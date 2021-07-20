@@ -1,0 +1,39 @@
+{
+  "name": "@primitive/v2-sdk",
+  "version": "1.0.00",
+  "description": "An SDK for the Primitive V2 Protocol",
+  "main": "dist/index.js",
+  "typings": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "repository": "https://github.com/primitivefinance/primitive-v2-sdk.git",
+  "keywords": [
+    "uniswap",
+    "ethereum"
+  ],
+  "module": "dist/v2-sdk.esm.js",
+  "scripts": {
+    "build": "tsdx build",
+    "start": "tsdx watch",
+    "test": "tsdx test"
+  },
+  "dependencies": {
+    "@alexangelj/web3-units": "^0.1.0",
+    "@primitivefinance/v2-math": "1.2.2",
+    "tiny-invariant": "^1.1.0",
+    "tiny-warning": "^1.0.3"
+  },
+  "devDependencies": {
+    "@types/jest": "^24.0.25",
+    "tsdx": "^0.14.1"
+  },
+  "engines": {
+    "node": ">=10"
+  },
+  "prettier": {
+    "printWidth": 120,
+    "semi": false,
+    "singleQuote": true
+  }
+}
