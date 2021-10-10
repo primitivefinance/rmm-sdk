@@ -1,6 +1,10 @@
 import { Wei, Time, FixedPointX64, parseFixedPointX64, parseWei, toBN } from 'web3-units'
 import { quantilePrime, std_n_pdf, inverse_std_n_cdf, nonNegative } from '@primitivefinance/v2-math'
-import { getStableGivenRisky, getRiskyGivenStable, calcInvariant } from '@primitivefinance/v2-math'
+import {
+  getStableGivenRiskyApproximation,
+  getRiskyGivenStableApproximation,
+  getInvariantApproximation
+} from '@primitivefinance/v2-math'
 import { Engine } from './engine'
 import { Calibration } from './calibration'
 import { Token } from '@uniswap/sdk-core'
@@ -106,17 +110,16 @@ export class VirtualPool {
    * @param reserveRisky Amount of risky tokens in reserve
    * @return reserveStable Expected amount of stable token reserves
    */
-  getStableGivenRisky(reserveRisky: Wei, noInvariant?: boolean): Wei {
+  getStableGivenRisky(reserveRisky: Wei, useInvariant?: boolean): Wei {
     const decimals = this.reserveStable.decimals
     let invariant = this.invariant.parsed
-    invariant = Math.abs(invariant) >= 1e-8 ? invariant : 0
 
-    let stable = getStableGivenRisky(
+    let stable = getStableGivenRiskyApproximation(
       reserveRisky.float,
       this.cal.strike.float,
       this.cal.sigma.float,
       this.tau.years,
-      noInvariant ? 0 : invariant
+      useInvariant ? invariant : 0
     )
 
     if (isNaN(stable)) return parseWei(0, decimals)
@@ -128,17 +131,16 @@ export class VirtualPool {
    * @param reserveStable Amount of stable tokens in reserve
    * @return reserveRisky Expected amount of risky token reserves
    */
-  getRiskyGivenStable(reserveStable: Wei, noInvariant?: boolean): Wei {
+  getRiskyGivenStable(reserveStable: Wei, useInvariant?: boolean): Wei {
     const decimals = this.reserveRisky.decimals
     let invariant = this.invariant.parsed
-    invariant = Math.abs(invariant) >= 1e-8 ? invariant : 0
 
-    let risky = getRiskyGivenStable(
+    let risky = getRiskyGivenStableApproximation(
       reserveStable.float,
       this.cal.strike.float,
       this.cal.sigma.float,
       this.tau.years,
-      noInvariant ? 0 : invariant
+      useInvariant ? invariant : 0
     )
 
     if (isNaN(risky)) return parseWei(0, decimals)
@@ -159,7 +161,13 @@ export class VirtualPool {
   calcInvariant(): FixedPointX64 {
     const risky = this.reserveRisky.float / this.liquidity.float
     const stable = this.reserveStable.float / this.liquidity.float
-    let invariant = calcInvariant(risky, stable, this.cal.strike.float, this.cal.sigma.float, this.tau.years)
+    let invariant = getInvariantApproximation(
+      risky,
+      stable,
+      this.cal.strike.float,
+      this.cal.sigma.float,
+      this.tau.years
+    )
     invariant = Math.floor(invariant * Math.pow(10, 18))
     this.invariant = new FixedPointX64(
       toBN(invariant === NaN ? 0 : invariant)
@@ -238,7 +246,13 @@ export class VirtualPool {
 
     const risky = reserveRiskyLast.add(deltaIn).float / this.liquidity.float
     const stable = reserveStableLast.sub(deltaOut).float / this.liquidity.float
-    let nextInvariant: any = calcInvariant(risky, stable, this.cal.strike.float, this.cal.sigma.float, this.tau.years)
+    let nextInvariant: any = getInvariantApproximation(
+      risky,
+      stable,
+      this.cal.strike.float,
+      this.cal.sigma.float,
+      this.tau.years
+    )
     nextInvariant = Math.floor(nextInvariant * Math.pow(10, 18))
     nextInvariant = new FixedPointX64(
       toBN(nextInvariant)
@@ -318,7 +332,13 @@ export class VirtualPool {
     const risky = reserveRiskyLast.sub(deltaOut).float / this.liquidity.float
     const stable = reserveStableLast.add(deltaIn).float / this.liquidity.float
 
-    let nextInvariant: any = calcInvariant(risky, stable, this.cal.strike.float, this.cal.sigma.float, this.tau.years)
+    let nextInvariant: any = getInvariantApproximation(
+      risky,
+      stable,
+      this.cal.strike.float,
+      this.cal.sigma.float,
+      this.tau.years
+    )
     nextInvariant = Math.floor(nextInvariant * Math.pow(10, 18))
     nextInvariant = new FixedPointX64(
       toBN(nextInvariant)
@@ -338,7 +358,7 @@ export class VirtualPool {
     const strike = this.cal.strike.float
     const sigma = this.cal.sigma.float
     const tau = this.tau.years
-    const spot = getStableGivenRisky(risky, strike, sigma, tau) * quantilePrime(1 - risky)
+    const spot = getStableGivenRiskyApproximation(risky, strike, sigma, tau) * quantilePrime(1 - risky)
     return parseWei(spot)
   }
 
