@@ -110,7 +110,7 @@ export class VirtualPool {
    * @param reserveRisky Amount of risky tokens in reserve
    * @return reserveStable Expected amount of stable token reserves
    */
-  getStableGivenRisky(reserveRisky: Wei, useInvariant?: boolean): Wei {
+  getStableGivenRisky(reserveRisky: Wei, noInvariant?: boolean): Wei {
     const decimals = this.reserveStable.decimals
     let invariant = this.invariant.parsed
 
@@ -119,7 +119,7 @@ export class VirtualPool {
       this.cal.strike.float,
       this.cal.sigma.float,
       this.tau.years,
-      useInvariant ? invariant : 0
+      noInvariant ? 0 : invariant
     )
 
     if (isNaN(stable)) return parseWei(0, decimals)
@@ -131,7 +131,7 @@ export class VirtualPool {
    * @param reserveStable Amount of stable tokens in reserve
    * @return reserveRisky Expected amount of risky token reserves
    */
-  getRiskyGivenStable(reserveStable: Wei, useInvariant?: boolean): Wei {
+  getRiskyGivenStable(reserveStable: Wei, noInvariant?: boolean): Wei {
     const decimals = this.reserveRisky.decimals
     let invariant = this.invariant.parsed
 
@@ -140,7 +140,7 @@ export class VirtualPool {
       this.cal.strike.float,
       this.cal.sigma.float,
       this.tau.years,
-      useInvariant ? invariant : 0
+      noInvariant ? 0 : invariant
     )
 
     if (isNaN(risky)) return parseWei(0, decimals)
