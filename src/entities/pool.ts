@@ -87,9 +87,8 @@ export class Pool extends Calibration {
 }
 
 export function scaleUp(value: number, decimals: number): Wei {
-  const scaleFactor = Math.pow(10, decimals)
-  const scaled = Math.floor(value * scaleFactor) / scaleFactor
-  return new Wei(toBN(scaled), decimals)
+  const scaled = Math.floor(value * Math.pow(10, decimals)) / Math.pow(10, decimals)
+  return parseWei(scaled.toFixed(decimals), decimals)
 }
 
 /**
@@ -436,7 +435,11 @@ export class VirtualPool {
     const reserve0 = this.reserveRisky
     const reserve1 = this.reserveStable
     const liquidity = this.liquidity
-    const values = [reserve0.mul(prices[0]), reserve1.mul(prices[1])]
+
+    const values = [
+      reserve0.mul(scaleUp(prices[0], reserve0.decimals)).div(parseWei(1, reserve0.decimals)),
+      reserve1.mul(scaleUp(prices[1], reserve1.decimals)).div(parseWei(1, reserve1.decimals))
+    ]
     const sum = values[0].add(values[1])
     const valuePerLiquidity = sum.mul(1e18).div(liquidity)
     return { valuePerLiquidity, values }
@@ -448,7 +451,7 @@ export class VirtualPool {
    * @returns Strike price - call premium, denominated in a stable asset
    */
   getTheoreticalLiquidityValue(lastTimestamp = this.cal.lastTimestamp.raw): number {
-    const totalTau = this.cal.maturity.raw - lastTimestamp // in seconds
+    const totalTau = new Time(this.cal.maturity.raw - lastTimestamp).years
     const premium = callPremiumApproximation(this.cal.strike.float, this.cal.sigma.float, totalTau, this.cal.spot.float)
     return this.cal.strike.float - premium
   }
@@ -459,7 +462,7 @@ export class VirtualPool {
    * @returns Theoretical premium of the replicated option using the entire lifetime of the pool
    */
   getTheoreticalMaxFee(creationTimestamp: number): number {
-    const totalTau = this.cal.maturity.raw - creationTimestamp // in seconds
+    const totalTau = new Time(this.cal.maturity.raw - creationTimestamp).years
     const premium = callPremiumApproximation(this.cal.strike.float, this.cal.sigma.float, totalTau, this.cal.spot.float)
     return premium
   }

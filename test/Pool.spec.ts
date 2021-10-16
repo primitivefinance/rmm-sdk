@@ -1,7 +1,7 @@
 import { Token } from '@uniswap/sdk-core'
 import { VirtualPool } from '../src/entities'
 import { Calibration } from '../src'
-import { parseWei } from 'web3-units'
+import { parseWei, Time } from 'web3-units'
 import { callDelta, callPremium } from '@primitivefinance/v2-math'
 import { AddressZero } from '@ethersproject/constants'
 
@@ -10,7 +10,7 @@ describe('Test pool', function() {
 
   beforeEach(async function() {
     const token = new Token(1, AddressZero, 18)
-    const calibration: Calibration = new Calibration(AddressZero, token, token, 10, 1, 1.01, 0.01, 10)
+    const calibration: Calibration = new Calibration(AddressZero, token, token, 10, 1, Time.YearInSeconds + 1, 1, 10)
     pool = new VirtualPool(calibration, parseWei(1 - callDelta(10, 1, 1, 10)), parseWei(1))
     prices = [10, 1]
   })
@@ -25,7 +25,7 @@ describe('Test pool', function() {
   })
 
   it('gets the theoretical max fee', async function() {
-    const max = pool.getTheoreticalMaxFee(0)
+    const max = pool.getTheoreticalMaxFee(1)
     expect(max).toBeCloseTo(callPremium(10, 1, 1, 10))
   })
 })
