@@ -7,7 +7,7 @@ import { MethodParameters, validateAndParseAddress } from '.'
 import { Calibration } from './entities/calibration'
 import { PermitOptions, SelfPermit } from './selfPermit'
 import { Pool } from './entities/pool'
-import { AddressZero } from './constants'
+import { AddressZero } from '@ethersproject/constants'
 import { PeripheryManager } from './peripheryManager'
 
 export interface DefaultOptions {
