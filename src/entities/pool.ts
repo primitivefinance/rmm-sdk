@@ -1,5 +1,11 @@
 import { Wei, Time, FixedPointX64, parseFixedPointX64, parseWei, toBN } from 'web3-units'
-import { quantilePrime, std_n_pdf, inverse_std_n_cdf, nonNegative } from '@primitivefinance/v2-math'
+import {
+  quantilePrime,
+  std_n_pdf,
+  inverse_std_n_cdf,
+  nonNegative,
+  callPremiumApproximation
+} from '@primitivefinance/v2-math'
 import {
   getStableGivenRiskyApproximation,
   getRiskyGivenStableApproximation,
@@ -11,7 +17,13 @@ import { Token } from '@uniswap/sdk-core'
 import { PERCENTAGE } from '..'
 
 export const clonePool = (poolToClone: VirtualPool, newRisky: Wei, newStable: Wei): VirtualPool => {
-  return new VirtualPool(poolToClone.cal, newRisky, poolToClone.liquidity, newStable ?? newStable)
+  return new VirtualPool(
+    poolToClone.cal,
+    newRisky,
+    poolToClone.liquidity,
+    poolToClone.reserveStable.decimals,
+    newStable ?? newStable
+  )
 }
 
 export interface SwapReturn {
@@ -64,14 +76,19 @@ export class Pool extends Calibration {
       params.spot ?? params.spot
     )
 
-    this.virtual = new VirtualPool(this, state.reserveRisky, state.liquidity, state.reserveStable)
+    this.virtual = new VirtualPool(
+      this,
+      state.reserveRisky,
+      state.liquidity,
+      state.reserveStable.decimals,
+      state.reserveStable
+    )
   }
 }
 
 export function scaleUp(value: number, decimals: number): Wei {
-  const scaleFactor = Math.pow(10, decimals)
-  const scaled = Math.floor(value * scaleFactor) / scaleFactor
-  return new Wei(toBN(scaled), decimals)
+  const scaled = Math.floor(value * Math.pow(10, decimals)) / Math.pow(10, decimals)
+  return parseWei(scaled.toFixed(decimals), decimals)
 }
 
 /**
@@ -95,7 +112,7 @@ export class VirtualPool {
    * @param liquidity Total liquidity supply to initialize the pool with
    * @param overrideStable The initial stable reserve value
    */
-  constructor(cal: Calibration, initialRisky: Wei, liquidity: Wei, overrideStable?: Wei) {
+  constructor(cal: Calibration, initialRisky: Wei, liquidity: Wei, stableDecimals = 18, overrideStable?: Wei) {
     // ===== State =====
     this.reserveRisky = initialRisky
     this.liquidity = liquidity
@@ -103,6 +120,7 @@ export class VirtualPool {
     // ===== Calculations using State ====-
     this.tau = this.calcTau() // maturity - lastTimestamp
     this.invariant = parseFixedPointX64(0)
+    this.reserveStable = overrideStable ? overrideStable : parseWei(0, stableDecimals)
     this.reserveStable = overrideStable ? overrideStable : this.getStableGivenRisky(this.reserveRisky)
   }
 
@@ -405,5 +423,47 @@ export class VirtualPool {
     const step6 = quantilePrime(step5)
     const step7 = gamma * step4 * step6
     return 1 / step7
+  }
+
+  /**
+   * @notice Calculates the current value of the pool, compare this to the current theoretical value
+   * @dev Denominating prices in a dollar-pegged stable coin will be easiest to calculate other values with
+   * @param prices Multiplier for each side of the pool, to convert to a respective price. E.g. [price(ETH, usd), price(USDC, usd)]
+   * @returns value per liquidity and values of each side of the pool, denominated in `prices` units
+   */
+  getCurrentLiquidityValue(prices: number[]): { valuePerLiquidity: Wei; values: Wei[] } {
+    const reserve0 = this.reserveRisky
+    const reserve1 = this.reserveStable
+    const liquidity = this.liquidity
+
+    const values = [
+      reserve0.mul(scaleUp(prices[0], reserve0.decimals)).div(parseWei(1, reserve0.decimals)),
+      reserve1.mul(scaleUp(prices[1], reserve1.decimals)).div(parseWei(1, reserve1.decimals))
+    ]
+    const sum = values[0].add(values[1])
+    const valuePerLiquidity = sum.mul(1e18).div(liquidity)
+    return { valuePerLiquidity, values }
+  }
+
+  /**
+   * @notice Calculates the theoretical fee's generated using a pool's creation timestamp
+   * @param lastTimestamp Unix timestamp in seconds of the pool's last update
+   * @returns Strike price - call premium, denominated in a stable asset
+   */
+  getTheoreticalLiquidityValue(lastTimestamp = this.cal.lastTimestamp.raw): number {
+    const totalTau = new Time(this.cal.maturity.raw - lastTimestamp).years
+    const premium = callPremiumApproximation(this.cal.strike.float, this.cal.sigma.float, totalTau, this.cal.spot.float)
+    return this.cal.strike.float - premium
+  }
+
+  /**
+   * @notice Calculates the theoretical fees generated using a pool's creation timestamp
+   * @param creationTimestamp Unix timestamp in seconds
+   * @returns Theoretical premium of the replicated option using the entire lifetime of the pool
+   */
+  getTheoreticalMaxFee(creationTimestamp: number): number {
+    const totalTau = new Time(this.cal.maturity.raw - creationTimestamp).years
+    const premium = callPremiumApproximation(this.cal.strike.float, this.cal.sigma.float, totalTau, this.cal.spot.float)
+    return premium
   }
 }

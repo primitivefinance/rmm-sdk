@@ -9,7 +9,7 @@ import { Calibration } from './entities/calibration'
 import { Engine } from './entities/engine'
 import { Pool } from './entities/pool'
 import { PermitOptions, SelfPermit } from './selfPermit'
-import { AddressZero } from './constants'
+import { AddressZero } from '@ethersproject/constants'
 
 export interface NativeOptions {
   useNative?: NativeCurrency
