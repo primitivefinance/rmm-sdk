@@ -90,7 +90,7 @@ export class VirtualPool {
     this.tau = this.calcTau() // maturity - lastTimestamp
     this.invariant = parseFixedPointX64(0)
     this.reserveStable = overrideStable ? overrideStable : parseWei(0, stableDecimals)
-    this.reserveStable = overrideStable ? overrideStable : this.getStableGivenRisky(this.reserveRisky)
+    this.reserveStable = overrideStable ? overrideStable : this.getStableGivenRisky(initialRisky)
   }
 
   /**
@@ -474,4 +474,4 @@ export class Pool extends Calibration {
   }
 }
 
-export const EMPTY_VIRTUAL_POOL = new VirtualPool(EMPTY_CALIBRATION, parseWei(0), parseWei(0), 18)
+export const EMPTY_VIRTUAL_POOL = new VirtualPool(EMPTY_CALIBRATION, parseWei(0), parseWei(0), 18, parseWei(0))
