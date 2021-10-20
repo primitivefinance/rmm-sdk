@@ -14,9 +14,14 @@ import {
 import { Engine } from './engine'
 import { Calibration } from './calibration'
 import { Token } from '@uniswap/sdk-core'
-import { PERCENTAGE } from '..'
+import { PERCENTAGE, EMPTY_CALIBRATION } from '../constants'
 
-export const clonePool = (poolToClone: VirtualPool, newRisky: Wei, newStable: Wei): VirtualPool => {
+export function scaleUp(value: number, decimals: number): Wei {
+  const scaled = Math.floor(value * Math.pow(10, decimals)) / Math.pow(10, decimals)
+  return parseWei(scaled.toFixed(decimals), decimals)
+}
+
+export function clonePool(poolToClone: VirtualPool, newRisky: Wei, newStable: Wei): VirtualPool {
   return new VirtualPool(
     poolToClone.cal,
     newRisky,
@@ -53,42 +58,6 @@ export interface PoolState {
   reserveRisky: Wei
   reserveStable: Wei
   liquidity: Wei
-}
-
-/**
- * @notice Real pool using on-chain reserves
- */
-export class Pool extends Calibration {
-  /**
-   * @notice Use the virtual pool to simulate swaps
-   */
-  public readonly virtual: VirtualPool
-
-  constructor(params: PoolParameters, state: PoolState) {
-    super(
-      params.factory,
-      params.risky,
-      params.stable,
-      params.strike,
-      params.sigma,
-      params.maturity,
-      params.lastTimestamp,
-      params.spot ?? params.spot
-    )
-
-    this.virtual = new VirtualPool(
-      this,
-      state.reserveRisky,
-      state.liquidity,
-      state.reserveStable.decimals,
-      state.reserveStable
-    )
-  }
-}
-
-export function scaleUp(value: number, decimals: number): Wei {
-  const scaled = Math.floor(value * Math.pow(10, decimals)) / Math.pow(10, decimals)
-  return parseWei(scaled.toFixed(decimals), decimals)
 }
 
 /**
@@ -467,3 +436,42 @@ export class VirtualPool {
     return premium
   }
 }
+
+/**
+ * @notice Real pool using on-chain reserves
+ */
+export class Pool extends Calibration {
+  private _virtual: VirtualPool
+
+  constructor(params: PoolParameters) {
+    super(
+      params.factory,
+      params.risky,
+      params.stable,
+      params.strike,
+      params.sigma,
+      params.maturity,
+      params.lastTimestamp,
+      params.spot ?? params.spot
+    )
+
+    this._virtual = EMPTY_VIRTUAL_POOL
+  }
+
+  public set virtual(state: PoolState) {
+    const calibration = this as Calibration
+    this._virtual = new VirtualPool(
+      calibration,
+      state.reserveRisky,
+      state.liquidity,
+      state.reserveStable.decimals,
+      state.reserveStable
+    )
+  }
+
+  public get virtual() {
+    return this._virtual
+  }
+}
+
+export const EMPTY_VIRTUAL_POOL = new VirtualPool(EMPTY_CALIBRATION, parseWei(0), parseWei(0), 18)
