@@ -458,7 +458,7 @@ export class Pool extends Calibration {
     this._virtual = EMPTY_VIRTUAL_POOL
   }
 
-  public set virtual(state: PoolState) {
+  public set virtual(state) {
     const calibration = this as Calibration
     this._virtual = new VirtualPool(
       calibration,
@@ -469,7 +469,7 @@ export class Pool extends Calibration {
     )
   }
 
-  public get virtual() {
+  public get virtual(): VirtualPool {
     return this._virtual
   }
 }
