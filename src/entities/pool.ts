@@ -173,7 +173,7 @@ export class VirtualPool {
     )
     invariant = Math.floor(invariant * Math.pow(10, 18))
     this.invariant = new FixedPointX64(
-      toBN(invariant === NaN ? 0 : invariant)
+      toBN(isNaN(invariant) ? 0 : invariant)
         .mul(FixedPointX64.Denominator)
         .div(Engine.PRECISION.raw)
     )
