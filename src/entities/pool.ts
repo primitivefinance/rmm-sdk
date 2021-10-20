@@ -89,8 +89,24 @@ export class VirtualPool {
     // ===== Calculations using State ====-
     this.tau = this.calcTau() // maturity - lastTimestamp
     this.invariant = parseFixedPointX64(0)
-    this.reserveStable = overrideStable ? overrideStable : parseWei(0, stableDecimals)
-    this.reserveStable = overrideStable ? overrideStable : this.getStableGivenRisky(initialRisky)
+
+    if (overrideStable) {
+      this.reserveStable = overrideStable
+    } else {
+      let stable = getStableGivenRiskyApproximation(
+        initialRisky.float,
+        cal.strike.float,
+        cal.sigma.float,
+        cal.tau.years,
+        0
+      )
+
+      let resStable: Wei
+      if (isNaN(stable)) resStable = parseWei(0, stableDecimals)
+      resStable = scaleUp(stable, stableDecimals)
+
+      this.reserveStable = resStable
+    }
   }
 
   /**
