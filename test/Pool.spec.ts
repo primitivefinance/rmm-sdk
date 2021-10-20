@@ -42,5 +42,6 @@ describe('Test pool', function() {
     })
 
     expect(main).toBeDefined
+    expect(main.virtual).toBeDefined
   })
 })
