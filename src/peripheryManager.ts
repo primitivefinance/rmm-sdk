@@ -4,7 +4,7 @@ import { Interface } from '@ethersproject/abi'
 import { parseWei, toBN, Wei } from 'web3-units'
 import { NativeCurrency } from '@uniswap/sdk-core'
 import { AddressZero } from '@ethersproject/constants'
-import { abi } from '@primitivefinance/v2-core/artifacts/contracts/PrimitiveFactory.sol/PrimitiveFactory.json'
+import { abi } from '@primitivefinance/v2-periphery/artifacts/contracts/PrimitiveHouse.sol/PrimitiveHouse.json'
 
 import { Pool } from './entities/pool'
 import { Engine } from './entities/engine'
@@ -54,11 +54,6 @@ export abstract class PeripheryManager extends SelfPermit {
 
   private constructor() {
     super()
-  }
-
-  // deploy engine
-  public encodeDeploy(): string {
-    return PeripheryManager.INTERFACE.encodeFunctionData('deployEngine', [])
   }
 
   // create pool
@@ -263,7 +258,8 @@ export abstract class PeripheryManager extends SelfPermit {
         ...PeripheryManager.encodeWithdraw(pool, {
           recipient: options.recipient,
           amountRisky: options.expectedRisky,
-          amountStable: options.expectedStable
+          amountStable: options.expectedStable,
+          useNative: options.useNative
         })
       )
     }

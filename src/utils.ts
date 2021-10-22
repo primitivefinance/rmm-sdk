@@ -1,4 +1,11 @@
+import { Wei } from 'web3-units'
+import invariant from 'tiny-invariant'
 import { getAddress } from '@ethersproject/address'
+import { Token } from '@uniswap/sdk-core'
+
+export function checkDecimals(amount: Wei, token: Token) {
+  invariant(amount.decimals === token.decimals, 'Amount decimals does not match token decimals')
+}
 
 /**
  * Validates an address and returns the parsed (checksummed) version of that address
