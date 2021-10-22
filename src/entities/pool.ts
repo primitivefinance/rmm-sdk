@@ -109,6 +109,35 @@ export class VirtualPool {
     }
   }
 
+  // ===== Liquidity =====
+
+  /**
+   * @notice Calculates the other side of the pool using the known amount of a side of the pool
+   * @param amount Amount of token
+   * @param token Token side of the pool that is used to calculate the other side
+   * @returns risky token amount, stable token amount, and liquidity amount
+   */
+  quote(amount: Wei, token: Token): { delRisky: Wei; delStable: Wei; delLiquidity: Wei } {
+    let delRisky: Wei
+    let delStable: Wei
+    let delLiquidity: Wei
+    if (token.equals(this.cal.risky)) {
+      delRisky = amount
+      delLiquidity = delRisky.mul(this.liquidity).div(this.reserveRisky)
+      delStable = delLiquidity.mul(this.reserveStable).div(this.liquidity)
+    } else if (token.equals(this.cal.stable)) {
+      delStable = amount
+      delLiquidity = delStable.mul(this.liquidity).div(this.reserveStable)
+      delRisky = delLiquidity.mul(this.reserveRisky).div(this.liquidity)
+    } else {
+      delLiquidity = amount
+      delRisky = delLiquidity.mul(this.reserveRisky).div(this.liquidity)
+      delStable = delLiquidity.mul(this.reserveStable).div(this.liquidity)
+    }
+
+    return { delRisky, delStable, delLiquidity }
+  }
+
   /**
    * @param reserveRisky Amount of risky tokens in reserve
    * @return reserveStable Expected amount of stable token reserves

@@ -44,4 +44,11 @@ describe('Test pool', function() {
     expect(main).toBeDefined
     expect(main.virtual).toBeDefined
   })
+
+  it('pool.quote()', async function() {
+    const amount = parseWei('0.5')
+    const quote = pool.quote(amount, pool.cal.risky)
+    const delStable = quote.delLiquidity.mul(pool.reserveStable).div(pool.liquidity)
+    expect(quote.delStable.float).toBeCloseTo(delStable.float)
+  })
 })
