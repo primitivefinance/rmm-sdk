@@ -1,8 +1,9 @@
-import { parseWei, Percentage, Time, Wei, parsePercentage } from 'web3-units'
-import { callDelta, callPremium } from '@primitivefinance/v2-math'
-import { computePoolId } from '../utils'
-import { Engine } from './engine'
+import { utils, BigNumber } from 'ethers'
 import { Token } from '@uniswap/sdk-core'
+import { callDelta, callPremium } from '@primitivefinance/v2-math'
+import { parseWei, Percentage, Time, Wei, parsePercentage } from 'web3-units'
+import { Engine } from './engine'
+const { keccak256, solidityPack } = utils
 
 /**
  * @notice Calibration Struct; Class representation of each Curve's parameters
@@ -11,7 +12,7 @@ export class Calibration extends Engine {
   /**
    * @notice Used to calculate minimum liquidity based on lowest decimals of risky/stable
    */
-  public readonly MIN_LIQUIDITY_FACTOR = 6
+  public static readonly MIN_LIQUIDITY_FACTOR = 6
   /**
    * @notice Strike price with the same precision as the stable asset
    */
@@ -28,6 +29,10 @@ export class Calibration extends Engine {
    * @notice Time until expiry is calculated from the difference of current timestamp and this
    */
   public readonly lastTimestamp: Time
+  /**
+   * @notice Timestamp of tx which created the pool
+   */
+  public readonly creationTimestamp: Time
   /**
    * @notice Price of risky token denominated in stable tokens, with the precision of the stable tokens
    */
@@ -49,6 +54,7 @@ export class Calibration extends Engine {
     sigma: number,
     maturity: number,
     lastTimestamp: number,
+    creationTimestamp: number,
     spot?: number
   ) {
     super(factory, risky, stable)
@@ -56,6 +62,7 @@ export class Calibration extends Engine {
     this.sigma = parsePercentage(sigma)
     this.maturity = new Time(maturity) // in seconds, because `block.timestamp` is in seconds
     this.lastTimestamp = new Time(lastTimestamp) // in seconds, because `block.timestamp` is in seconds
+    this.creationTimestamp = new Time(creationTimestamp)
     this.spot = spot ? parseWei(spot, stable.decimals) : parseWei(0, stable.decimals)
   }
 
@@ -65,15 +72,39 @@ export class Calibration extends Engine {
   get MIN_LIQUIDITY(): number {
     return (
       (this.stable.decimals > this.risky.decimals ? this.risky.decimals : this.stable.decimals) /
-      this.MIN_LIQUIDITY_FACTOR
+      Calibration.MIN_LIQUIDITY_FACTOR
     )
   }
 
   /**
-   * @returns Time until expiry
+   * @returns Time until expiry in seconds
    */
   get tau(): Time {
     return this.maturity.sub(this.lastTimestamp)
+  }
+
+  /**
+   * @returns Total lifetime of a pool in seconds
+   */
+  get lifetime(): Time {
+    return this.maturity.sub(this.creationTimestamp)
+  }
+
+  /**
+   * @returns Total lifetime of a pool in seconds
+   */
+  get remaining(): Time {
+    const now = this.maturity.now
+    if (now >= this.maturity.raw) return new Time(0)
+
+    return this.maturity.sub(now)
+  }
+
+  /**
+   * @returns expired if time until expiry is lte 0
+   */
+  get expired(): boolean {
+    return this.remaining.raw <= 0
   }
 
   /**
@@ -101,6 +132,15 @@ export class Calibration extends Engine {
    * @notice Keccak256 hash of the calibration parameters and the engine address
    */
   get poolId(): string {
-    return computePoolId(this.address, this.strike.raw, this.sigma.raw, this.maturity.raw)
+    return Calibration.computePoolId(this.address, this.strike.raw, this.sigma.raw, this.maturity.raw)
+  }
+
+  public static computePoolId(
+    engine: string,
+    strike: string | BigNumber,
+    sigma: string | BigNumber,
+    maturity: string | number
+  ): string {
+    return keccak256(solidityPack(['address', 'uint128', 'uint32', 'uint32'], [engine, strike, sigma, maturity]))
   }
 }

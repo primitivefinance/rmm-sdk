@@ -10,7 +10,7 @@ describe('Test pool', function() {
 
   beforeEach(async function() {
     const token = new Token(1, AddressZero, 18)
-    const calibration: Calibration = new Calibration(AddressZero, token, token, 10, 1, Time.YearInSeconds + 1, 1, 10)
+    const calibration: Calibration = new Calibration(AddressZero, token, token, 10, 1, Time.YearInSeconds + 1, 1, 1, 10)
     pool = new VirtualPool(calibration, parseWei(1 - callDelta(10, 1, 1, 10)), parseWei(1))
     prices = [10, 1]
   })
