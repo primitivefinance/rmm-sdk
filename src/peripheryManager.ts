@@ -1,15 +1,15 @@
-import { Interface } from '@ethersproject/abi'
-import { abi } from '@primitivefinance/v2-core/artifacts/contracts/PrimitiveFactory.sol/PrimitiveFactory.json'
-import { NativeCurrency } from '@uniswap/sdk-core'
 import { BigNumber } from 'ethers'
 import invariant from 'tiny-invariant'
+import { Interface } from '@ethersproject/abi'
 import { parseWei, toBN, Wei } from 'web3-units'
-import { MethodParameters, validateAndParseAddress } from '.'
-import { Calibration } from './entities/calibration'
-import { Engine } from './entities/engine'
-import { Pool } from './entities/pool'
-import { PermitOptions, SelfPermit } from './selfPermit'
+import { NativeCurrency } from '@uniswap/sdk-core'
 import { AddressZero } from '@ethersproject/constants'
+import { abi } from '@primitivefinance/v2-core/artifacts/contracts/PrimitiveFactory.sol/PrimitiveFactory.json'
+
+import { Pool } from './entities/pool'
+import { Engine } from './entities/engine'
+import { PermitOptions, SelfPermit } from './selfPermit'
+import { MethodParameters, validateAndParseAddress } from './utils'
 
 export interface NativeOptions {
   useNative?: NativeCurrency
@@ -31,8 +31,9 @@ export interface MarginOptions extends RecipientOptions, NativeOptions {
 }
 
 export interface LiquidityOptions {
-  cal: Calibration
-  amountLiquidity: Wei
+  delRisky: Wei
+  delStable: Wei
+  delLiquidity: Wei
 }
 
 export interface AllocateOptions extends LiquidityOptions, RecipientOptions, NativeOptions, Deadline {
@@ -61,14 +62,17 @@ export abstract class PeripheryManager extends SelfPermit {
   }
 
   // create pool
-  private static encodeCreate(cal: Calibration, liquidity: Wei): string {
+  private static encodeCreate(pool: Pool, liquidity: Wei): string {
+    const decimals = pool.risky.decimals
+    const delta = parseWei(pool.delta, decimals)
+    const riskyPerLp = parseWei(1, decimals).sub(delta)
     return PeripheryManager.INTERFACE.encodeFunctionData('create', [
-      cal.risky.address,
-      cal.stable.address,
-      cal.strike.raw,
-      cal.sigma.raw,
-      cal.maturity.raw,
-      parseWei(cal.delta, 18).raw,
+      pool.risky.address,
+      pool.stable.address,
+      pool.strike.raw,
+      pool.sigma.raw,
+      pool.maturity.raw,
+      riskyPerLp.raw,
       liquidity.raw
     ])
   }
@@ -77,7 +81,7 @@ export abstract class PeripheryManager extends SelfPermit {
   public depositCallParameters(engine: Engine, options: MarginOptions): MethodParameters {
     invariant(options.amountRisky.gt(0) || options.amountStable.gt(0), 'ZeroError()')
 
-    const calldatas: string[] = []
+    let calldatas: string[] = []
 
     // if permits
     if (options.permitRisky) {
@@ -89,6 +93,8 @@ export abstract class PeripheryManager extends SelfPermit {
     }
 
     const recipient = validateAndParseAddress(options.recipient)
+    invariant(recipient !== AddressZero, 'Zero Address Recipient')
+
     const amount0 = options.amountRisky.raw
     const amount1 = options.amountStable.raw
 
@@ -104,6 +110,7 @@ export abstract class PeripheryManager extends SelfPermit {
 
     let value: string = toBN(0).toHexString()
 
+    // if ether
     if (options.useNative) {
       const wrapped = options.useNative.wrapped
       invariant(engine.risky.equals(wrapped) || engine.stable.equals(wrapped), 'No Weth')
@@ -127,15 +134,16 @@ export abstract class PeripheryManager extends SelfPermit {
   // withdraw margin
   public static encodeWithdraw(engine: Engine, options: MarginOptions): string[] {
     invariant(options.amountRisky.gt(0) || options.amountStable.gt(0), 'ZeroError()')
-    const calldatas: string[] = []
+    const recipient: string = validateAndParseAddress(options.recipient)
+    invariant(recipient !== AddressZero, 'Zero Address Recipient')
 
     const useEth: boolean = engine.risky.isNative || engine.stable.isNative
-    const recipient: string = validateAndParseAddress(options.recipient)
     const amount0: BigNumber = options.amountRisky.raw
     const amount1: BigNumber = options.amountStable.raw
 
     // if withdrawing weth and its being unwrapped, a zero address recipient will pull the withdrawn tokens
     // to the periphery contract
+    let calldatas: string[] = []
     calldatas.push(
       PeripheryManager.INTERFACE.encodeFunctionData('withdraw', [
         useEth ? AddressZero : recipient,
@@ -147,7 +155,7 @@ export abstract class PeripheryManager extends SelfPermit {
     )
 
     if (useEth) {
-      const wrappedAmount = engine.risky.isNative ? amount0 : amount1 // if risky is native use risky amount
+      const wrappedAmount = engine.risky.isNative ? amount0 : amount1 // if risky is native, use risky amount
       const token = engine.risky.isNative ? engine.stable : engine.risky // if risky is native, token is stable
       const tokenAmount = engine.risky.isNative ? amount1 : amount0 // if risky is native, token amount is stable amount
 
@@ -168,7 +176,7 @@ export abstract class PeripheryManager extends SelfPermit {
   public withdrawCallParameters(engine: Engine, options: MarginOptions): MethodParameters {
     invariant(options.amountRisky.gt(0) || options.amountStable.gt(0), 'ZeroError()')
 
-    const calldatas: string[] = PeripheryManager.encodeWithdraw(engine, options)
+    let calldatas: string[] = PeripheryManager.encodeWithdraw(engine, options)
 
     return {
       calldata:
@@ -179,47 +187,46 @@ export abstract class PeripheryManager extends SelfPermit {
 
   // allocate liquidity
   public allocateCallParameters(pool: Pool, options: AllocateOptions): MethodParameters {
-    invariant(options.amountLiquidity.gt(0), 'ZeroError()')
+    invariant(options.delRisky.gt(0), 'ZeroError()')
+    invariant(options.delStable.gt(0), 'ZeroError()')
+    invariant(options.delLiquidity.gt(0), 'ZeroError()')
 
-    const calldatas: string[] = []
-
-    const { amount0, amount1 } = { amount0: pool.virtual.reserveRisky.raw, amount1: pool.virtual.reserveStable.raw } // get token amounts
-
-    // if curve should be created
-    if (options.createPool) {
-      calldatas.push(PeripheryManager.encodeCreate(options.cal, options.amountLiquidity))
-    }
+    let calldatas: string[] = []
 
     // if permits
     if (options.permitRisky) {
-      calldatas.push(PeripheryManager.encodePermit(options.cal.risky, options.permitRisky))
+      calldatas.push(PeripheryManager.encodePermit(pool.risky, options.permitRisky))
     }
 
     if (options.permitStable) {
-      calldatas.push(PeripheryManager.encodePermit(options.cal.stable, options.permitStable))
+      calldatas.push(PeripheryManager.encodePermit(pool.stable, options.permitStable))
     }
 
-    //const recipient = validateAndParseAddress(options.recipient) // add to periphery
-    //const deadline = options.deadline.toHexString() // add to periphery
-
-    calldatas.push(
-      PeripheryManager.INTERFACE.encodeFunctionData('allocate', [
-        options.cal.risky.address,
-        options.cal.stable.address,
-        options.cal.poolId,
-        options.amountLiquidity.raw.toHexString(),
-        options.fromMargin
-      ])
-    )
+    // if curve should be created
+    if (options.createPool) {
+      invariant(!options.fromMargin, 'Cannot pay from margin when creating')
+      calldatas.push(PeripheryManager.encodeCreate(pool, options.delLiquidity))
+    } else {
+      calldatas.push(
+        PeripheryManager.INTERFACE.encodeFunctionData('allocate', [
+          pool.poolId,
+          pool.risky.address,
+          pool.stable.address,
+          options.delRisky.raw.toHexString(),
+          options.delStable.raw.toHexString(),
+          options.fromMargin
+        ])
+      )
+    }
 
     let value: string = toBN(0).toHexString()
 
     // if ether
     if (options.useNative) {
       const wrapped = options.useNative.wrapped
-      invariant(options.cal.risky.equals(wrapped) || options.cal.stable.equals(wrapped), 'No Weth')
+      invariant(pool.risky.equals(wrapped) || pool.stable.equals(wrapped), 'No Weth')
 
-      const wrappedAmount = options.cal.risky.equals(wrapped) ? amount0 : amount1
+      const wrappedAmount = pool.risky.equals(wrapped) ? options.delRisky.raw : options.delStable.raw
 
       if (wrappedAmount.gte(0)) {
         calldatas.push(PeripheryManager.INTERFACE.encodeFunctionData('refundETH'))
@@ -236,28 +243,24 @@ export abstract class PeripheryManager extends SelfPermit {
   }
 
   // remove liquidity
+  public removeCallParameters(pool: Pool, options: RemoveOptions): MethodParameters {
+    invariant(options.delLiquidity.gt(0), 'ZeroError()')
 
-  public removeCallParameters(options: RemoveOptions): MethodParameters {
-    invariant(options.amountLiquidity.gt(0), 'ZeroError()')
+    let calldatas: string[] = []
 
-    const calldatas: string[] = []
-
-    //const recipient = validateAndParseAddress(options.recipient) // add to periphery
-    //const deadline = options.deadline.toHexString() // add to peripheyr
-
+    // tokens are by default removed from curve and deposited to margin
     calldatas.push(
       PeripheryManager.INTERFACE.encodeFunctionData('remove', [
-        options.cal.risky.address,
-        options.cal.stable.address,
-        options.cal.poolId,
-        options.amountLiquidity.raw.toHexString(),
-        options.toMargin // add to periphery
+        pool.address,
+        pool.poolId,
+        options.delLiquidity.raw.toHexString()
       ])
     )
 
+    // handles unwrapping ether, if needed
     if (!options.toMargin) {
       calldatas.push(
-        ...PeripheryManager.encodeWithdraw(options.cal, {
+        ...PeripheryManager.encodeWithdraw(pool, {
           recipient: options.recipient,
           amountRisky: options.expectedRisky,
           amountStable: options.expectedStable

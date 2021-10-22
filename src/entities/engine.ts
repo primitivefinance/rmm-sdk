@@ -6,12 +6,15 @@ import { bytecode as EngineBytecode } from '@primitivefinance/v2-core/artifacts/
 /**
  * @notice Represents the PrimitiveEngine.sol smart contract
  */
-export class Engine {
+export class Engine extends Token {
+  /**
+   * @notice Used to calculate minimum liquidity based on lowest decimals of risky/stable
+   */
+  public static readonly MIN_LIQUIDITY_FACTOR = 6
   /**
    * @notice Engine constant value which all values are scaled to for any math
    */
   public static readonly PRECISION: Wei = parseWei('1', 18)
-
   /**
    * @notice Engine constant used to apply fee of 0.15% to swaps
    */
@@ -48,6 +51,13 @@ export class Engine {
    * @param stable Stable token
    */
   constructor(factory: string, risky: Token, stable: Token) {
+    super(
+      risky.chainId,
+      Engine.computeEngineAddress(factory, risky.address, stable.address, EngineBytecode),
+      18,
+      'RMM-01',
+      'Primitive RMM-01 LP Token'
+    )
     this.factory = factory
     this.risky = risky
     this.stable = stable
@@ -55,19 +65,18 @@ export class Engine {
     this.scaleFactorStable = parseWei(1, 18 - stable.decimals)
   }
 
-  /**
-   * @notice Computes the Engine address of this instance using the factory and its immutable tokens
-   */
-  get address(): string {
-    return Engine.computeEngineAddress(this.factory, this.risky.address, this.stable.address, EngineBytecode)
-  }
-
-  get chainId(): number {
-    return this.risky.chainId
-  }
-
   public involvesToken(token: Token): boolean {
     return this.risky.equals(token) || this.stable.equals(token)
+  }
+
+  /**
+   * @notice Minimum amount of liquidity to supply on calling `create()`
+   */
+  get MIN_LIQUIDITY(): number {
+    return (
+      (this.stable.decimals > this.risky.decimals ? this.risky.decimals : this.stable.decimals) /
+      Engine.MIN_LIQUIDITY_FACTOR
+    )
   }
 
   /**
