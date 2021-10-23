@@ -23,11 +23,14 @@ export interface Deadline {
   deadline: BigNumber
 }
 
-export interface MarginOptions extends RecipientOptions, NativeOptions {
-  amountRisky: Wei
-  amountStable: Wei
+export interface PermitTokens {
   permitRisky?: PermitOptions
   permitStable?: PermitOptions
+}
+
+export interface MarginOptions extends PermitTokens, RecipientOptions, NativeOptions {
+  amountRisky: Wei
+  amountStable: Wei
 }
 
 export interface LiquidityOptions {
@@ -36,10 +39,8 @@ export interface LiquidityOptions {
   delLiquidity: Wei
 }
 
-export interface AllocateOptions extends LiquidityOptions, RecipientOptions, NativeOptions, Deadline {
+export interface AllocateOptions extends PermitTokens, LiquidityOptions, RecipientOptions, NativeOptions, Deadline {
   fromMargin: boolean
-  permitRisky?: PermitOptions
-  permitStable?: PermitOptions
   createPool?: boolean
 }
 
@@ -70,6 +71,28 @@ export abstract class PeripheryManager extends SelfPermit {
       riskyPerLp.raw,
       liquidity.raw
     ])
+  }
+
+  public createCallParameters(pool: Pool, liquidity: Wei, options?: PermitTokens) {
+    let calldatas: string[] = []
+
+    if (options?.permitRisky) {
+      calldatas.push(PeripheryManager.encodePermit(pool.risky, options?.permitRisky))
+    }
+
+    if (options?.permitStable) {
+      calldatas.push(PeripheryManager.encodePermit(pool.stable, options?.permitStable))
+    }
+
+    calldatas.push(PeripheryManager.encodeCreate(pool, liquidity))
+
+    let value: string = toBN(0).toHexString()
+
+    return {
+      calldata:
+        calldatas.length === 1 ? calldatas[0] : PeripheryManager.INTERFACE.encodeFunctionData('multicall', [calldatas]),
+      value
+    }
   }
 
   // deposit margin
