@@ -58,7 +58,7 @@ export abstract class PeripheryManager extends SelfPermit {
   }
 
   // create pool
-  private static encodeCreate(pool: Pool, liquidity: Wei): string {
+  public static encodeCreate(pool: Pool, liquidity: Wei): string {
     const decimals = pool.risky.decimals
     const delta = parseWei(pool.delta, decimals)
     const riskyPerLp = parseWei(1, decimals).sub(delta)
@@ -96,7 +96,7 @@ export abstract class PeripheryManager extends SelfPermit {
   }
 
   // deposit margin
-  public depositCallParameters(engine: Engine, options: MarginOptions): MethodParameters {
+  public static depositCallParameters(engine: Engine, options: MarginOptions): MethodParameters {
     invariant(options.amountRisky.gt(0) || options.amountStable.gt(0), 'ZeroError()')
 
     let calldatas: string[] = []
@@ -191,7 +191,7 @@ export abstract class PeripheryManager extends SelfPermit {
     return calldatas
   }
 
-  public withdrawCallParameters(engine: Engine, options: MarginOptions): MethodParameters {
+  public static withdrawCallParameters(engine: Engine, options: MarginOptions): MethodParameters {
     invariant(options.amountRisky.gt(0) || options.amountStable.gt(0), 'ZeroError()')
 
     let calldatas: string[] = PeripheryManager.encodeWithdraw(engine, options)
@@ -204,7 +204,7 @@ export abstract class PeripheryManager extends SelfPermit {
   }
 
   // allocate liquidity
-  public allocateCallParameters(pool: Pool, options: AllocateOptions): MethodParameters {
+  public static allocateCallParameters(pool: Pool, options: AllocateOptions): MethodParameters {
     invariant(options.delRisky.gt(0), 'ZeroError()')
     invariant(options.delStable.gt(0), 'ZeroError()')
     invariant(options.delLiquidity.gt(0), 'ZeroError()')
@@ -261,7 +261,7 @@ export abstract class PeripheryManager extends SelfPermit {
   }
 
   // remove liquidity
-  public removeCallParameters(pool: Pool, options: RemoveOptions): MethodParameters {
+  public static removeCallParameters(pool: Pool, options: RemoveOptions): MethodParameters {
     invariant(options.delLiquidity.gt(0), 'ZeroError()')
 
     let calldatas: string[] = []
