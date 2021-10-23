@@ -1,14 +1,14 @@
-import { Interface } from '@ethersproject/abi'
-import { abi } from '@primitivefinance/v2-core/artifacts/contracts/PrimitiveFactory.sol/PrimitiveFactory.json'
 import { BigNumber } from 'ethers'
 import invariant from 'tiny-invariant'
-import { parseWei, Percentage, toBN, Wei } from 'web3-units'
-import { MethodParameters, validateAndParseAddress } from '.'
-import { Calibration } from './entities/calibration'
-import { PermitOptions, SelfPermit } from './selfPermit'
-import { Pool } from './entities/pool'
+import { Interface } from '@ethersproject/abi'
 import { AddressZero } from '@ethersproject/constants'
-import { PeripheryManager } from './peripheryManager'
+import { parseWei, Percentage, toBN, Wei } from 'web3-units'
+import { abi } from '@primitivefinance/v2-periphery/artifacts/contracts/PrimitiveHouse.sol/PrimitiveHouse.json'
+
+import { Pool } from './entities/pool'
+import { PeripheryManager, NativeOptions } from './peripheryManager'
+import { PermitOptions, SelfPermit } from './selfPermit'
+import { MethodParameters, validateAndParseAddress, checkDecimals } from './utils'
 
 export interface DefaultOptions {
   recipient: string
@@ -17,12 +17,13 @@ export interface DefaultOptions {
   inputTokenPermit?: PermitOptions
 }
 
-export interface SwapOptions extends DefaultOptions {
-  cal: Calibration
+export interface SwapOptions extends DefaultOptions, NativeOptions {
   riskyForStable: boolean
-  amountIn: Wei
+  deltaIn: Wei
+  deltaOut: Wei
   fromMargin: boolean
   toMargin: boolean
+  toRecipient?: boolean
 }
 
 export abstract class SwapManager extends SelfPermit {
@@ -32,58 +33,63 @@ export abstract class SwapManager extends SelfPermit {
     super()
   }
 
-  public swapCallParameters(pool: Pool, cal: Calibration, options: SwapOptions): MethodParameters {
-    const calldatas: string[] = []
+  public swapCallParameters(pool: Pool, options: SwapOptions): MethodParameters {
+    // ensure decimals for amounts are correct
+    if (options.riskyForStable) {
+      checkDecimals(options.deltaIn, pool.risky)
+      checkDecimals(options.deltaOut, pool.stable)
+    } else {
+      checkDecimals(options.deltaOut, pool.risky)
+      checkDecimals(options.deltaIn, pool.stable)
+    }
 
     const recipient: string = validateAndParseAddress(options.recipient)
+    invariant(recipient !== AddressZero, 'Zero Address Recipient')
 
-    const inputEth = options.riskyForStable ? cal.risky.isNative : cal.stable.isNative
-    const outputEth = options.riskyForStable ? cal.stable.isNative : cal.risky.isNative
+    const isEthInput = options.riskyForStable ? pool.risky.isNative : pool.stable.isNative
+    const isEthOutput = options.riskyForStable ? pool.stable.isNative : pool.risky.isNative
 
-    const value: string = inputEth ? options.amountIn.raw.toHexString() : toBN(0).toHexString()
+    const value: string = isEthInput ? options.deltaIn.raw.toHexString() : toBN(0).toHexString()
 
-    const swapResult = options.riskyForStable
-      ? pool.virtual.swapAmountInRisky(options.amountIn)
-      : pool.virtual.swapAmountInStable(options.amountIn)
-
-    const amountOut = SwapManager.minimumAmountOut(options.slippageTolerance, swapResult.deltaOut)
+    let calldatas: string[] = []
 
     // if input token is permit-able
     if (options.inputTokenPermit) {
-      const token = options.riskyForStable ? cal.risky : cal.stable
+      const token = options.riskyForStable ? pool.risky : pool.stable
       invariant(token.isToken, 'Not token')
       calldatas.push(SwapManager.encodePermit(token, options.inputTokenPermit))
     }
 
     // swap data
+    // By default, tokens are sent to recipient
+    // If output token should be ether, and tokens should be sent to recipient, then they
+    // first must be transferred to the periphery, and then unwrapped and withdrawn
+    const unwrapAndWithdraw = isEthOutput && options.toRecipient
     calldatas.push(
       SwapManager.INTERFACE.encodeFunctionData('swap', [
-        outputEth ? AddressZero : recipient, // add to periphery, will direct weth from swap to SwapManager
-        cal.risky.address,
-        cal.stable.address,
-        cal.poolId,
+        recipient,
+        pool.risky.address,
+        pool.stable.address,
+        pool.poolId,
         options.riskyForStable,
-        options.amountIn.raw.toHexString(),
-        amountOut.raw.toHexString(),
+        options.deltaIn.raw.toHexString(),
+        options.deltaOut.raw.toHexString(),
         options.fromMargin,
-        options.toMargin // add to periphery
+        unwrapAndWithdraw ? true : options.toMargin,
+        options.deadline
       ])
     )
 
     // calls withdraw on the periphery manager, assuming withdraw is accessible on swap manager
-    if (!options.toMargin) {
+    if (unwrapAndWithdraw) {
       calldatas.push(
-        ...PeripheryManager.encodeWithdraw(options.cal, {
+        ...PeripheryManager.encodeWithdraw(pool, {
           recipient: recipient,
-          amountRisky: options.riskyForStable ? parseWei(0) : amountOut,
-          amountStable: options.riskyForStable ? amountOut : parseWei(0)
+          amountRisky: options.riskyForStable ? parseWei(0) : options.deltaOut,
+          amountStable: options.riskyForStable ? options.deltaOut : parseWei(0),
+          useNative: options.useNative
         })
       )
-    }
-
-    // if weth is received from trade, unwrap it and send to recipient
-    if (outputEth) {
-      calldatas.push(SwapManager.INTERFACE.encodeFunctionData('unwrapWETH', [amountOut.raw.toHexString(), recipient]))
     }
 
     return { calldata: SwapManager.INTERFACE.encodeFunctionData('multicall', [calldatas]), value }
@@ -96,11 +102,10 @@ export abstract class SwapManager extends SelfPermit {
    */
   public static minimumAmountOut(slippageTolerance: Percentage, amountOut: Wei): Wei {
     invariant(!(slippageTolerance.float < 0), 'SLIPPAGE_TOLERANCE')
+    const scalar = Math.pow(10, Percentage.Mantissa)
 
     // amount out * 100 / (100 + slippage tolerance) = minimum amount out
-    const slippageAdjustedAmountOut = amountOut
-      .mul(Math.pow(10, Percentage.Mantissa))
-      .div(slippageTolerance.raw.add(1e4))
+    const slippageAdjustedAmountOut = amountOut.mul(scalar).div(slippageTolerance.raw.add(scalar))
     return slippageAdjustedAmountOut
   }
 }

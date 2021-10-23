@@ -14,26 +14,12 @@ import {
 import { Engine } from './engine'
 import { Calibration } from './calibration'
 import { Token } from '@uniswap/sdk-core'
-import { PERCENTAGE, EMPTY_CALIBRATION } from '../constants'
-
-export function scaleUp(value: number, decimals: number): Wei {
-  const scaled = Math.floor(value * Math.pow(10, decimals)) / Math.pow(10, decimals)
-  return parseWei(scaled.toFixed(decimals), decimals)
-}
-
-export function clonePool(poolToClone: VirtualPool, newRisky: Wei, newStable: Wei): VirtualPool {
-  return new VirtualPool(
-    poolToClone.cal,
-    newRisky,
-    poolToClone.liquidity,
-    poolToClone.reserveStable.decimals,
-    newStable ?? newStable
-  )
-}
+import { PERCENTAGE } from '../constants'
+import { callDelta, callPremium } from '@primitivefinance/v2-math'
 
 export interface SwapReturn {
   deltaOut: Wei
-  pool: VirtualPool
+  pool: Pool
   effectivePriceOutStable?: Wei
 }
 
@@ -43,90 +29,186 @@ export interface DebugReturn extends SwapReturn {
   nextInvariant?: FixedPointX64
 }
 
-export interface PoolParameters {
-  factory: string
-  risky: Token
-  stable: Token
-  strike: number
-  sigma: number
-  maturity: number
-  lastTimestamp: number
-  spot?: number
-}
-
-export interface PoolState {
-  reserveRisky: Wei
-  reserveStable: Wei
-  liquidity: Wei
-}
-
 /**
- * @notice Virtualized instance of a pool using any reserve amounts
+ * @notice Virtualized instance of a pool using reserve and liquidity amounts from state
  */
-export class VirtualPool {
+export class Pool extends Calibration {
   public static readonly FEE: number = Engine.GAMMA / PERCENTAGE
-  public readonly liquidity: Wei
-  public readonly cal: Calibration
 
   /// ===== State of Virtual Pool =====
+  public liquidity: Wei
   public reserveRisky: Wei
   public reserveStable: Wei
   public invariant: FixedPointX64
-  public tau: Time
-  public debug: boolean = false
+
+  /**
+   * @notice Time until expiry is calculated from the difference of current timestamp and this
+   */
+  public readonly lastTimestamp: Time
+  /**
+   * @notice Timestamp of tx which created the pool
+   */
+  public readonly creationTimestamp: Time
+  /**
+   * @notice Price of risky token denominated in stable tokens, with the precision of the stable tokens
+   */
+  public spot: Wei
 
   /**
    * @notice Builds a typescript representation of a single curve within an Engine contract
-   * @param initialRisky Reserve amount to initialize the pool's risky tokens
+   * @param reserveRisky Reserve amount to initialize the pool's risky tokens
    * @param liquidity Total liquidity supply to initialize the pool with
    * @param overrideStable The initial stable reserve value
    */
-  constructor(cal: Calibration, initialRisky: Wei, liquidity: Wei, stableDecimals = 18, overrideStable?: Wei) {
-    // ===== State =====
-    this.reserveRisky = initialRisky
+  constructor(
+    factory: string,
+    risky: Token,
+    stable: Token,
+    strike: number,
+    sigma: number,
+    maturity: number,
+    lastTimestamp: number,
+    creationTimestamp: number,
+    reserveRisky: Wei,
+    reserveStable: Wei,
+    liquidity: Wei,
+    spot = 0
+  ) {
+    super(factory, risky, stable, strike, sigma, maturity)
+
+    // ===== Calibration State =====
+    this.lastTimestamp = new Time(lastTimestamp) // in seconds, because `block.timestamp` is in seconds
+    this.creationTimestamp = new Time(creationTimestamp)
+    this.spot = spot ? parseWei(spot, stable.decimals) : parseWei(0, stable.decimals)
+
+    // ===== Token & Liquidity State =====
+    this.reserveRisky = reserveRisky
+    this.reserveStable = reserveStable
     this.liquidity = liquidity
-    this.cal = cal
-    // ===== Calculations using State ====-
-    this.tau = this.calcTau() // maturity - lastTimestamp
+
+    // ===== Invariant ====-
     this.invariant = parseFixedPointX64(0)
 
-    if (overrideStable) {
-      this.reserveStable = overrideStable
-    } else {
-      let stable = getStableGivenRiskyApproximation(
-        initialRisky.float,
-        cal.strike.float,
-        cal.sigma.float,
-        cal.tau.years,
-        0
+    if (reserveRisky.decimals != risky.decimals)
+      throw new Error(
+        `Decimals for the risky token ${risky.decimals} doesn't match reserveRisky decimals: ${reserveRisky.decimals}`
       )
 
-      let resStable: Wei
-      if (isNaN(stable)) resStable = parseWei(0, stableDecimals)
-      resStable = scaleUp(stable, stableDecimals)
+    if (reserveStable.decimals != stable.decimals)
+      throw new Error(
+        `Decimals for the stable token ${stable.decimals} doesn't match reserveStable decimals: ${reserveStable.decimals}`
+      )
 
-      this.reserveStable = resStable
+    if (liquidity.decimals != 18) throw new Error(`Liquidity decimals of ${liquidity.decimals} is not 18`)
+  }
+
+  // ===== Calibration =====
+  /**
+   * @returns Time until expiry in seconds
+   */
+  get tau(): Time {
+    return this.maturity.sub(this.lastTimestamp)
+  }
+
+  /**
+   * @returns Total lifetime of a pool in seconds
+   */
+  get lifetime(): Time {
+    return this.maturity.sub(this.creationTimestamp)
+  }
+
+  /**
+   * @returns Total lifetime of a pool in seconds
+   */
+  get remaining(): Time {
+    const now = this.maturity.now
+    if (now >= this.maturity.raw) return new Time(0)
+
+    return this.maturity.sub(now)
+  }
+
+  /**
+   * @returns expired if time until expiry is lte 0
+   */
+  get expired(): boolean {
+    return this.remaining.raw <= 0
+  }
+
+  /**
+   * @returns Change in pool premium wrt change in underlying spot price
+   */
+  get delta(): number {
+    return this.spot ? callDelta(this.strike.float, this.sigma.float, this.tau.years, this.spot.float) : 0
+  }
+
+  /**
+   * @returns Black-Scholes implied premium
+   */
+  get premium(): number {
+    return this.spot ? callPremium(this.strike.float, this.sigma.float, this.tau.years, this.spot.float) : 0
+  }
+
+  /**
+   * @returns Spot price is above strike price
+   */
+  get inTheMoney(): boolean {
+    return this.spot ? this.strike.float >= this.spot.float : false
+  }
+
+  // ===== Liquidity =====
+
+  /**
+   * @notice Calculates the other side of the pool using the known amount of a side of the pool
+   * @param amount Amount of token
+   * @param token Token side of the pool that is used to calculate the other side
+   * @returns risky token amount, stable token amount, and liquidity amount
+   */
+  liquidityQuote(amount: Wei, token: Token): { delRisky: Wei; delStable: Wei; delLiquidity: Wei } {
+    let delRisky: Wei = parseWei(0)
+    let delStable: Wei = parseWei(0)
+    let delLiquidity: Wei = parseWei(0)
+
+    switch (token) {
+      case this.risky:
+        delRisky = amount
+        delLiquidity = delRisky.mul(this.liquidity).div(this.reserveRisky)
+        delStable = delLiquidity.mul(this.reserveStable).div(this.liquidity)
+        break
+      case this.stable:
+        delStable = amount
+        delLiquidity = delStable.mul(this.liquidity).div(this.reserveStable)
+        delRisky = delLiquidity.mul(this.reserveRisky).div(this.liquidity)
+        break
+      case this:
+        delLiquidity = amount
+        delRisky = delLiquidity.mul(this.reserveRisky).div(this.liquidity)
+        delStable = delLiquidity.mul(this.reserveStable).div(this.liquidity)
+        break
+      default:
+        break
     }
+
+    return { delRisky, delStable, delLiquidity }
   }
 
   /**
    * @param reserveRisky Amount of risky tokens in reserve
    * @return reserveStable Expected amount of stable token reserves
    */
-  getStableGivenRisky(reserveRisky: Wei, noInvariant?: boolean): Wei {
+  getStableGivenRisky(reserveRisky: Wei, noInvariant = false): Wei {
     const decimals = this.reserveStable.decimals
-    let invariant = this.invariant.parsed
+    const invariant = this.invariant.parsed
 
-    let stable = getStableGivenRiskyApproximation(
+    const stable = getStableGivenRiskyApproximation(
       reserveRisky.float,
-      this.cal.strike.float,
-      this.cal.sigma.float,
+      this.strike.float,
+      this.sigma.float,
       this.tau.years,
       noInvariant ? 0 : invariant
     )
 
     if (isNaN(stable)) return parseWei(0, decimals)
-    return scaleUp(stable, decimals)
+    return parseWei(stable, decimals)
   }
 
   /**
@@ -134,28 +216,20 @@ export class VirtualPool {
    * @param reserveStable Amount of stable tokens in reserve
    * @return reserveRisky Expected amount of risky token reserves
    */
-  getRiskyGivenStable(reserveStable: Wei, noInvariant?: boolean): Wei {
+  getRiskyGivenStable(reserveStable: Wei, noInvariant = false): Wei {
     const decimals = this.reserveRisky.decimals
-    let invariant = this.invariant.parsed
+    const invariant = this.invariant.parsed
 
-    let risky = getRiskyGivenStableApproximation(
+    const risky = getRiskyGivenStableApproximation(
       reserveStable.float,
-      this.cal.strike.float,
-      this.cal.sigma.float,
+      this.strike.float,
+      this.sigma.float,
       this.tau.years,
       noInvariant ? 0 : invariant
     )
 
     if (isNaN(risky)) return parseWei(0, decimals)
-    return scaleUp(risky, decimals)
-  }
-
-  /**
-   * @return tau Calculated tau using this Pool's maturity timestamp and lastTimestamp
-   */
-  calcTau(): Time {
-    this.tau = this.cal.maturity.sub(this.cal.lastTimestamp)
-    return this.tau
+    return parseWei(risky, decimals)
   }
 
   /**
@@ -164,13 +238,7 @@ export class VirtualPool {
   calcInvariant(): FixedPointX64 {
     const risky = this.reserveRisky.float / this.liquidity.float
     const stable = this.reserveStable.float / this.liquidity.float
-    let invariant = getInvariantApproximation(
-      risky,
-      stable,
-      this.cal.strike.float,
-      this.cal.sigma.float,
-      this.tau.years
-    )
+    let invariant = getInvariantApproximation(risky, stable, this.strike.float, this.sigma.float, this.tau.years)
     invariant = Math.floor(invariant * Math.pow(10, 18))
     this.invariant = new FixedPointX64(
       toBN(isNaN(invariant) ? 0 : invariant)
@@ -252,8 +320,8 @@ export class VirtualPool {
     let nextInvariant: any = getInvariantApproximation(
       risky,
       stable,
-      this.cal.strike.float,
-      this.cal.sigma.float,
+      this.strike.float,
+      this.sigma.float,
       this.tau.years
     )
     nextInvariant = Math.floor(nextInvariant * Math.pow(10, 18))
@@ -338,8 +406,8 @@ export class VirtualPool {
     let nextInvariant: any = getInvariantApproximation(
       risky,
       stable,
-      this.cal.strike.float,
-      this.cal.sigma.float,
+      this.strike.float,
+      this.sigma.float,
       this.tau.years
     )
     nextInvariant = Math.floor(nextInvariant * Math.pow(10, 18))
@@ -358,11 +426,11 @@ export class VirtualPool {
 
   get spotPrice(): Wei {
     const risky = this.reserveRisky.float / this.liquidity.float
-    const strike = this.cal.strike.float
-    const sigma = this.cal.sigma.float
+    const strike = this.strike.float
+    const sigma = this.sigma.float
     const tau = this.tau.years
     const spot = getStableGivenRiskyApproximation(risky, strike, sigma, tau) * quantilePrime(1 - risky)
-    return parseWei(spot)
+    return parseWei(spot, this.stable.decimals)
   }
 
   /**
@@ -372,11 +440,11 @@ export class VirtualPool {
    */
   getMarginalPriceSwapRiskyIn(amountIn: number) {
     if (!nonNegative(amountIn)) return 0
-    const gamma = 1 - VirtualPool.FEE
+    const gamma = 1 - Pool.FEE
     const reserveRisky = this.reserveRisky.float / this.liquidity.float
     //const invariant = this.invariant
-    const strike = this.cal.strike
-    const sigma = this.cal.sigma
+    const strike = this.strike
+    const sigma = this.sigma
     const tau = this.tau
     const step0 = 1 - reserveRisky - gamma * amountIn
     const step1 = sigma.float * Math.sqrt(tau.years)
@@ -394,11 +462,11 @@ export class VirtualPool {
    */
   getMarginalPriceSwapStableIn(amountIn: number) {
     if (!nonNegative(amountIn)) return 0
-    const gamma = 1 - VirtualPool.FEE
+    const gamma = 1 - Pool.FEE
     const reserveStable = this.reserveStable.float / this.liquidity.float
     const invariant = this.invariant
-    const strike = this.cal.strike
-    const sigma = this.cal.sigma
+    const strike = this.strike
+    const sigma = this.sigma
     const tau = this.tau
     const step0 = (reserveStable + gamma * amountIn - invariant.parsed / Math.pow(10, 18)) / strike.float
     const step1 = sigma.float * Math.sqrt(tau.years)
@@ -413,18 +481,20 @@ export class VirtualPool {
   /**
    * @notice Calculates the current value of the pool, compare this to the current theoretical value
    * @dev Denominating prices in a dollar-pegged stable coin will be easiest to calculate other values with
-   * @param prices Multiplier for each side of the pool, to convert to a respective price. E.g. [price(ETH, usd), price(USDC, usd)]
+   * @param priceOfRisky Multiplier for the price of the risky asset
+   * @param priceOfStable Multiplier for the price of the stable asset, defaults to 1 given the priceOfRisky is denominated in that asset
    * @returns value per liquidity and values of each side of the pool, denominated in `prices` units
    */
-  getCurrentLiquidityValue(prices: number[]): { valuePerLiquidity: Wei; values: Wei[] } {
+  getCurrentLiquidityValue(priceOfRisky: number, priceOfStable = 1): { valuePerLiquidity: Wei; values: Wei[] } {
     const reserve0 = this.reserveRisky
     const reserve1 = this.reserveStable
     const liquidity = this.liquidity
 
     const values = [
-      reserve0.mul(scaleUp(prices[0], reserve0.decimals)).div(parseWei(1, reserve0.decimals)),
-      reserve1.mul(scaleUp(prices[1], reserve1.decimals)).div(parseWei(1, reserve1.decimals))
+      reserve0.mul(parseWei(priceOfRisky, reserve0.decimals)).div(parseWei(1, reserve0.decimals)),
+      reserve1.mul(parseWei(priceOfStable, reserve1.decimals)).div(parseWei(1, reserve1.decimals))
     ]
+
     const sum = values[0].add(values[1])
     const valuePerLiquidity = sum.mul(1e18).div(liquidity)
     return { valuePerLiquidity, values }
@@ -435,10 +505,10 @@ export class VirtualPool {
    * @param lastTimestamp Unix timestamp in seconds of the pool's last update
    * @returns Strike price - call premium, denominated in a stable asset
    */
-  getTheoreticalLiquidityValue(lastTimestamp = this.cal.lastTimestamp.raw): number {
-    const totalTau = new Time(this.cal.maturity.raw - lastTimestamp).years
-    const premium = callPremiumApproximation(this.cal.strike.float, this.cal.sigma.float, totalTau, this.cal.spot.float)
-    return this.cal.strike.float - premium
+  getTheoreticalLiquidityValue(lastTimestamp = this.lastTimestamp.raw): number {
+    const totalTau = new Time(this.maturity.raw - lastTimestamp).years
+    const premium = callPremiumApproximation(this.strike.float, this.sigma.float, totalTau, this.spot.float)
+    return this.strike.float - premium
   }
 
   /**
@@ -447,40 +517,8 @@ export class VirtualPool {
    * @returns Theoretical premium of the replicated option using the entire lifetime of the pool
    */
   getTheoreticalMaxFee(creationTimestamp: number): number {
-    const totalTau = new Time(this.cal.maturity.raw - creationTimestamp).years
-    const premium = callPremiumApproximation(this.cal.strike.float, this.cal.sigma.float, totalTau, this.cal.spot.float)
+    const totalTau = new Time(this.maturity.raw - creationTimestamp).years
+    const premium = callPremiumApproximation(this.strike.float, this.sigma.float, totalTau, this.spot.float)
     return premium
   }
 }
-
-/**
- * @notice Real pool using on-chain reserves
- */
-export class Pool extends Calibration {
-  private _virtual: VirtualPool
-
-  constructor(params: PoolParameters) {
-    super(
-      params.factory,
-      params.risky,
-      params.stable,
-      params.strike,
-      params.sigma,
-      params.maturity,
-      params.lastTimestamp,
-      params.spot ?? params.spot
-    )
-
-    this._virtual = EMPTY_VIRTUAL_POOL
-  }
-
-  public set virtual(virtual: VirtualPool) {
-    this._virtual = virtual
-  }
-
-  public get virtual(): VirtualPool {
-    return this._virtual
-  }
-}
-
-export const EMPTY_VIRTUAL_POOL = new VirtualPool(EMPTY_CALIBRATION, parseWei(0), parseWei(0), 18, parseWei(0))
