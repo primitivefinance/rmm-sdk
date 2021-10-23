@@ -68,7 +68,7 @@ describe('Test pool', function() {
       spot
     )
 
-    expect(main).toBeDefined
+    expect(main).toBeDefined()
   })
 
   it('pool.liquidityQuote()', async function() {
