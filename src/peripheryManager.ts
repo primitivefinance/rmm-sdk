@@ -10,6 +10,7 @@ import { Pool } from './entities/pool'
 import { Engine } from './entities/engine'
 import { PermitOptions, SelfPermit } from './selfPermit'
 import { MethodParameters, validateAndParseAddress } from './utils'
+import { checkDecimals } from '.'
 
 export interface NativeOptions {
   useNative?: NativeCurrency
@@ -20,7 +21,7 @@ export interface RecipientOptions {
 }
 
 export interface Deadline {
-  deadline: BigNumber
+  deadline?: BigNumber
 }
 
 export interface PermitTokens {
@@ -59,6 +60,7 @@ export abstract class PeripheryManager extends SelfPermit {
 
   // create pool
   public static encodeCreate(pool: Pool, liquidity: Wei): string {
+    checkDecimals(liquidity, pool)
     const decimals = pool.risky.decimals
     const delta = parseWei(pool.delta, decimals)
     const riskyPerLp = parseWei(1, decimals).sub(delta)
@@ -68,12 +70,12 @@ export abstract class PeripheryManager extends SelfPermit {
       pool.strike.raw,
       pool.sigma.raw,
       pool.maturity.raw,
-      riskyPerLp.raw,
-      liquidity.raw
+      riskyPerLp.raw.toHexString(),
+      liquidity.raw.toHexString()
     ])
   }
 
-  public createCallParameters(pool: Pool, liquidity: Wei, options?: PermitTokens) {
+  public static createCallParameters(pool: Pool, liquidity: Wei, options?: PermitTokens) {
     let calldatas: string[] = []
 
     if (options?.permitRisky) {
@@ -98,6 +100,8 @@ export abstract class PeripheryManager extends SelfPermit {
   // deposit margin
   public static depositCallParameters(engine: Engine, options: MarginOptions): MethodParameters {
     invariant(options.amountRisky.gt(0) || options.amountStable.gt(0), 'ZeroError()')
+    checkDecimals(options.amountRisky, engine.risky)
+    checkDecimals(options.amountStable, engine.stable)
 
     let calldatas: string[] = []
 
@@ -152,10 +156,12 @@ export abstract class PeripheryManager extends SelfPermit {
   // withdraw margin
   public static encodeWithdraw(engine: Engine, options: MarginOptions): string[] {
     invariant(options.amountRisky.gt(0) || options.amountStable.gt(0), 'ZeroError()')
+    checkDecimals(options.amountRisky, engine.risky)
+    checkDecimals(options.amountStable, engine.stable)
+
     const recipient: string = validateAndParseAddress(options.recipient)
     invariant(recipient !== AddressZero, 'Zero Address Recipient')
 
-    const useEth: boolean = engine.risky.isNative || engine.stable.isNative
     const amount0: BigNumber = options.amountRisky.raw
     const amount1: BigNumber = options.amountStable.raw
 
@@ -164,21 +170,22 @@ export abstract class PeripheryManager extends SelfPermit {
     let calldatas: string[] = []
     calldatas.push(
       PeripheryManager.INTERFACE.encodeFunctionData('withdraw', [
-        useEth ? AddressZero : recipient,
-        engine.risky.address,
-        engine.stable.address,
+        options.useNative ? AddressZero : recipient,
+        engine.address,
         amount0.toHexString(),
         amount1.toHexString()
       ])
     )
 
-    if (useEth) {
-      const wrappedAmount = engine.risky.isNative ? amount0 : amount1 // if risky is native, use risky amount
-      const token = engine.risky.isNative ? engine.stable : engine.risky // if risky is native, token is stable
-      const tokenAmount = engine.risky.isNative ? amount1 : amount0 // if risky is native, token amount is stable amount
+    if (options.useNative) {
+      const wrapped = options.useNative.wrapped
+      invariant(engine.risky.equals(wrapped) || engine.stable.equals(wrapped), 'No Weth')
+      const wrappedAmount = engine.risky.equals(wrapped) ? amount0 : amount1 // if risky is native, use risky amount
+      const token = engine.risky.equals(wrapped) ? engine.stable : engine.risky // if risky is native, token is stable
+      const tokenAmount = engine.risky.equals(wrapped) ? amount1 : amount0 // if risky is native, token amount is stable amount
 
       // sends withdrawn assets to the recipient
-      calldatas.push(PeripheryManager.INTERFACE.encodeFunctionData('unwrapWETH', [wrappedAmount, recipient]))
+      calldatas.push(PeripheryManager.INTERFACE.encodeFunctionData('unwrap', [wrappedAmount, recipient]))
       calldatas.push(
         PeripheryManager.INTERFACE.encodeFunctionData('sweepToken', [
           token.address,
@@ -192,8 +199,6 @@ export abstract class PeripheryManager extends SelfPermit {
   }
 
   public static withdrawCallParameters(engine: Engine, options: MarginOptions): MethodParameters {
-    invariant(options.amountRisky.gt(0) || options.amountStable.gt(0), 'ZeroError()')
-
     let calldatas: string[] = PeripheryManager.encodeWithdraw(engine, options)
 
     return {
@@ -208,6 +213,9 @@ export abstract class PeripheryManager extends SelfPermit {
     invariant(options.delRisky.gt(0), 'ZeroError()')
     invariant(options.delStable.gt(0), 'ZeroError()')
     invariant(options.delLiquidity.gt(0), 'ZeroError()')
+    checkDecimals(options.delLiquidity, pool)
+    checkDecimals(options.delRisky, pool.risky)
+    checkDecimals(options.delStable, pool.stable)
 
     let calldatas: string[] = []
 
@@ -263,6 +271,9 @@ export abstract class PeripheryManager extends SelfPermit {
   // remove liquidity
   public static removeCallParameters(pool: Pool, options: RemoveOptions): MethodParameters {
     invariant(options.delLiquidity.gt(0), 'ZeroError()')
+    checkDecimals(options.delLiquidity, pool)
+    checkDecimals(options.delRisky, pool.risky)
+    checkDecimals(options.delStable, pool.stable)
 
     let calldatas: string[] = []
 
