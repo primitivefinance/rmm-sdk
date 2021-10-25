@@ -89,17 +89,17 @@ export class Pool extends Calibration {
     // ===== Invariant ====-
     this.invariant = parseFixedPointX64(0)
 
-    if (reserveRisky.decimals != risky.decimals)
+    if (reserveRisky.decimals !== risky.decimals)
       throw new Error(
         `Decimals for the risky token ${risky.decimals} doesn't match reserveRisky decimals: ${reserveRisky.decimals}`
       )
 
-    if (reserveStable.decimals != stable.decimals)
+    if (reserveStable.decimals !== stable.decimals)
       throw new Error(
         `Decimals for the stable token ${stable.decimals} doesn't match reserveStable decimals: ${reserveStable.decimals}`
       )
 
-    if (liquidity.decimals != 18) throw new Error(`Liquidity decimals of ${liquidity.decimals} is not 18`)
+    if (liquidity.decimals !== 18) throw new Error(`Liquidity decimals of ${liquidity.decimals} is not 18`)
   }
 
   // ===== Calibration =====

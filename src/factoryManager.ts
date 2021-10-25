@@ -9,9 +9,9 @@ export abstract class FactoryManager {
   private constructor() {}
 
   // deploy engine
-  public encodeDeploy(risky: string, stable: string): string {
+  public static encodeDeploy(risky: string, stable: string): string {
     invariant(risky !== AddressZero && stable !== AddressZero, 'Zero address tokens')
     invariant(risky !== stable, 'Same tokens')
-    return FactoryManager.INTERFACE.encodeFunctionData('deployEngine', [risky, stable])
+    return FactoryManager.INTERFACE.encodeFunctionData('deploy', [risky, stable])
   }
 }

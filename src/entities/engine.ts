@@ -1,12 +1,19 @@
-import { parseWei, Wei } from 'web3-units'
-import { Token } from '@uniswap/sdk-core'
 import { utils } from 'ethers'
-import { bytecode as EngineBytecode } from '@primitivefinance/v2-core/artifacts/contracts/PrimitiveEngine.sol/PrimitiveEngine.json'
+import { Token } from '@uniswap/sdk-core'
+import { parseWei, Wei } from 'web3-units'
+import { Interface } from '@ethersproject/abi'
+import {
+  bytecode as EngineBytecode,
+  abi as EngineAbi
+} from '@primitivefinance/v2-core/artifacts/contracts/PrimitiveEngine.sol/PrimitiveEngine.json'
 
 /**
  * @notice Represents the PrimitiveEngine.sol smart contract
  */
 export class Engine extends Token {
+  public static BYTECODE: string = EngineBytecode
+  public static INTERFACE: Interface = new Interface(EngineAbi)
+
   /**
    * @notice Used to calculate minimum liquidity based on lowest decimals of risky/stable
    */

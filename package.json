@@ -17,7 +17,8 @@
   "scripts": {
     "build": "tsdx build",
     "start": "tsdx watch",
-    "test": "tsdx test"
+    "test": "tsdx test",
+    "lint": "tsdx lint"
   },
   "dependencies": {
     "@primitivefinance/v2-core": "^1.10.0",
