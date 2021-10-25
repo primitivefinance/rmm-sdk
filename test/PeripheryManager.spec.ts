@@ -1,10 +1,11 @@
 import { parseWei } from 'web3-units'
 import { AddressZero } from '@ethersproject/constants'
+import { Ether, NativeCurrency } from '@uniswap/sdk-core'
 
 import { Pool } from '../src/entities/pool'
-import { usePool, usePoolWithDecimals, useWethPool } from './shared/fixture'
+import { AddressOne } from './shared/constants'
 import { PeripheryManager } from '../src/peripheryManager'
-import { Ether, NativeCurrency } from '@uniswap/sdk-core'
+import { usePool, usePoolWithDecimals, useWethPool } from './shared/fixture'
 
 function decode(frag: string, data: any) {
   return PeripheryManager.INTERFACE.decodeFunctionData(frag, data)
@@ -17,7 +18,7 @@ describe('Periphery Manager', function() {
     pool = usePool()
     wethPool = useWethPool()
     lowDecimalPool = usePoolWithDecimals(6)
-    from = '0x0000000000000000000000000000000000000001'
+    from = AddressOne
     useNative = Ether.onChain(1)
   })
 

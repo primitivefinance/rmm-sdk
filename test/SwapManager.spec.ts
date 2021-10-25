@@ -1,12 +1,13 @@
-import { parseWei } from 'web3-units'
 import { AddressZero } from '@ethersproject/constants'
+import { parsePercentage, parseWei, Percentage, Time, toBN } from 'web3-units'
 
-import { Pool } from '../src/entities/pool'
 import { usePool } from './shared/fixture'
-import { PeripheryManager } from '../src/peripheryManager'
+import { Pool } from '../src/entities/pool'
+import { SwapManager } from '../src/swapManager'
+import { AddressOne } from './shared/constants'
 
 function decode(frag: string, data: any) {
-  return PeripheryManager.INTERFACE.decodeFunctionData(frag, data)
+  return SwapManager.INTERFACE.decodeFunctionData(frag, data)
 }
 
 describe('Swap Manager', function() {
@@ -16,50 +17,127 @@ describe('Swap Manager', function() {
     pool = usePool()
   })
 
-  it('createCallParameters()', async function() {
-    const liquidity = parseWei(1, 18)
-    const decimals = pool.risky.decimals
-    const delta = parseWei(pool.delta, decimals)
-    const riskyPerLp = parseWei(1, decimals).sub(delta)
-    const frag = 'create'
-    const data = [
-      pool.risky.address,
-      pool.stable.address,
-      pool.strike.raw,
-      pool.sigma.raw,
-      pool.maturity.raw,
-      riskyPerLp.raw,
-      liquidity.raw
-    ]
+  describe('#swapCallParameters', function() {
+    it('successful', async function() {
+      const riskyForStable = true
+      const deltaIn = parseWei(0.3, pool.risky.decimals)
+      const deltaOut = parseWei(3.0, pool.stable.decimals)
+      const fromMargin = false
+      const toMargin = false
+      const recipient = AddressOne
+      const deadline = toBN(Time.YearInSeconds)
+      const slippageTolerance = parsePercentage(3 / 100)
+      const options = {
+        riskyForStable,
+        deltaIn,
+        deltaOut,
+        fromMargin,
+        toMargin,
+        recipient,
+        deadline,
+        slippageTolerance
+      }
 
-    const encoded = PeripheryManager.encodeCreate(pool, liquidity)
-    const decoded = decode(frag, encoded)
-    data.forEach((item, i) => expect(item).toStrictEqual(decoded[i]))
+      const { calldata, value } = SwapManager.swapCallParameters(pool, options)
+
+      const data = [
+        recipient,
+        pool.risky.address,
+        pool.stable.address,
+        pool.poolId,
+        riskyForStable,
+        deltaIn.raw,
+        deltaOut.raw,
+        fromMargin,
+        toMargin,
+        deadline
+      ]
+      const decoded = decode('swap', calldata)
+      data.forEach((item, i) => expect(item).toStrictEqual(decoded[0][i]))
+      expect(value).toBe('0x00')
+    })
+
+    it('fails when recipient is address zero', async function() {
+      const riskyForStable = true
+      const deltaIn = parseWei(0.3, pool.risky.decimals)
+      const deltaOut = parseWei(3.0, pool.stable.decimals)
+      const fromMargin = false
+      const toMargin = false
+      const recipient = AddressZero
+      const deadline = toBN(Time.YearInSeconds)
+      const slippageTolerance = parsePercentage(3 / 100)
+      const options = {
+        riskyForStable,
+        deltaIn,
+        deltaOut,
+        fromMargin,
+        toMargin,
+        recipient,
+        deadline,
+        slippageTolerance
+      }
+      expect(() => SwapManager.swapCallParameters(pool, options)).toThrow()
+    })
+
+    it('fails when deltaIn decimals does not match in token amount decimals', async function() {
+      const riskyForStable = true
+      const deltaIn = parseWei(0.3, pool.risky.decimals - 1)
+      const deltaOut = parseWei(3.0, pool.stable.decimals)
+      const fromMargin = false
+      const toMargin = false
+      const recipient = AddressZero
+      const deadline = toBN(Time.YearInSeconds)
+      const slippageTolerance = parsePercentage(3 / 100)
+      const options = {
+        riskyForStable,
+        deltaIn,
+        deltaOut,
+        fromMargin,
+        toMargin,
+        recipient,
+        deadline,
+        slippageTolerance
+      }
+      expect(() => SwapManager.swapCallParameters(pool, options)).toThrow()
+    })
+
+    it('fails when deltaOut decimals does not match out token amount decimals', async function() {
+      const riskyForStable = true
+      const deltaIn = parseWei(0.3, pool.risky.decimals)
+      const deltaOut = parseWei(3.0, pool.stable.decimals - 1)
+      const fromMargin = false
+      const toMargin = false
+      const recipient = AddressZero
+      const deadline = toBN(Time.YearInSeconds)
+      const slippageTolerance = parsePercentage(3 / 100)
+      const options = {
+        riskyForStable,
+        deltaIn,
+        deltaOut,
+        fromMargin,
+        toMargin,
+        recipient,
+        deadline,
+        slippageTolerance
+      }
+      expect(() => SwapManager.swapCallParameters(pool, options)).toThrow()
+    })
   })
 
-  it('depositCallParameters()', async function() {
-    const recipient = '0x0000000000000000000000000000000000000001'
-    const risky = pool.risky
-    const stable = pool.stable
-    const amountRisky = parseWei(1)
-    const amountStable = parseWei(1)
-    const data = [recipient, risky.address, stable.address, amountRisky.raw, amountStable.raw]
-    const { calldata, value } = PeripheryManager.depositCallParameters(pool, { recipient, amountRisky, amountStable })
-    const decoded = decode('deposit', calldata)
-    data.forEach((item, i) => expect(item).toStrictEqual(decoded[i]))
-    expect(value).toBe('0x00')
-  })
+  describe('#minimumAmountOut', function() {
+    it('successful', async function() {
+      const slippageTolerance = parsePercentage(3 / 100)
+      const amountOut = parseWei(1, 18)
+      const expected = amountOut
+        .mul(Math.pow(10, Percentage.Mantissa))
+        .div(Math.pow(10, Percentage.Mantissa) + +slippageTolerance.raw)
+      expect(SwapManager.minimumAmountOut(slippageTolerance, amountOut).raw).toStrictEqual(expected.raw)
+    })
 
-  it('encodeWithdraw()', async function() {})
-
-  it('withdrawCallParameters()', async function() {})
-
-  it('removeCallParameters()', async function() {})
-
-  it('fail:depositCallParameters() with address zero', async function() {
-    const recipient = AddressZero
-    const amountRisky = parseWei(1)
-    const amountStable = parseWei(1)
-    expect(() => PeripheryManager.depositCallParameters(pool, { recipient, amountRisky, amountStable })).toThrow()
+    it('fails if slippage tolernace is less than 0', async function() {
+      const slippageTolerance = parsePercentage(-0.1)
+      const amountOut = parseWei(1, 18)
+      expect(() => SwapManager.minimumAmountOut(slippageTolerance, amountOut).raw).toThrow()
+    })
   })
 })

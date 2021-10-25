@@ -3,7 +3,7 @@ import { parseWei, Time } from 'web3-units'
 import { AddressZero } from '@ethersproject/constants'
 import { callDelta, callPremium, getStableGivenRiskyApproximation } from '@primitivefinance/v2-math'
 
-import { Pool } from '../src'
+import { Pool } from '../src/entities/pool'
 
 describe('Test pool', function() {
   let pool: Pool,

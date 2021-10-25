@@ -27,13 +27,13 @@ export interface SwapOptions extends DefaultOptions, NativeOptions {
 }
 
 export abstract class SwapManager extends SelfPermit {
-  public readonly INTERFACE: Interface = new Interface(abi)
+  public static INTERFACE: Interface = new Interface(abi)
 
   private constructor() {
     super()
   }
 
-  public swapCallParameters(pool: Pool, options: SwapOptions): MethodParameters {
+  public static swapCallParameters(pool: Pool, options: SwapOptions): MethodParameters {
     // ensure decimals for amounts are correct
     if (options.riskyForStable) {
       checkDecimals(options.deltaIn, pool.risky)
@@ -67,16 +67,18 @@ export abstract class SwapManager extends SelfPermit {
     const unwrapAndWithdraw = isEthOutput && options.toRecipient
     calldatas.push(
       SwapManager.INTERFACE.encodeFunctionData('swap', [
-        recipient,
-        pool.risky.address,
-        pool.stable.address,
-        pool.poolId,
-        options.riskyForStable,
-        options.deltaIn.raw.toHexString(),
-        options.deltaOut.raw.toHexString(),
-        options.fromMargin,
-        unwrapAndWithdraw ? true : options.toMargin,
-        options.deadline
+        {
+          recipient: recipient,
+          risky: pool.risky.address,
+          stable: pool.stable.address,
+          poolId: pool.poolId,
+          riskyForStable: options.riskyForStable,
+          deltaIn: options.deltaIn.raw.toHexString(),
+          deltaOut: options.deltaOut.raw.toHexString(),
+          fromMargin: options.fromMargin,
+          toMargin: unwrapAndWithdraw ? true : options.toMargin,
+          deadline: options.deadline
+        }
       ])
     )
 
@@ -92,7 +94,11 @@ export abstract class SwapManager extends SelfPermit {
       )
     }
 
-    return { calldata: SwapManager.INTERFACE.encodeFunctionData('multicall', [calldatas]), value }
+    return {
+      calldata:
+        calldatas.length === 1 ? calldatas[0] : SwapManager.INTERFACE.encodeFunctionData('multicall', [calldatas]),
+      value
+    }
   }
 
   /**
