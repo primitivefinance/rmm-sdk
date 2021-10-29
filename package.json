@@ -21,9 +21,9 @@
     "lint": "tsdx lint"
   },
   "dependencies": {
-    "@primitivefinance/v2-core": "^1.10.0",
+    "@primitivefinance/v2-core": "^1.12.0",
     "@primitivefinance/v2-math": "^1.5.0",
-    "@primitivefinance/v2-periphery": "^0.2.3",
+    "@primitivefinance/v2-periphery": "^0.2.6",
     "@uniswap/sdk-core": "^3.0.1",
     "tiny-invariant": "^1.1.0",
     "tiny-warning": "^1.0.3"

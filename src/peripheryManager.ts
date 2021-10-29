@@ -67,9 +67,10 @@ export abstract class PeripheryManager extends SelfPermit {
     return PeripheryManager.INTERFACE.encodeFunctionData('create', [
       pool.risky.address,
       pool.stable.address,
-      pool.strike.raw,
-      pool.sigma.raw,
+      pool.strike.raw.toHexString(),
+      pool.sigma.raw.toHexString(),
       pool.maturity.raw,
+      pool.gamma.raw.toHexString(),
       riskyPerLp.raw.toHexString(),
       liquidity.raw.toHexString()
     ])

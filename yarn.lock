@@ -1475,10 +1475,10 @@
   resolved "https://registry.yarnpkg.com/@openzeppelin/contracts/-/contracts-4.3.2.tgz#ff80affd6d352dbe1bbc5b4e1833c41afd6283b6"
   integrity sha512-AybF1cesONZStg5kWf6ao9OlqTZuPqddvprc0ky7lrUVOjXeKpmQ2Y9FK+6ygxasb+4aic4O5pneFBfwVsRRRg==
 
-"@primitivefinance/v2-core@^1.10.0":
-  version "1.10.0"
-  resolved "https://npm.pkg.github.com/download/@primitivefinance/v2-core/1.10.0/3e5e96629e1ffffefae87057a0823f0957a36dfe94d9b035c21dcf53544b9b7d#27496a50329f2e3ca46fd99bb92864da1878ce46"
-  integrity sha512-uIKLxmZ7OvfKM2A3uAYZZPR0N8HhdT+Vpk7XcSOe8mHuOzQxH329+6otJaq3ajGe799kgcxFaUz0hnnkY/mgNQ==
+"@primitivefinance/v2-core@^1.12.0":
+  version "1.12.0"
+  resolved "https://npm.pkg.github.com/download/@primitivefinance/v2-core/1.12.0/2d19cd63bad2fbf50d1daf8ae6412bc28ce11c48cabca76b0c6eab2f061bb1df#5f2a637e73234de0ed4b6c9670f3a63d097dd7f1"
+  integrity sha512-AzK0xt71L7e1xtlpx3GaCQttOyLpBL3dgOxnfRtacuzUMB6mtMfETPS+Bz6bPfEO6IO3z8jCBOPtu47dX8eb/w==
   dependencies:
     mocha "^9.0.3"
 
@@ -1490,13 +1490,13 @@
     gaussian "^1.2.0"
     numeric "^1.2.6"
 
-"@primitivefinance/v2-periphery@^0.2.3":
-  version "0.2.3"
-  resolved "https://npm.pkg.github.com/download/@primitivefinance/v2-periphery/0.2.3/12bbee9632d3cde5d8f44050ff84e0e4689239e4564a104a593c3c2a1ac0e0ff#3c9aa6b38fe9ced9b9eea4770f71bf8cdd216a61"
-  integrity sha512-L72S/wbUogZKzYIh8lbWeDqrycEn2jg4XtBMu4LlXNP7Nqy3IMWX+eepvBNnDz3kow44CSAsg/YEl19p1VkObA==
+"@primitivefinance/v2-periphery@^0.2.6":
+  version "0.2.6"
+  resolved "https://npm.pkg.github.com/download/@primitivefinance/v2-periphery/0.2.6/a31bf4908abdff366ab4d5c439d566d2528bb03bc1c18895cd7adb8d55b36479#45b53c715eacb6b4a63eb56ecd194b1a3ab0b6f4"
+  integrity sha512-tnMoVDjccppSCcuENtwUSFlatHn8EW5g1aARmyO0bE+CExj9x1SVS9ZAu6ty6065Z9eV51/ev1ySVpAAuaGOOA==
   dependencies:
     "@openzeppelin/contracts" "^4.1.0"
-    "@primitivefinance/v2-core" "^1.10.0"
+    "@primitivefinance/v2-core" "^1.12.0"
     "@uniswap/v3-core" "^1.0.0"
     "@uniswap/v3-periphery" "^1.0.0"
     mocha "^9.1.1"
