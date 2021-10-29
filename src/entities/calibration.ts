@@ -20,33 +20,50 @@ export class Calibration extends Engine {
    * @notice Time class with a raw value in seconds
    */
   public readonly maturity: Time
+  /**
+   * @notice Gamma, equal to 1 - fee %, as a Percentage instance with 4 precision
+   */
+  public readonly gamma: Percentage
 
   /**
    *
    * @param strike Strike price as a float with precision equal to stable token decimals
    * @param sigma Volatility percentage as a float, e.g. 1 = 100%
    * @param maturity Timestamp in seconds
+   * @param gamma 1 - fee, as a float
    */
-  constructor(factory: string, risky: Token, stable: Token, strike: number, sigma: number, maturity: number) {
+  constructor(
+    factory: string,
+    risky: Token,
+    stable: Token,
+    strike: number,
+    sigma: number,
+    maturity: number,
+    gamma: number
+  ) {
     super(factory, risky, stable)
     this.strike = parseWei(strike, stable.decimals)
     this.sigma = parsePercentage(sigma)
     this.maturity = new Time(maturity) // in seconds, because `block.timestamp` is in seconds
+    this.gamma = parsePercentage(gamma)
   }
 
   /**
    * @notice Keccak256 hash of the calibration parameters and the engine address
    */
   get poolId(): string {
-    return Calibration.computePoolId(this.address, this.strike.raw, this.sigma.raw, this.maturity.raw)
+    return Calibration.computePoolId(this.address, this.strike.raw, this.sigma.raw, this.maturity.raw, this.gamma.raw)
   }
 
   public static computePoolId(
     engine: string,
     strike: string | BigNumber,
     sigma: string | BigNumber,
-    maturity: string | number
+    maturity: string | number,
+    gamma: string | BigNumber
   ): string {
-    return keccak256(solidityPack(['address', 'uint128', 'uint32', 'uint32'], [engine, strike, sigma, maturity]))
+    return keccak256(
+      solidityPack(['address', 'uint128', 'uint32', 'uint32', 'uint32'], [engine, strike, sigma, maturity, gamma])
+    )
   }
 }
