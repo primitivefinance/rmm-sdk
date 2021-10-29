@@ -46,10 +46,6 @@ export class Pool extends Calibration {
    */
   public readonly lastTimestamp: Time
   /**
-   * @notice Timestamp of tx which created the pool
-   */
-  public readonly creationTimestamp: Time
-  /**
    * @notice Price of risky token denominated in stable tokens, with the precision of the stable tokens
    */
   public spot: Wei
@@ -67,18 +63,17 @@ export class Pool extends Calibration {
     strike: number,
     sigma: number,
     maturity: number,
+    gamma: number,
     lastTimestamp: number,
-    creationTimestamp: number,
     reserveRisky: Wei,
     reserveStable: Wei,
     liquidity: Wei,
     spot = 0
   ) {
-    super(factory, risky, stable, strike, sigma, maturity)
+    super(factory, risky, stable, strike, sigma, maturity, gamma)
 
     // ===== Calibration State =====
     this.lastTimestamp = new Time(lastTimestamp) // in seconds, because `block.timestamp` is in seconds
-    this.creationTimestamp = new Time(creationTimestamp)
     this.spot = spot ? parseWei(spot, stable.decimals) : parseWei(0, stable.decimals)
 
     // ===== Token & Liquidity State =====
@@ -108,13 +103,6 @@ export class Pool extends Calibration {
    */
   get tau(): Time {
     return this.maturity.sub(this.lastTimestamp)
-  }
-
-  /**
-   * @returns Total lifetime of a pool in seconds
-   */
-  get lifetime(): Time {
-    return this.maturity.sub(this.creationTimestamp)
   }
 
   /**
@@ -509,16 +497,5 @@ export class Pool extends Calibration {
     const totalTau = new Time(this.maturity.raw - lastTimestamp).years
     const premium = callPremiumApproximation(this.strike.float, this.sigma.float, totalTau, this.spot.float)
     return this.strike.float - premium
-  }
-
-  /**
-   * @notice Calculates the theoretical fees generated using a pool's creation timestamp
-   * @param creationTimestamp Unix timestamp in seconds
-   * @returns Theoretical premium of the replicated option using the entire lifetime of the pool
-   */
-  getTheoreticalMaxFee(creationTimestamp: number): number {
-    const totalTau = new Time(this.maturity.raw - creationTimestamp).years
-    const premium = callPremiumApproximation(this.strike.float, this.sigma.float, totalTau, this.spot.float)
-    return premium
   }
 }
