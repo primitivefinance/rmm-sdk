@@ -1,5 +1,5 @@
 {
-  "name": "@primitivefinance/v2-sdk",
+  "name": "@primitivefinance/rmm-sdk",
   "version": "1.4.7",
   "description": "An SDK for the Primitive V2 Protocol",
   "main": "dist/index.js",
