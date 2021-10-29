@@ -1,3 +1,3 @@
-# Primitive V2 SDK
+# Primitive RMM SDK
 
-A software development kit for the Primitive V2 Protocol.
+A software development kit for Primitive RMM-01.
