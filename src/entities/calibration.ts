@@ -2,6 +2,7 @@ import { utils, BigNumber } from 'ethers'
 import { Token } from '@uniswap/sdk-core'
 import { parseWei, Percentage, Time, Wei, parsePercentage } from 'web3-units'
 import { Engine } from './engine'
+import invariant from 'tiny-invariant'
 const { keccak256, solidityPack } = utils
 
 /**
@@ -42,6 +43,8 @@ export class Calibration extends Engine {
     gamma: number
   ) {
     super(factory, risky, stable)
+    invariant(sigma <= 1000 && sigma >= 0.01, 'Sigma Error: Implied volatility outside of bounds')
+    invariant(gamma < 1 && gamma > 0, 'Gamma Error: Fee outside of bounds')
     this.strike = parseWei(strike, stable.decimals)
     this.sigma = parsePercentage(sigma)
     this.maturity = new Time(maturity) // in seconds, because `block.timestamp` is in seconds
