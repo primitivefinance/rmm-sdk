@@ -10,13 +10,13 @@ describe('Test pool', function() {
     strike: number,
     sigma: number,
     maturity: number,
+    gamma: number,
     lastTimestamp: number,
-    creationTimestamp: number,
     spot: number,
     tau: number
 
   beforeEach(async function() {
-    ;[strike, sigma, maturity, lastTimestamp, creationTimestamp, spot] = [10, 1, Time.YearInSeconds + 1, 1, 1, 10]
+    ;[strike, sigma, maturity, lastTimestamp, gamma, spot] = [10, 1, Time.YearInSeconds + 1, 1, 1 - 0.0015, 10]
     tau = new Time(maturity - lastTimestamp).years
     const delta = callDelta(strike, sigma, tau, spot)
     const risky = parseWei(1 - delta, 18)
@@ -28,8 +28,8 @@ describe('Test pool', function() {
       strike,
       sigma,
       maturity,
+      gamma,
       lastTimestamp,
-      creationTimestamp,
       risky,
       stable,
       parseWei(1),
@@ -47,11 +47,6 @@ describe('Test pool', function() {
     expect(current.valuePerLiquidity.float).toBeCloseTo(pool.getTheoreticalLiquidityValue(lastTimestamp))
   })
 
-  it('gets the theoretical max fee', async function() {
-    const max = pool.getTheoreticalMaxFee(1)
-    expect(max).toBeCloseTo(callPremium(strike, sigma, tau, spot))
-  })
-
   it('new Pool(...).poolId', async function() {
     const main = new Pool(
       AddressZero,
@@ -60,8 +55,8 @@ describe('Test pool', function() {
       strike,
       sigma,
       maturity,
+      gamma,
       lastTimestamp,
-      creationTimestamp,
       parseWei(0.5),
       parseWei(5),
       parseWei(1),

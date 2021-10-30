@@ -35,13 +35,14 @@ describe('Periphery Manager', function() {
         pool.strike.raw,
         pool.sigma.raw,
         pool.maturity.raw,
+        pool.gamma.raw,
         riskyPerLp.raw,
         liquidity.raw
       ]
 
       const calldata = PeripheryManager.encodeCreate(pool, liquidity)
       const decoded = decode(frag, calldata)
-      data.forEach((item, i) => expect(item).toStrictEqual(decoded[i]))
+      data.forEach((item, i) => expect(item.toString()).toStrictEqual(decoded[i].toString()))
     })
 
     it('fails with wrong liquidity decimals', async function() {
@@ -63,13 +64,14 @@ describe('Periphery Manager', function() {
         pool.strike.raw,
         pool.sigma.raw,
         pool.maturity.raw,
+        pool.gamma.raw,
         riskyPerLp.raw,
         liquidity.raw
       ]
 
       const { calldata, value } = PeripheryManager.createCallParameters(pool, liquidity)
       const decoded = decode(frag, calldata)
-      data.forEach((item, i) => expect(item).toStrictEqual(decoded[i]))
+      data.forEach((item, i) => expect(item.toString()).toStrictEqual(decoded[i].toString()))
       expect(value).toBe('0x00')
     })
   })
@@ -84,7 +86,7 @@ describe('Periphery Manager', function() {
       const data = [recipient, risky.address, stable.address, amountRisky.raw, amountStable.raw]
       const { calldata, value } = PeripheryManager.depositCallParameters(pool, { recipient, amountRisky, amountStable })
       const decoded = decode('deposit', calldata)
-      data.forEach((item, i) => expect(item).toStrictEqual(decoded[i]))
+      data.forEach((item, i) => expect(item.toString()).toStrictEqual(decoded[i].toString()))
       expect(value).toBe('0x00')
     })
 
@@ -149,7 +151,7 @@ describe('Periphery Manager', function() {
       const calldatas = PeripheryManager.encodeWithdraw(pool, { recipient, amountRisky, amountStable })
       const decoded = decode('withdraw', calldatas[0])
       const data = [recipient, pool.address, amountRisky.raw, amountStable.raw]
-      data.forEach((item, i) => expect(item).toStrictEqual(decoded[i]))
+      data.forEach((item, i) => expect(item.toString()).toStrictEqual(decoded[i].toString()))
     })
 
     it('uses native token successfully', async function() {
@@ -225,7 +227,7 @@ describe('Periphery Manager', function() {
       const data = [recipient, pool.address, amountRisky.raw, amountStable.raw]
 
       const decoded = decode('withdraw', calldata)
-      data.forEach((item, i) => expect(item).toStrictEqual(decoded[i]))
+      data.forEach((item, i) => expect(item.toString()).toStrictEqual(decoded[i].toString()))
       expect(value).toBe('0x00')
     })
 
@@ -279,7 +281,7 @@ describe('Periphery Manager', function() {
       })
       const data = [pool.poolId, pool.risky.address, pool.stable.address, delRisky.raw, delStable.raw, fromMargin]
       const decoded = decode('allocate', calldata)
-      data.forEach((item, i) => expect(item).toStrictEqual(decoded[i]))
+      data.forEach((item, i) => expect(item.toString()).toStrictEqual(decoded[i].toString()))
       expect(value).toBe('0x00')
     })
 
@@ -344,12 +346,13 @@ describe('Periphery Manager', function() {
         wethPool.strike.raw,
         wethPool.sigma.raw,
         wethPool.maturity.raw,
+        wethPool.gamma.raw,
         riskyPerLp.raw,
         delLiquidity.raw
       ]
 
       const decoded = decode('create', calldata)
-      createData.forEach((item, i) => expect(item).toStrictEqual(decoded[i]))
+      createData.forEach((item, i) => expect(item.toString()).toStrictEqual(decoded[i].toString()))
 
       expect(value).toBe('0x00')
     })
@@ -485,7 +488,7 @@ describe('Periphery Manager', function() {
 
       const data = [pool.address, pool.poolId, delLiquidity.raw]
       const decoded = decode('remove', calldata)
-      data.forEach((item, i) => expect(item).toStrictEqual(decoded[i]))
+      data.forEach((item, i) => expect(item.toString()).toStrictEqual(decoded[i].toString()))
       expect(value).toBe('0x00')
     })
 
