@@ -16,6 +16,7 @@ import { Calibration } from './calibration'
 import { Token } from '@uniswap/sdk-core'
 import { PERCENTAGE } from '../constants'
 import { callDelta, callPremium } from '@primitivefinance/v2-math'
+import invariant from 'tiny-invariant'
 
 export interface SwapReturn {
   deltaOut: Wei
@@ -149,33 +150,48 @@ export class Pool extends Calibration {
    * @notice Calculates the other side of the pool using the known amount of a side of the pool
    * @param amount Amount of token
    * @param token Token side of the pool that is used to calculate the other side
+   * @param fresh If instantiating a fresh pool, use the spot price (passed in constructor) to get reserves
    * @returns risky token amount, stable token amount, and liquidity amount
    */
-  liquidityQuote(amount: Wei, token: Token): { delRisky: Wei; delStable: Wei; delLiquidity: Wei } {
+  liquidityQuote(amount: Wei, token: Token, fresh?: boolean): { delRisky: Wei; delStable: Wei; delLiquidity: Wei } {
     let delRisky: Wei = parseWei(0)
     let delStable: Wei = parseWei(0)
     let delLiquidity: Wei = parseWei(0)
 
+    let reserveRisky: Wei = parseWei(0)
+    let reserveStable: Wei = parseWei(0)
+    let liquidity: Wei = parseWei(0)
+
+    if (fresh) {
+      invariant(this.spot.gt(0), 'Spot price is not greater than zero')
+      reserveRisky = parseWei(1 - this.delta, this.risky.decimals)
+      reserveStable = this.getStableGivenRisky(reserveRisky, true)
+      liquidity = parseWei(1, 18)
+    } else {
+      reserveRisky = this.reserveRisky
+      reserveStable = this.reserveStable
+      liquidity = this.liquidity
+    }
+
     switch (token) {
       case this.risky:
         delRisky = amount
-        delLiquidity = delRisky.mul(this.liquidity).div(this.reserveRisky)
-        delStable = delLiquidity.mul(this.reserveStable).div(this.liquidity)
+        delLiquidity = delRisky.mul(liquidity).div(reserveRisky)
+        delStable = delLiquidity.mul(reserveStable).div(liquidity)
         break
       case this.stable:
         delStable = amount
-        delLiquidity = delStable.mul(this.liquidity).div(this.reserveStable)
-        delRisky = delLiquidity.mul(this.reserveRisky).div(this.liquidity)
+        delLiquidity = delStable.mul(liquidity).div(reserveStable)
+        delRisky = delLiquidity.mul(reserveRisky).div(liquidity)
         break
       case this:
         delLiquidity = amount
-        delRisky = delLiquidity.mul(this.reserveRisky).div(this.liquidity)
-        delStable = delLiquidity.mul(this.reserveStable).div(this.liquidity)
+        delRisky = delLiquidity.mul(reserveRisky).div(liquidity)
+        delStable = delLiquidity.mul(reserveStable).div(liquidity)
         break
       default:
         break
     }
-
     return { delRisky, delStable, delLiquidity }
   }
 
