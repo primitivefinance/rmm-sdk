@@ -1475,12 +1475,26 @@
   resolved "https://registry.yarnpkg.com/@openzeppelin/contracts/-/contracts-4.3.2.tgz#ff80affd6d352dbe1bbc5b4e1833c41afd6283b6"
   integrity sha512-AybF1cesONZStg5kWf6ao9OlqTZuPqddvprc0ky7lrUVOjXeKpmQ2Y9FK+6ygxasb+4aic4O5pneFBfwVsRRRg==
 
-"@primitivefinance/v2-core@^1.12.0":
-  version "1.12.0"
-  resolved "https://npm.pkg.github.com/download/@primitivefinance/v2-core/1.12.0/2d19cd63bad2fbf50d1daf8ae6412bc28ce11c48cabca76b0c6eab2f061bb1df#5f2a637e73234de0ed4b6c9670f3a63d097dd7f1"
-  integrity sha512-AzK0xt71L7e1xtlpx3GaCQttOyLpBL3dgOxnfRtacuzUMB6mtMfETPS+Bz6bPfEO6IO3z8jCBOPtu47dX8eb/w==
+"@primitivefinance/rmm-core@^1.13.2":
+  version "1.13.2"
+  resolved "https://npm.pkg.github.com/download/@primitivefinance/rmm-core/1.13.2/9483826fcd3dad8fafe094afc7f7f997b8cd664f2647f93ff6b79f05b190347a#101cf120ac51d4896c532496d2eac6e04816611c"
+  integrity sha512-VfOUAhgeKhOjk8dmMaKNckqz2gKIdiycHYTivlN7nbU8QGXspM8B699e/ogdtGh1LV7Yx0X70ltadOiSl3PF3g==
+
+"@primitivefinance/rmm-core@^1.13.3":
+  version "1.13.3"
+  resolved "https://npm.pkg.github.com/download/@primitivefinance/rmm-core/1.13.3/ace2d8701506a80af7ad8cf4a112cadee2a45a6c65a0e29c0803d0996b0a4dcb#d751f96e6a3b512aac2f0566807a80a73456f5ae"
+  integrity sha512-0eEOcwOD59UYDVOf3zWnWTJ1gVnW7mQdH3IhOQCkEYGTM+E4Qtyum3WqP3IEXU5U0zbMsWQZwA/k5x8OxPDgEA==
+
+"@primitivefinance/rmm-periphery@^0.2.7":
+  version "0.2.7"
+  resolved "https://npm.pkg.github.com/download/@primitivefinance/rmm-periphery/0.2.7/8ed15a3ad9e3caa19f422020af27321b8b5bfe634cc38e3b5c243f7a31e28eaa#a2c6087a284de820f82711ccefac064fee392b29"
+  integrity sha512-DbVX+06yYDySAsjjEUBITa+cAGrxiSVPdwNTHgztRut+JqhU3DJJ6dczkN4WKZVv6xHEW9mM72m8lBF7+WkUiA==
   dependencies:
-    mocha "^9.0.3"
+    "@openzeppelin/contracts" "^4.1.0"
+    "@primitivefinance/rmm-core" "^1.13.2"
+    "@uniswap/v3-core" "^1.0.0"
+    "@uniswap/v3-periphery" "^1.0.0"
+    mocha "^9.1.1"
 
 "@primitivefinance/v2-math@^1.5.0":
   version "1.5.0"
@@ -1489,17 +1503,6 @@
   dependencies:
     gaussian "^1.2.0"
     numeric "^1.2.6"
-
-"@primitivefinance/v2-periphery@^0.2.6":
-  version "0.2.6"
-  resolved "https://npm.pkg.github.com/download/@primitivefinance/v2-periphery/0.2.6/a31bf4908abdff366ab4d5c439d566d2528bb03bc1c18895cd7adb8d55b36479#45b53c715eacb6b4a63eb56ecd194b1a3ab0b6f4"
-  integrity sha512-tnMoVDjccppSCcuENtwUSFlatHn8EW5g1aARmyO0bE+CExj9x1SVS9ZAu6ty6065Z9eV51/ev1ySVpAAuaGOOA==
-  dependencies:
-    "@openzeppelin/contracts" "^4.1.0"
-    "@primitivefinance/v2-core" "^1.12.0"
-    "@uniswap/v3-core" "^1.0.0"
-    "@uniswap/v3-periphery" "^1.0.0"
-    mocha "^9.1.1"
 
 "@rollup/plugin-babel@^5.1.0":
   version "5.3.0"
@@ -1795,9 +1798,9 @@
   integrity sha512-kSC4djMGKMHj7sLMYVnn61k9nu+lHjMIxgg9CDQT+s2QYLoA56GbSK9Oxr+qJXzzygbkrmuY6cwgP6cW2JXPFA==
 
 "@uniswap/v3-periphery@^1.0.0":
-  version "1.2.1"
-  resolved "https://registry.yarnpkg.com/@uniswap/v3-periphery/-/v3-periphery-1.2.1.tgz#7775630bea774a2cf989ab87ce3c328ac52e0d50"
-  integrity sha512-45W8hT8X1j9ZcXa+y3NSVao90hMZtgtoJyDlMOg91wmUGi2idXAiGivOQYdB7+7Lq8Gc6Upv/ggFZknixZrv7g==
+  version "1.3.0"
+  resolved "https://registry.yarnpkg.com/@uniswap/v3-periphery/-/v3-periphery-1.3.0.tgz#37f0a1ef6025221722e50e9f3f2009c2d5d6e4ec"
+  integrity sha512-HjHdI5RkjBl8zz3bqHShrbULFoZSrjbbrRHoO2vbzn+WRzTa6xY4PWphZv2Tlcb38YEKfKHp6NPl5hVedac8uw==
   dependencies:
     "@openzeppelin/contracts" "3.4.1-solc-0.7-2"
     "@uniswap/lib" "^4.0.1-alpha"
@@ -2678,13 +2681,6 @@ data-urls@^1.1.0:
     abab "^2.0.0"
     whatwg-mimetype "^2.2.0"
     whatwg-url "^7.0.0"
-
-debug@4.3.1:
-  version "4.3.1"
-  resolved "https://registry.yarnpkg.com/debug/-/debug-4.3.1.tgz#f0d229c505e0c6d8c49ac553d1b13dc183f6b2ee"
-  integrity sha512-doEwdvm4PCeK4K3RQN2ZC2BYUBaxwLARCqZmMjtF8a51J2Rb0xpVloFRnCODwqjpwnAoao4pelN8l3RJdv3gRQ==
-  dependencies:
-    ms "2.1.2"
 
 debug@4.3.2, debug@^4.0.1, debug@^4.1.0, debug@^4.1.1:
   version "4.3.2"
@@ -3986,10 +3982,17 @@ is-generator-fn@^2.0.0:
   resolved "https://registry.yarnpkg.com/is-generator-fn/-/is-generator-fn-2.1.0.tgz#7d140adc389aaf3011a8f2a2a4cfa6faadffb118"
   integrity sha512-cTIB4yPYL/Grw0EaSzASzg6bBy9gqCofvWN8okThAYIxKJZC+udlRAmGbM0XLeniEJSs8uEgHPGuHSe1XsOLSQ==
 
-is-glob@^4.0.0, is-glob@^4.0.1, is-glob@~4.0.1:
+is-glob@^4.0.0, is-glob@^4.0.1:
   version "4.0.1"
   resolved "https://registry.yarnpkg.com/is-glob/-/is-glob-4.0.1.tgz#7567dbe9f2f5e2467bc77ab83c4a29482407a5dc"
   integrity sha512-5G0tKtBTFImOqDnLB2hG6Bp2qcKEFduo4tZu9MT/H6NQv/ghhy30o55ufafxJ/LdH79LLs2Kfrn85TLKyA7BUg==
+  dependencies:
+    is-extglob "^2.1.1"
+
+is-glob@~4.0.1:
+  version "4.0.3"
+  resolved "https://registry.yarnpkg.com/is-glob/-/is-glob-4.0.3.tgz#64f61e42cbbb2eec2071a9dac0b28ba1e65d5084"
+  integrity sha512-xelSayHH36ZgE7ZWhli7pW34hNbNl8Ojv5KVmkJD4hBdD3th8Tfk9vYasLM+mXWOZhFkgZfxhLSnrwRr4elSSg==
   dependencies:
     is-extglob "^2.1.1"
 
@@ -5014,37 +5017,6 @@ mkdirp@0.x, mkdirp@^0.5.1:
   dependencies:
     minimist "^1.2.5"
 
-mocha@^9.0.3:
-  version "9.1.1"
-  resolved "https://registry.yarnpkg.com/mocha/-/mocha-9.1.1.tgz#33df2eb9c6262434630510c5f4283b36efda9b61"
-  integrity sha512-0wE74YMgOkCgBUj8VyIDwmLUjTsS13WV1Pg7l0SHea2qzZzlq7MDnfbPsHKcELBRk3+izEVkRofjmClpycudCA==
-  dependencies:
-    "@ungap/promise-all-settled" "1.1.2"
-    ansi-colors "4.1.1"
-    browser-stdout "1.3.1"
-    chokidar "3.5.2"
-    debug "4.3.1"
-    diff "5.0.0"
-    escape-string-regexp "4.0.0"
-    find-up "5.0.0"
-    glob "7.1.7"
-    growl "1.10.5"
-    he "1.2.0"
-    js-yaml "4.1.0"
-    log-symbols "4.1.0"
-    minimatch "3.0.4"
-    ms "2.1.3"
-    nanoid "3.1.23"
-    serialize-javascript "6.0.0"
-    strip-json-comments "3.1.1"
-    supports-color "8.1.1"
-    which "2.0.2"
-    wide-align "1.1.3"
-    workerpool "6.1.5"
-    yargs "16.2.0"
-    yargs-parser "20.2.4"
-    yargs-unparser "2.0.0"
-
 mocha@^9.1.1:
   version "9.1.3"
   resolved "https://registry.yarnpkg.com/mocha/-/mocha-9.1.3.tgz#8a623be6b323810493d8c8f6f7667440fa469fdb"
@@ -5099,11 +5071,6 @@ mute-stream@0.0.8:
   version "0.0.8"
   resolved "https://registry.yarnpkg.com/mute-stream/-/mute-stream-0.0.8.tgz#1630c42b2251ff81e2a283de96a5497ea92e5e0d"
   integrity sha512-nnbWWOkoWyUsTjKrhgD0dcz22mdkSnpYqbEjIm2nhwhuxlSkpywJmBo8h0ZqJdkp73mb90SssHkN4rsRaBAfAA==
-
-nanoid@3.1.23:
-  version "3.1.23"
-  resolved "https://registry.yarnpkg.com/nanoid/-/nanoid-3.1.23.tgz#f744086ce7c2bc47ee0a8472574d5c78e4183a81"
-  integrity sha512-FiB0kzdP0FFVGDKlRLEQ1BgDzU87dy5NnzjeW9YZNt+/c3+q82EQDUwniSAUxp/F0gFNI1ZhKU1FqYsMuqZVnw==
 
 nanoid@3.1.25:
   version "3.1.25"
@@ -6349,7 +6316,7 @@ string-length@^3.1.0:
     astral-regex "^1.0.0"
     strip-ansi "^5.2.0"
 
-"string-width@^1.0.2 || 2", string-width@^2.1.1:
+string-width@^2.1.1:
   version "2.1.1"
   resolved "https://registry.yarnpkg.com/string-width/-/string-width-2.1.1.tgz#ab93f27a8dc13d28cac815c462143a6d9012ae9e"
   integrity sha512-nOqH59deCq9SRHlxq1Aw85Jnt4w6KvLKqWVik6oA9ZklXLNIOlqg4F2yrT1MVaTjAqvVwdfeZ7w7aCvJD7ugkw==
@@ -7007,13 +6974,6 @@ which@^1.2.9, which@^1.3.1:
   integrity sha512-HxJdYWq1MTIQbJ3nw0cqssHoTNU267KlrDuGZ1WYlxDStUtKUhOaJmh112/TZmHxxUfuJqPXSOm7tDyas0OSIQ==
   dependencies:
     isexe "^2.0.0"
-
-wide-align@1.1.3:
-  version "1.1.3"
-  resolved "https://registry.yarnpkg.com/wide-align/-/wide-align-1.1.3.tgz#ae074e6bdc0c14a431e804e624549c633b000457"
-  integrity sha512-QGkOQc8XL6Bt5PwnsExKBPuMKBxnGxWWW3fU55Xt4feHozMUhdUMaBCk290qpm/wG5u/RSKzwdAC4i51YigihA==
-  dependencies:
-    string-width "^1.0.2 || 2"
 
 word-wrap@~1.2.3:
   version "1.2.3"

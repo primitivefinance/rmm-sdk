@@ -4,7 +4,7 @@ import { Interface } from '@ethersproject/abi'
 import { parseWei, toBN, Wei } from 'web3-units'
 import { NativeCurrency } from '@uniswap/sdk-core'
 import { AddressZero } from '@ethersproject/constants'
-import { abi } from '@primitivefinance/v2-periphery/artifacts/contracts/PrimitiveHouse.sol/PrimitiveHouse.json'
+import { abi } from '@primitivefinance/rmm-periphery/artifacts/contracts/PrimitiveHouse.sol/PrimitiveHouse.json'
 
 import { Pool } from './entities/pool'
 import { Engine } from './entities/engine'

@@ -1,7 +1,7 @@
 import invariant from 'tiny-invariant'
 import { Interface } from '@ethersproject/abi'
 import { AddressZero } from '@ethersproject/constants'
-import { abi } from '@primitivefinance/v2-core/artifacts/contracts/PrimitiveFactory.sol/PrimitiveFactory.json'
+import { abi } from '@primitivefinance/rmm-core/artifacts/contracts/PrimitiveFactory.sol/PrimitiveFactory.json'
 
 export abstract class FactoryManager {
   public static INTERFACE: Interface = new Interface(abi)
