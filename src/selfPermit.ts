@@ -1,6 +1,6 @@
 import { Token } from '@uniswap/sdk-core'
 import { Interface } from '@ethersproject/abi'
-import { abi } from '@primitivefinance/v2-core/artifacts/contracts/PrimitiveFactory.sol/PrimitiveFactory.json' // todo: fix placeholder
+import { abi } from '@primitivefinance/rmm-core/artifacts/contracts/PrimitiveFactory.sol/PrimitiveFactory.json' // todo: fix placeholder
 import { BigNumber } from 'ethers'
 
 export interface StandardPermitArguments {

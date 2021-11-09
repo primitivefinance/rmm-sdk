@@ -5,7 +5,7 @@ import { Interface } from '@ethersproject/abi'
 import {
   bytecode as EngineBytecode,
   abi as EngineAbi
-} from '@primitivefinance/v2-core/artifacts/contracts/PrimitiveEngine.sol/PrimitiveEngine.json'
+} from '@primitivefinance/rmm-core/artifacts/contracts/PrimitiveEngine.sol/PrimitiveEngine.json'
 
 /**
  * @notice Represents the PrimitiveEngine.sol smart contract

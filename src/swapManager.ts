@@ -3,7 +3,7 @@ import invariant from 'tiny-invariant'
 import { Interface } from '@ethersproject/abi'
 import { AddressZero } from '@ethersproject/constants'
 import { parseWei, Percentage, toBN, Wei } from 'web3-units'
-import { abi } from '@primitivefinance/v2-periphery/artifacts/contracts/PrimitiveHouse.sol/PrimitiveHouse.json'
+import { abi } from '@primitivefinance/rmm-periphery/artifacts/contracts/PrimitiveHouse.sol/PrimitiveHouse.json'
 
 import { Pool } from './entities/pool'
 import { PeripheryManager, NativeOptions } from './peripheryManager'
