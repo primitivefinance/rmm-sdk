@@ -1,4 +1,4 @@
-import { Wei, Time, FixedPointX64, parseFixedPointX64, parseWei, toBN } from 'web3-units'
+import { Wei, Time, FixedPointX64, parseFixedPointX64, parseWei, toBN, Percentage } from 'web3-units'
 import {
   quantilePrime,
   std_n_pdf,
@@ -61,11 +61,11 @@ export class Pool extends Calibration {
     factory: string,
     risky: Token,
     stable: Token,
-    strike: number,
-    sigma: number,
-    maturity: number,
-    gamma: number,
-    lastTimestamp: number,
+    strike: Wei,
+    sigma: Percentage,
+    maturity: Time,
+    gamma: Percentage,
+    lastTimestamp: Time,
     reserveRisky: Wei,
     reserveStable: Wei,
     liquidity: Wei,
@@ -74,7 +74,7 @@ export class Pool extends Calibration {
     super(factory, risky, stable, strike, sigma, maturity, gamma)
 
     // ===== Calibration State =====
-    this.lastTimestamp = new Time(lastTimestamp) // in seconds, because `block.timestamp` is in seconds
+    this.lastTimestamp = lastTimestamp // in seconds, because `block.timestamp` is in seconds
     this.spot = spot ? parseWei(spot, stable.decimals) : parseWei(0, stable.decimals)
 
     // ===== Token & Liquidity State =====
@@ -176,22 +176,26 @@ export class Pool extends Calibration {
     switch (token) {
       case this.risky:
         delRisky = amount
-        delLiquidity = delRisky.mul(liquidity).div(reserveRisky)
-        delStable = delLiquidity.mul(reserveStable).div(liquidity)
+        delLiquidity = liquidity.mul(delRisky).div(reserveRisky)
+        delStable = reserveStable.mul(delLiquidity).div(liquidity)
         break
       case this.stable:
         delStable = amount
-        delLiquidity = delStable.mul(liquidity).div(reserveStable)
-        delRisky = delLiquidity.mul(reserveRisky).div(liquidity)
+        delLiquidity = liquidity.mul(delStable).div(reserveStable)
+        delRisky = reserveRisky.mul(delLiquidity).div(liquidity)
         break
       case this:
         delLiquidity = amount
-        delRisky = delLiquidity.mul(reserveRisky).div(liquidity)
-        delStable = delLiquidity.mul(reserveStable).div(liquidity)
+        delRisky = reserveRisky.mul(delLiquidity).div(liquidity)
+        delStable = reserveStable.mul(delLiquidity).div(liquidity)
         break
       default:
         break
     }
+
+    invariant(delRisky.decimals === this.risky.decimals, 'Risky amount decimals does not match')
+    invariant(delStable.decimals === this.stable.decimals, 'Stable amount decimals does not match')
+    invariant(delLiquidity.decimals === 18, 'Liquidity amount decimals is not 18')
     return { delRisky, delStable, delLiquidity }
   }
 
@@ -494,12 +498,17 @@ export class Pool extends Calibration {
     const reserve1 = this.reserveStable
     const liquidity = this.liquidity
 
+    // Computes the price of the token multiplied by amount of the token and dividing by 10^decimals, canceling out the tokens decimals
     const values = [
-      reserve0.mul(parseWei(priceOfRisky, reserve0.decimals)).div(parseWei(1, reserve0.decimals)),
-      reserve1.mul(parseWei(priceOfStable, reserve1.decimals)).div(parseWei(1, reserve1.decimals))
+      parseWei(priceOfRisky, 18)
+        .mul(reserve0)
+        .div(parseWei(1, reserve0.decimals)),
+      parseWei(priceOfStable, 18)
+        .mul(reserve1)
+        .div(parseWei(1, reserve1.decimals))
     ]
 
-    const sum = values[0].add(values[1])
+    const sum = values[0].add(values[1]) // both have 18 decimals
     const valuePerLiquidity = sum.mul(1e18).div(liquidity)
     return { valuePerLiquidity, values }
   }

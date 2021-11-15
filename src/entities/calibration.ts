@@ -6,6 +6,35 @@ import invariant from 'tiny-invariant'
 const { keccak256, solidityPack } = utils
 
 /**
+ * @notice Formats the number values into proper types for Calibration
+ * @param factory Address of the PrimitiveFactory
+ * @param risky A token entity for the Risky asset
+ * @param stable A token entity for the Stable asset
+ * @param strike Strike price as a float
+ * @param sigma Implied volatility as a float
+ * @param maturity Timestamp of expiry in seconds
+ * @param gamma 1 - fee % of the pool as a float
+ * @returns Calibration Entity instantiated with float values converted to proper types
+ */
+export function parseCalibration(
+  factory: string,
+  risky: Token,
+  stable: Token,
+  strike: number,
+  sigma: number,
+  maturity: number,
+  gamma: number
+): Calibration {
+  let parsed: any = {
+    strike: parseWei(strike, stable.decimals),
+    sigma: parsePercentage(sigma),
+    maturity: new Time(maturity), // in seconds, because `block.timestamp` is in seconds
+    gamma: parsePercentage(gamma)
+  }
+  return new Calibration(factory, risky, stable, parsed.strike, parsed.sigma, parsed.maturity, parsed.gamma)
+}
+
+/**
  * @notice Calibration Struct; Class representation of each Curve's parameters
  */
 export class Calibration extends Engine {
@@ -28,27 +57,27 @@ export class Calibration extends Engine {
 
   /**
    *
-   * @param strike Strike price as a float with precision equal to stable token decimals
-   * @param sigma Volatility percentage as a float, e.g. 1 = 100%
-   * @param maturity Timestamp in seconds
-   * @param gamma 1 - fee, as a float
+   * @param strike Strike price as a `Wei` class with decimals the same as `stable.decimals`
+   * @param sigma Implied Volatility as a `Percentage` class with a raw value scaled by 1e4
+   * @param maturity Timestamp of expiry as a `Time` class, in seconds
+   * @param gamma The 1 - fee % multiplier applied to input amounts on swaps as a `Percentage` class
    */
   constructor(
     factory: string,
     risky: Token,
     stable: Token,
-    strike: number,
-    sigma: number,
-    maturity: number,
-    gamma: number
+    strike: Wei,
+    sigma: Percentage,
+    maturity: Time,
+    gamma: Percentage
   ) {
     super(factory, risky, stable)
-    invariant(sigma <= 1000 && sigma >= 0.01, 'Sigma Error: Implied volatility outside of bounds')
-    invariant(gamma < 1 && gamma > 0, 'Gamma Error: Fee outside of bounds')
-    this.strike = parseWei(strike, stable.decimals)
-    this.sigma = parsePercentage(sigma)
-    this.maturity = new Time(maturity) // in seconds, because `block.timestamp` is in seconds
-    this.gamma = parsePercentage(gamma)
+    invariant(sigma.float <= 1000 && sigma.float >= 0.01, 'Sigma Error: Implied volatility outside of bounds')
+    invariant(gamma.float < 1 && gamma.float > 0, 'Gamma Error: Fee outside of bounds')
+    this.strike = strike
+    this.sigma = sigma
+    this.maturity = maturity // in seconds, because `block.timestamp` is in seconds
+    this.gamma = gamma
   }
 
   /**
