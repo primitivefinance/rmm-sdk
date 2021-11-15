@@ -4,6 +4,7 @@ import { AddressZero } from '@ethersproject/constants'
 import { callDelta, callPremium, getStableGivenRiskyApproximation } from '@primitivefinance/v2-math'
 
 import { Pool } from '../src/entities/pool'
+import { parseCalibration } from '../src/entities/calibration'
 
 describe('Test pool', function() {
   let pool: Pool,
@@ -21,15 +22,24 @@ describe('Test pool', function() {
     const delta = callDelta(strike, sigma, tau, spot)
     const risky = parseWei(1 - delta, 18)
     const stable = parseWei(getStableGivenRiskyApproximation(risky.float, strike, sigma, tau), 18)
-    pool = new Pool(
+    const cal = parseCalibration(
       AddressZero,
       new Token(1, AddressZero, 18),
       new Token(1, AddressZero, 18),
       strike,
       sigma,
       maturity,
-      gamma,
-      lastTimestamp,
+      gamma
+    )
+    pool = new Pool(
+      AddressZero,
+      new Token(1, AddressZero, 18),
+      new Token(1, AddressZero, 18),
+      cal.strike,
+      cal.sigma,
+      cal.maturity,
+      cal.gamma,
+      new Time(lastTimestamp),
       risky,
       stable,
       parseWei(1),
@@ -48,15 +58,24 @@ describe('Test pool', function() {
   })
 
   it('new Pool(...).poolId', async function() {
-    const main = new Pool(
+    const cal = parseCalibration(
       AddressZero,
       new Token(1, AddressZero, 18),
       new Token(1, AddressZero, 18),
       strike,
       sigma,
       maturity,
-      gamma,
-      lastTimestamp,
+      gamma
+    )
+    const main = new Pool(
+      AddressZero,
+      new Token(1, AddressZero, 18),
+      new Token(1, AddressZero, 18),
+      cal.strike,
+      cal.sigma,
+      cal.maturity,
+      cal.gamma,
+      new Time(lastTimestamp),
       parseWei(0.5),
       parseWei(5),
       parseWei(1),

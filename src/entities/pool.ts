@@ -1,4 +1,4 @@
-import { Wei, Time, FixedPointX64, parseFixedPointX64, parseWei, toBN } from 'web3-units'
+import { Wei, Time, FixedPointX64, parseFixedPointX64, parseWei, toBN, Percentage } from 'web3-units'
 import {
   quantilePrime,
   std_n_pdf,
@@ -61,11 +61,11 @@ export class Pool extends Calibration {
     factory: string,
     risky: Token,
     stable: Token,
-    strike: number,
-    sigma: number,
-    maturity: number,
-    gamma: number,
-    lastTimestamp: number,
+    strike: Wei,
+    sigma: Percentage,
+    maturity: Time,
+    gamma: Percentage,
+    lastTimestamp: Time,
     reserveRisky: Wei,
     reserveStable: Wei,
     liquidity: Wei,
@@ -74,7 +74,7 @@ export class Pool extends Calibration {
     super(factory, risky, stable, strike, sigma, maturity, gamma)
 
     // ===== Calibration State =====
-    this.lastTimestamp = new Time(lastTimestamp) // in seconds, because `block.timestamp` is in seconds
+    this.lastTimestamp = lastTimestamp // in seconds, because `block.timestamp` is in seconds
     this.spot = spot ? parseWei(spot, stable.decimals) : parseWei(0, stable.decimals)
 
     // ===== Token & Liquidity State =====
