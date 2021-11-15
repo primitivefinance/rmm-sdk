@@ -3,6 +3,7 @@ import { Token, WETH9 } from '@uniswap/sdk-core'
 import { parseWei, Time } from 'web3-units'
 import { AddressZero } from '@ethersproject/constants'
 import { callDelta, getStableGivenRiskyApproximation } from '@primitivefinance/v2-math'
+import { parseCalibration } from '../../src/entities/calibration'
 
 export function usePoolWithDecimals(decimals: number): Pool {
   const [strike, sigma, maturity, lastTimestamp, gamma, spot] = [10, 1, Time.YearInSeconds + 1, 1, 1 - 0.0015, 10]
@@ -10,15 +11,24 @@ export function usePoolWithDecimals(decimals: number): Pool {
   const delta = callDelta(strike, sigma, tau, spot)
   const risky = parseWei(1 - delta, decimals)
   const stable = parseWei(getStableGivenRiskyApproximation(risky.float, strike, sigma, tau), decimals)
-  const pool = new Pool(
+  const cal = parseCalibration(
     AddressZero,
     new Token(1, AddressZero, decimals),
     new Token(1, AddressZero, decimals),
     strike,
     sigma,
     maturity,
-    gamma,
-    lastTimestamp,
+    gamma
+  )
+  const pool = new Pool(
+    AddressZero,
+    new Token(1, AddressZero, decimals),
+    new Token(1, AddressZero, decimals),
+    cal.strike,
+    cal.sigma,
+    cal.maturity,
+    cal.gamma,
+    new Time(lastTimestamp),
     risky,
     stable,
     parseWei(1),
@@ -33,15 +43,24 @@ export function usePool(): Pool {
   const delta = callDelta(strike, sigma, tau, spot)
   const risky = parseWei(1 - delta, 18)
   const stable = parseWei(getStableGivenRiskyApproximation(risky.float, strike, sigma, tau), 18)
-  const pool = new Pool(
+  const cal = parseCalibration(
     AddressZero,
     new Token(1, AddressZero, 18),
     new Token(1, AddressZero, 18),
     strike,
     sigma,
     maturity,
-    gamma,
-    lastTimestamp,
+    gamma
+  )
+  const pool = new Pool(
+    AddressZero,
+    new Token(1, AddressZero, 18),
+    new Token(1, AddressZero, 18),
+    cal.strike,
+    cal.sigma,
+    cal.maturity,
+    cal.gamma,
+    new Time(lastTimestamp),
     risky,
     stable,
     parseWei(1),
@@ -56,15 +75,16 @@ export function useWethPool(): Pool {
   const delta = callDelta(strike, sigma, tau, spot)
   const risky = parseWei(1 - delta, 18)
   const stable = parseWei(getStableGivenRiskyApproximation(risky.float, strike, sigma, tau), 18)
+  const cal = parseCalibration(AddressZero, WETH9[1], new Token(1, AddressZero, 18), strike, sigma, maturity, gamma)
   const pool = new Pool(
     AddressZero,
     WETH9[1],
     new Token(1, AddressZero, 18),
-    strike,
-    sigma,
-    maturity,
-    gamma,
-    lastTimestamp,
+    cal.strike,
+    cal.sigma,
+    cal.maturity,
+    cal.gamma,
+    new Time(lastTimestamp),
     risky,
     stable,
     parseWei(1),
