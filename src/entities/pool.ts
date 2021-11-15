@@ -176,22 +176,26 @@ export class Pool extends Calibration {
     switch (token) {
       case this.risky:
         delRisky = amount
-        delLiquidity = delRisky.mul(liquidity).div(reserveRisky)
-        delStable = delLiquidity.mul(reserveStable).div(liquidity)
+        delLiquidity = liquidity.mul(delRisky).div(reserveRisky)
+        delStable = reserveStable.mul(delLiquidity).div(liquidity)
         break
       case this.stable:
         delStable = amount
-        delLiquidity = delStable.mul(liquidity).div(reserveStable)
-        delRisky = delLiquidity.mul(reserveRisky).div(liquidity)
+        delLiquidity = liquidity.mul(delStable).div(reserveStable)
+        delRisky = reserveRisky.mul(delLiquidity).div(liquidity)
         break
       case this:
         delLiquidity = amount
-        delRisky = delLiquidity.mul(reserveRisky).div(liquidity)
-        delStable = delLiquidity.mul(reserveStable).div(liquidity)
+        delRisky = reserveRisky.mul(delLiquidity).div(liquidity)
+        delStable = reserveStable.mul(delLiquidity).div(liquidity)
         break
       default:
         break
     }
+
+    invariant(delRisky.decimals === this.risky.decimals, 'Risky amount decimals does not match')
+    invariant(delStable.decimals === this.stable.decimals, 'Stable amount decimals does not match')
+    invariant(delLiquidity.decimals === 18, 'Liquidity amount decimals is not 18')
     return { delRisky, delStable, delLiquidity }
   }
 
