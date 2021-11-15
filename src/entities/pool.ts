@@ -498,12 +498,17 @@ export class Pool extends Calibration {
     const reserve1 = this.reserveStable
     const liquidity = this.liquidity
 
+    // Computes the price of the token multiplied by amount of the token and dividing by 10^decimals, canceling out the tokens decimals
     const values = [
-      reserve0.mul(parseWei(priceOfRisky, reserve0.decimals)).div(parseWei(1, reserve0.decimals)),
-      reserve1.mul(parseWei(priceOfStable, reserve1.decimals)).div(parseWei(1, reserve1.decimals))
+      parseWei(priceOfRisky, 18)
+        .mul(reserve0)
+        .div(parseWei(1, reserve0.decimals)),
+      parseWei(priceOfStable, 18)
+        .mul(reserve1)
+        .div(parseWei(1, reserve1.decimals))
     ]
 
-    const sum = values[0].add(values[1])
+    const sum = values[0].add(values[1]) // both have 18 decimals
     const valuePerLiquidity = sum.mul(1e18).div(liquidity)
     return { valuePerLiquidity, values }
   }
