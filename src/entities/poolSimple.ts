@@ -9,6 +9,7 @@ import { FixedPointX64, parseFixedPointX64, parseWei, Time, toBN, Wei } from 'we
 import {
   callDelta,
   callPremium,
+  getRiskyGivenStableApproximation,
   getStableGivenRiskyApproximation,
   inverse_std_n_cdf,
   nonNegative,
@@ -294,6 +295,52 @@ export class PoolSimple {
     invariant(delStable.decimals === reserveStable.decimals, 'Stable amount decimals does not match')
     invariant(delLiquidity.decimals === liquidity.decimals, 'Liquidity amount decimals is not 18')
     return { delRisky, delStable, delLiquidity }
+  }
+
+  /**
+   * @param reserveRisky Amount of risky tokens in reserve
+   * @return reserveStable Expected amount of stable token reserves
+   */
+  public static getStableGivenRisky(
+    strikeFloating: number,
+    sigmaBasisPts: number,
+    tauYears: number,
+    reserveRiskyFloating: number,
+    invariantFloating?: number
+  ): number | undefined {
+    const stable = getStableGivenRiskyApproximation(
+      reserveRiskyFloating,
+      strikeFloating,
+      sigmaBasisPts,
+      tauYears,
+      invariantFloating ? invariantFloating : 0
+    )
+
+    if (isNaN(stable)) return undefined
+    return stable
+  }
+
+  /**
+   * @param reserveStable Amount of stable tokens in reserve
+   * @return reserveRisky Expected amount of risky token reserves
+   */
+  public static getRiskyGivenStable(
+    strikeFloating: number,
+    sigmaBasisPts: number,
+    tauYears: number,
+    reserveStableFloating: number,
+    invariantFloating?: number
+  ): number | undefined {
+    const stable = getRiskyGivenStableApproximation(
+      reserveStableFloating,
+      strikeFloating,
+      sigmaBasisPts,
+      tauYears,
+      invariantFloating ? invariantFloating : 0
+    )
+
+    if (isNaN(stable)) return undefined
+    return stable
   }
 
   /**
