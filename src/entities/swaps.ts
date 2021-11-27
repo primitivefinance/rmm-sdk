@@ -1,7 +1,7 @@
 import { getInvariantApproximation } from '@primitivefinance/v2-math'
 import { parseWei, Wei } from 'web3-units'
 import { Engine } from '.'
-import { PoolSimple } from './poolSimple'
+import { Pool } from './pool'
 
 export class Swaps {
   public static exactRiskyInput(
@@ -26,7 +26,7 @@ export class Swaps {
       .div(liquidity)
 
     const reserveOutputFloating =
-      PoolSimple.getStableGivenRisky(
+      Pool.getStableGivenRisky(
         strikeFloating,
         sigmaBasisPts,
         tauYears,
@@ -72,7 +72,7 @@ export class Swaps {
       .div(liquidity)
 
     const reserveOutputFloating =
-      PoolSimple.getRiskyGivenStable(
+      Pool.getRiskyGivenStable(
         strikeFloating,
         sigmaBasisPts,
         tauYears,

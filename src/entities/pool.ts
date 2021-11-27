@@ -1,189 +1,225 @@
-import { Wei, Time, FixedPointX64, parseFixedPointX64, parseWei, toBN, Percentage } from 'web3-units'
+import invariant from 'tiny-invariant'
+import { formatFixed } from '@ethersproject/bignumber'
+import { Token } from '@uniswap/sdk-core'
+import { FixedPointX64, parseFixedPointX64, parseWei, Time, toBN, Wei } from 'web3-units'
+
 import {
-  quantilePrime,
-  std_n_pdf,
+  callDelta,
+  callPremium,
+  getRiskyGivenStableApproximation,
+  getStableGivenRiskyApproximation,
   inverse_std_n_cdf,
   nonNegative,
-  callPremiumApproximation
+  quantilePrime,
+  std_n_pdf
 } from '@primitivefinance/v2-math'
-import {
-  getStableGivenRiskyApproximation,
-  getRiskyGivenStableApproximation,
-  getInvariantApproximation
-} from '@primitivefinance/v2-math'
-import { Engine } from './engine'
-import { Calibration } from './calibration'
-import { Token } from '@uniswap/sdk-core'
-import { callDelta, callPremium } from '@primitivefinance/v2-math'
-import invariant from 'tiny-invariant'
+import { PoolInterface } from './interfaces'
+import { Calibration } from '.'
 
-export interface SwapReturn {
-  deltaOut: Wei
-  pool: Pool
-  effectivePriceOutStable?: Wei
-}
-
-export interface DebugReturn extends SwapReturn {
-  invariantLast?: FixedPointX64
-  deltaInWithFee?: Wei
-  nextInvariant?: FixedPointX64
+export enum PoolSides {
+  RISKY = 'RISKY',
+  STABLE = 'STABLE',
+  RMM_01 = 'RMM_01'
 }
 
 /**
- * @notice Virtualized instance of a pool using reserve and liquidity amounts from state
+ * @notice RMM-01 Pool Entity
+ * @dev    Has slots for reserves, invariant, and lastTimestamp state
  */
 export class Pool extends Calibration {
-  public static readonly FEE: number = Engine.GAMMA / Percentage.BasisPoints
-
-  /// ===== State of Virtual Pool =====
-  public liquidity: Wei
-  public reserveRisky: Wei
-  public reserveStable: Wei
-  public invariant: FixedPointX64
-
   /**
-   * @notice Time until expiry is calculated from the difference of current timestamp and this
+   * @notice Reference market spot price of the Risky asset denominated in the Stable asset
    */
+  public readonly referencePriceOfRisky?: number
   public readonly lastTimestamp: Time
-  /**
-   * @notice Price of risky token denominated in stable tokens, with the precision of the stable tokens
-   */
-  public spot: Wei
+  public readonly invariant: FixedPointX64
+  public readonly reserveRisky: Wei
+  public readonly reserveStable: Wei
+  public readonly liquidity: Wei
 
   /**
-   * @notice Builds a typescript representation of a single curve within an Engine contract
-   * @param reserveRisky Reserve amount to initialize the pool's risky tokens
-   * @param liquidity Total liquidity supply to initialize the pool with
-   * @param overrideStable The initial stable reserve value
+   * @notice Constructs a Pool entity from on-chain data
+   * @param address Engine address which had the pool created
+   * @param pool Returned data from on-chain, reconstructed to match PoolInterface or returned from the `house.uri(id)` call
+   * @param risky Decimal places of the risky token
+   * @param stable Decimal places of the stable token
+   * @returns Pool entity
    */
-  constructor(
-    factory: string,
-    risky: Token,
-    stable: Token,
-    strike: Wei,
-    sigma: Percentage,
-    maturity: Time,
-    gamma: Percentage,
-    lastTimestamp: Time,
-    reserveRisky: Wei,
-    reserveStable: Wei,
-    liquidity: Wei,
-    spot = 0
-  ) {
-    super(factory, risky, stable, strike, sigma, maturity, gamma)
+  public static from(pool: PoolInterface, chainId?: number): Pool {
+    const { factory, risky, stable, calibration, reserve, invariant } = pool.properties
 
-    // ===== Calibration State =====
-    this.lastTimestamp = lastTimestamp // in seconds, because `block.timestamp` is in seconds
-    this.spot = spot ? parseWei(spot, stable.decimals) : parseWei(0, stable.decimals)
-
-    // ===== Token & Liquidity State =====
-    this.reserveRisky = reserveRisky
-    this.reserveStable = reserveStable
-    this.liquidity = liquidity
-
-    // ===== Invariant ====-
-    this.invariant = parseFixedPointX64(0)
-
-    if (reserveRisky.decimals !== risky.decimals)
-      throw new Error(
-        `Decimals for the risky token ${risky.decimals} doesn't match reserveRisky decimals: ${reserveRisky.decimals}`
-      )
-
-    if (reserveStable.decimals !== stable.decimals)
-      throw new Error(
-        `Decimals for the stable token ${stable.decimals} doesn't match reserveStable decimals: ${reserveStable.decimals}`
-      )
-
-    if (liquidity.decimals !== 18) throw new Error(`Liquidity decimals of ${liquidity.decimals} is not 18`)
+    return new Pool(
+      factory,
+      { ...risky },
+      { ...stable },
+      { ...calibration },
+      { ...reserve },
+      invariant,
+      chainId ?? undefined,
+      undefined
+    )
   }
 
-  // ===== Calibration =====
+  constructor(
+    factory: string,
+    risky: { address: string; decimals: string | number; name?: string; symbol?: string },
+    stable: { address: string; decimals: string | number; name?: string; symbol?: string },
+    calibration: { strike: string; sigma: string; maturity: string; gamma: string; lastTimestamp?: string },
+    overrideReserves?: {
+      reserveRisky?: string
+      reserveStable?: string
+      liquidity?: string
+    },
+    overrideInvariant?: string,
+    chainId?: number,
+    referencePriceOfRisky?: number
+  ) {
+    const token0 = new Token(chainId ?? 1, risky.address, +risky.decimals, risky?.symbol, risky?.name)
+    const token1 = new Token(chainId ?? 1, stable.address, +stable.decimals, stable?.symbol, stable?.name)
+
+    let { strike, sigma, maturity, gamma, lastTimestamp } = calibration
+    super(factory, token0, token1, strike, sigma, maturity, gamma)
+
+    this.lastTimestamp = lastTimestamp ? new Time(Number(lastTimestamp)) : new Time(Time.now)
+
+    this.referencePriceOfRisky = referencePriceOfRisky
+
+    const maxPrice = parseFloat(formatFixed(strike, stable.decimals))
+    const tau = new Time(Number(maturity)).sub(lastTimestamp ?? new Time(Time.now))
+
+    let reserveRisky: Wei // store in memory to reference if needed to compute stable side of pool
+    if (overrideReserves?.reserveRisky) {
+      reserveRisky = new Wei(toBN(overrideReserves.reserveRisky), Number(risky.decimals))
+    } else {
+      if (!referencePriceOfRisky) {
+        const e = `Thrown on Pool constructor, if override risky reserve, must enter a stable per risky price`
+        throw e
+      }
+      const oppositeDelta = Pool.getRiskyReservesGivenReferencePrice(
+        maxPrice,
+        Number(sigma),
+        tau.years,
+        referencePriceOfRisky
+      )
+      const formatted = oppositeDelta.toFixed(Number(risky.decimals))
+      reserveRisky = parseWei(formatted, Number(risky.decimals))
+    }
+    this.reserveRisky = reserveRisky
+
+    if (overrideReserves?.reserveStable) {
+      const { reserveStable } = overrideReserves
+      this.reserveStable = new Wei(toBN(reserveStable), Number(stable.decimals))
+    } else {
+      const balance = getStableGivenRiskyApproximation(reserveRisky.float, maxPrice, Number(sigma), tau.years)
+      const formatted = balance.toFixed(Number(stable.decimals))
+      this.reserveStable = parseWei(formatted, Number(stable.decimals))
+    }
+
+    if (overrideReserves?.liquidity) {
+      const { liquidity } = overrideReserves
+      this.liquidity = new Wei(toBN(liquidity), 18)
+    } else {
+      this.liquidity = parseWei(1, 18)
+    }
+
+    if (overrideInvariant) {
+      this.invariant = new FixedPointX64(toBN(overrideInvariant), Number(stable.decimals))
+    } else {
+      this.invariant = parseFixedPointX64(0, Number(stable.decimals))
+    }
+  }
+
+  // ===== Curve Info =====
+
   /**
-   * @returns Time until expiry in seconds
+   * @returns Time until pool expires in seconds
    */
   get tau(): Time {
     return this.maturity.sub(this.lastTimestamp)
   }
 
   /**
-   * @returns Total lifetime of a pool in seconds
+   * @returns Total remaining time of a pool in seconds
    */
   get remaining(): Time {
-    const now = Time.now
-    if (now >= this.maturity.raw) return new Time(0)
-
-    return this.maturity.sub(now)
+    const expiring = this.maturity
+    if (Time.now >= expiring.raw) return new Time(0)
+    return expiring.sub(this.lastTimestamp)
   }
 
   /**
-   * @returns expired if time until expiry is lte 0
+   * @returns Expired if time until expiry is lte 0
    */
   get expired(): boolean {
     return this.remaining.raw <= 0
   }
 
   /**
-   * @returns Change in pool premium wrt change in underlying spot price
+   * @returns Change in Black-Scholes implied premium premium wrt change in underlying spot price
    */
   get delta(): number {
-    return this.spot ? callDelta(this.strike.float, this.sigma.float, this.tau.years, this.spot.float) : 0
+    const priceOfRisky = this.referencePriceOfRisky ?? this.reportedPriceOfRisky.float
+    return callDelta(this.strike.float, this.sigma.bps, this.tau.years, priceOfRisky)
   }
 
   /**
    * @returns Black-Scholes implied premium
    */
   get premium(): number {
-    return this.spot ? callPremium(this.strike.float, this.sigma.float, this.tau.years, this.spot.float) : 0
+    const priceOfRisky = this.referencePriceOfRisky ?? this.reportedPriceOfRisky.float
+    return callPremium(this.strike.float, this.sigma.bps, this.tau.years, priceOfRisky)
   }
 
   /**
-   * @returns Spot price is above strike price
+   * @returns Price of Risky asset, whether reference or reported, is greater than or equal to strike
    */
   get inTheMoney(): boolean {
-    return this.spot ? this.strike.float >= this.spot.float : false
+    const priceOfRisky = this.referencePriceOfRisky ?? this.reportedPriceOfRisky.float
+    return priceOfRisky >= this.strike.float
   }
 
-  // ===== Liquidity =====
+  // ===== Liquidity Token Info =====
 
   /**
    * @notice Calculates the other side of the pool using the known amount of a side of the pool
    * @param amount Amount of token
-   * @param token Token side of the pool that is used to calculate the other side
-   * @param fresh If instantiating a fresh pool, use the spot price (passed in constructor) to get reserves
+   * @param sideOfPool Token side of the pool that is used to calculate the other side
    * @returns risky token amount, stable token amount, and liquidity amount
    */
-  liquidityQuote(amount: Wei, token: Token, fresh?: boolean): { delRisky: Wei; delStable: Wei; delLiquidity: Wei } {
+  liquidityQuote(amount: Wei, sideOfPool: PoolSides): { delRisky: Wei; delStable: Wei; delLiquidity: Wei } {
+    const { reserveRisky, reserveStable, liquidity } = this
+    return Pool.getLiquidityQuote(amount, sideOfPool, reserveRisky, reserveStable, liquidity)
+  }
+
+  /**
+   * @notice Calculates the other side of the pool using the known amount of a side of the pool
+   * @param amount Amount of token
+   * @param sideOfPool Token side of the pool that is used to calculate the other side
+   * @returns risky token amount, stable token amount, and liquidity amount
+   */
+  public static getLiquidityQuote(
+    amount: Wei,
+    sideOfPool: PoolSides,
+    reserveRisky: Wei,
+    reserveStable: Wei,
+    liquidity: Wei
+  ): { delRisky: Wei; delStable: Wei; delLiquidity: Wei } {
     let delRisky: Wei = parseWei(0)
     let delStable: Wei = parseWei(0)
     let delLiquidity: Wei = parseWei(0)
 
-    let reserveRisky: Wei = parseWei(0)
-    let reserveStable: Wei = parseWei(0)
-    let liquidity: Wei = parseWei(0)
-
-    if (fresh) {
-      invariant(this.spot.gt(0), 'Spot price is not greater than zero')
-      reserveRisky = parseWei(1 - this.delta, this.risky.decimals)
-      reserveStable = this.getStableGivenRisky(reserveRisky, true)
-      liquidity = parseWei(1, 18)
-    } else {
-      reserveRisky = this.reserveRisky
-      reserveStable = this.reserveStable
-      liquidity = this.liquidity
-    }
-
-    switch (token) {
-      case this.risky:
+    switch (sideOfPool) {
+      case PoolSides.RISKY:
         delRisky = amount
         delLiquidity = liquidity.mul(delRisky).div(reserveRisky)
         delStable = reserveStable.mul(delLiquidity).div(liquidity)
         break
-      case this.stable:
+      case PoolSides.STABLE:
         delStable = amount
         delLiquidity = liquidity.mul(delStable).div(reserveStable)
         delRisky = reserveRisky.mul(delLiquidity).div(liquidity)
         break
-      case this:
+      case PoolSides.RMM_01:
         delLiquidity = amount
         delRisky = reserveRisky.mul(delLiquidity).div(liquidity)
         delStable = reserveStable.mul(delLiquidity).div(liquidity)
@@ -192,301 +228,14 @@ export class Pool extends Calibration {
         break
     }
 
-    invariant(delRisky.decimals === this.risky.decimals, 'Risky amount decimals does not match')
-    invariant(delStable.decimals === this.stable.decimals, 'Stable amount decimals does not match')
-    invariant(delLiquidity.decimals === 18, 'Liquidity amount decimals is not 18')
+    invariant(delRisky.decimals === reserveRisky.decimals, 'Risky amount decimals does not match')
+    invariant(delStable.decimals === reserveStable.decimals, 'Stable amount decimals does not match')
+    invariant(delLiquidity.decimals === liquidity.decimals, 'Liquidity amount decimals is not 18')
     return { delRisky, delStable, delLiquidity }
   }
 
   /**
-   * @param reserveRisky Amount of risky tokens in reserve
-   * @return reserveStable Expected amount of stable token reserves
-   */
-  getStableGivenRisky(reserveRisky: Wei, noInvariant = false): Wei {
-    const decimals = this.reserveStable.decimals
-    const invariant = this.invariant.parsed
-
-    const stable = getStableGivenRiskyApproximation(
-      reserveRisky.float,
-      this.strike.float,
-      this.sigma.float,
-      this.tau.years,
-      noInvariant ? 0 : invariant
-    )
-
-    if (isNaN(stable)) return parseWei(0, decimals)
-    return parseWei(stable, decimals)
-  }
-
-  /**
-   *
-   * @param reserveStable Amount of stable tokens in reserve
-   * @return reserveRisky Expected amount of risky token reserves
-   */
-  getRiskyGivenStable(reserveStable: Wei, noInvariant = false): Wei {
-    const decimals = this.reserveRisky.decimals
-    const invariant = this.invariant.parsed
-
-    const risky = getRiskyGivenStableApproximation(
-      reserveStable.float,
-      this.strike.float,
-      this.sigma.float,
-      this.tau.years,
-      noInvariant ? 0 : invariant
-    )
-
-    if (isNaN(risky)) return parseWei(0, decimals)
-    return parseWei(risky, decimals)
-  }
-
-  /**
-   * @return invariant Calculated invariant using this Pool's state
-   */
-  calcInvariant(): FixedPointX64 {
-    const risky = this.reserveRisky.float / this.liquidity.float
-    const stable = this.reserveStable.float / this.liquidity.float
-    let invariant = getInvariantApproximation(risky, stable, this.strike.float, this.sigma.float, this.tau.years)
-    invariant = Math.floor(invariant * Math.pow(10, 18))
-    this.invariant = new FixedPointX64(
-      toBN(isNaN(invariant) ? 0 : invariant)
-        .mul(FixedPointX64.Denominator)
-        .div(Engine.PRECISION.raw)
-    )
-    return this.invariant
-  }
-
-  private get defaultSwapReturn(): SwapReturn {
-    return { deltaOut: parseWei(0), pool: this, effectivePriceOutStable: parseWei(0) }
-  }
-
-  /**
-   * @notice A Risky to Stable token swap
-   */
-  swapAmountInRisky(deltaIn: Wei): DebugReturn {
-    if (deltaIn.raw.isNegative()) return this.defaultSwapReturn
-    const reserveStableLast = this.reserveStable
-    const reserveRiskyLast = this.reserveRisky
-
-    // Updates `tau` and `invariant` state of this virtual pool
-    const invariantLast: FixedPointX64 = this.calcInvariant()
-
-    // 0. Calculate the new risky reserves (we know the new risky reserves because we are swapping in risky)
-    const deltaInWithFee = deltaIn.mul(Engine.GAMMA).div(Percentage.BasisPoints)
-    // 1. Calculate the new stable reserve using the new risky reserve
-    const newRiskyReserve = reserveRiskyLast
-      .add(deltaInWithFee)
-      .mul(Engine.PRECISION)
-      .div(this.liquidity)
-
-    const newReserveStable = this.getStableGivenRisky(newRiskyReserve)
-      .mul(this.liquidity)
-      .div(Engine.PRECISION)
-
-    if (newReserveStable.raw.isNegative()) return this.defaultSwapReturn
-
-    const deltaOut = reserveStableLast.sub(newReserveStable)
-
-    this.reserveRisky = this.reserveRisky.add(deltaIn)
-    this.reserveStable = this.reserveStable.sub(deltaOut)
-
-    // 2. Calculate the new invariant with the new reserve values
-    const nextInvariant = this.calcInvariant()
-    // 3. Check the nextInvariant is >= invariantLast in the fee-less case, set it if valid
-    if (nextInvariant.percentage < invariantLast.percentage)
-      console.log('invariant not passing', `${nextInvariant.percentage} < ${invariantLast.percentage}`)
-
-    const effectivePriceOutStable = deltaOut
-      .mul(parseWei(1, 18 - deltaOut.decimals))
-      .div(deltaIn.mul(parseWei(1, 18 - deltaIn.decimals))) // stable per risky
-
-    return { invariantLast, deltaInWithFee, nextInvariant, deltaOut, pool: this, effectivePriceOutStable }
-  }
-
-  virtualSwapAmountInRisky(deltaIn: Wei): DebugReturn {
-    if (deltaIn.raw.isNegative()) return this.defaultSwapReturn
-    const reserveRiskyLast = this.reserveRisky
-    const reserveStableLast = this.reserveStable
-    const invariantLast: FixedPointX64 = this.calcInvariant()
-    const deltaInWithFee = deltaIn.mul(Engine.GAMMA).div(Percentage.BasisPoints)
-
-    const newReserveRisky = reserveRiskyLast
-      .add(deltaInWithFee)
-      .mul(Engine.PRECISION)
-      .div(this.liquidity)
-
-    const newReserveStable = this.getStableGivenRisky(newReserveRisky)
-      .mul(this.liquidity)
-      .div(Engine.PRECISION)
-
-    if (newReserveStable.raw.isNegative()) return this.defaultSwapReturn
-
-    const deltaOut = reserveStableLast.sub(newReserveStable)
-
-    const risky = reserveRiskyLast.add(deltaIn).float / this.liquidity.float
-    const stable = reserveStableLast.sub(deltaOut).float / this.liquidity.float
-    let nextInvariant: any = getInvariantApproximation(
-      risky,
-      stable,
-      this.strike.float,
-      this.sigma.float,
-      this.tau.years
-    )
-    nextInvariant = Math.floor(nextInvariant * Math.pow(10, 18))
-    nextInvariant = new FixedPointX64(
-      toBN(nextInvariant)
-        .mul(FixedPointX64.Denominator)
-        .div(Engine.PRECISION.raw)
-    )
-    const effectivePriceOutStable = deltaOut
-      .mul(parseWei(1, 18 - deltaOut.decimals))
-      .div(deltaIn.mul(parseWei(1, 18 - deltaIn.decimals)))
-
-    return { invariantLast, deltaInWithFee, nextInvariant, deltaOut, pool: this, effectivePriceOutStable }
-  }
-
-  /**
-   * @notice A Stable to Risky token swap
-   */
-  swapAmountInStable(deltaIn: Wei): DebugReturn {
-    if (deltaIn.raw.isNegative()) return this.defaultSwapReturn
-    const reserveRiskyLast = this.reserveRisky
-    const reserveStableLast = this.reserveStable
-
-    // Important: Updates the invariant and tau state of this pool
-    const invariantLast: FixedPointX64 = this.calcInvariant()
-
-    // 0. Calculate the new risky reserve since we know how much risky is being swapped out
-    const deltaInWithFee = deltaIn.mul(Engine.GAMMA).div(Percentage.BasisPoints)
-    // 1. Calculate the new risky reserves using the known new stable reserves
-    const newStableReserve = reserveStableLast
-      .add(deltaInWithFee)
-      .mul(Engine.PRECISION)
-      .div(this.liquidity)
-
-    const newReserveRisky = this.getRiskyGivenStable(newStableReserve)
-      .mul(this.liquidity)
-      .div(Engine.PRECISION)
-
-    if (newReserveRisky.raw.isNegative()) return this.defaultSwapReturn
-
-    const deltaOut = reserveRiskyLast.sub(newReserveRisky)
-
-    this.reserveStable = this.reserveStable.add(deltaIn)
-    this.reserveRisky = this.reserveRisky.sub(deltaOut)
-
-    // 2. Calculate the new invariant with the new reserves
-    const nextInvariant = this.calcInvariant()
-    // 3. Check the nextInvariant is >= invariantLast
-    if (nextInvariant.parsed < invariantLast.parsed)
-      console.log('invariant not passing', `${nextInvariant.parsed} < ${invariantLast.parsed}`)
-    // 4. Calculate the change in risky reserve by comparing new reserve to previous
-    const effectivePriceOutStable = deltaIn
-      .mul(parseWei(1, 18 - deltaIn.decimals))
-      .div(deltaOut.mul(parseWei(1, 18 - deltaOut.decimals))) // stable per risky
-
-    return { invariantLast, deltaInWithFee, nextInvariant, deltaOut, pool: this, effectivePriceOutStable }
-  }
-
-  virtualSwapAmountInStable(deltaIn: Wei): DebugReturn {
-    if (deltaIn.raw.isNegative()) return this.defaultSwapReturn
-    const reserveRiskyLast = this.reserveRisky
-    const reserveStableLast = this.reserveStable
-    const invariantLast: FixedPointX64 = this.calcInvariant()
-    const deltaInWithFee = deltaIn.mul(Engine.GAMMA).div(Percentage.BasisPoints)
-
-    const newStableReserve = reserveStableLast
-      .add(deltaInWithFee)
-      .mul(Engine.PRECISION)
-      .div(this.liquidity)
-
-    const newReserveRisky = this.getRiskyGivenStable(newStableReserve)
-      .mul(this.liquidity)
-      .div(Engine.PRECISION)
-
-    if (newReserveRisky.raw.isNegative()) return this.defaultSwapReturn
-
-    const deltaOut = reserveRiskyLast.sub(newReserveRisky)
-
-    const risky = reserveRiskyLast.sub(deltaOut).float / this.liquidity.float
-    const stable = reserveStableLast.add(deltaIn).float / this.liquidity.float
-
-    let nextInvariant: any = getInvariantApproximation(
-      risky,
-      stable,
-      this.strike.float,
-      this.sigma.float,
-      this.tau.years
-    )
-    nextInvariant = Math.floor(nextInvariant * Math.pow(10, 18))
-    nextInvariant = new FixedPointX64(
-      toBN(nextInvariant)
-        .mul(FixedPointX64.Denominator)
-        .div(Engine.PRECISION.raw)
-    )
-
-    const effectivePriceOutStable = deltaIn
-      .mul(parseWei(1, 18 - deltaIn.decimals))
-      .div(deltaOut.mul(parseWei(1, 18 - deltaOut.decimals)))
-
-    return { invariantLast, deltaInWithFee, nextInvariant, deltaOut, pool: this, effectivePriceOutStable }
-  }
-
-  get spotPrice(): Wei {
-    const risky = this.reserveRisky.float / this.liquidity.float
-    const strike = this.strike.float
-    const sigma = this.sigma.float
-    const tau = this.tau.years
-    const spot = getStableGivenRiskyApproximation(risky, strike, sigma, tau) * quantilePrime(1 - risky)
-    return parseWei(spot, this.stable.decimals)
-  }
-
-  /**
-   * @notice See https://arxiv.org/pdf/2012.08040.pdf
-   * @param amountIn Amount of risky token to add to risky reserve
-   * @return Marginal price after a trade with size `amountIn` with the current reserves.
-   */
-  getMarginalPriceSwapRiskyIn(amountIn: number) {
-    if (!nonNegative(amountIn)) return 0
-    const gamma = 1 - Pool.FEE
-    const reserveRisky = this.reserveRisky.float / this.liquidity.float
-    //const invariant = this.invariant
-    const strike = this.strike
-    const sigma = this.sigma
-    const tau = this.tau
-    const step0 = 1 - reserveRisky - gamma * amountIn
-    const step1 = sigma.float * Math.sqrt(tau.years)
-    const step2 = quantilePrime(step0)
-    const step3 = gamma * strike.float
-    const step4 = inverse_std_n_cdf(step0)
-    const step5 = std_n_pdf(step4 - step1)
-    return step3 * step5 * step2
-  }
-
-  /**
-   * @notice See https://arxiv.org/pdf/2012.08040.pdf
-   * @param amountIn Amount of stable token to add to stable reserve
-   * @return Marginal price after a trade with size `amountIn` with the current reserves.
-   */
-  getMarginalPriceSwapStableIn(amountIn: number) {
-    if (!nonNegative(amountIn)) return 0
-    const gamma = 1 - Pool.FEE
-    const reserveStable = this.reserveStable.float / this.liquidity.float
-    const invariant = this.invariant
-    const strike = this.strike
-    const sigma = this.sigma
-    const tau = this.tau
-    const step0 = (reserveStable + gamma * amountIn - invariant.parsed / Math.pow(10, 18)) / strike.float
-    const step1 = sigma.float * Math.sqrt(tau.years)
-    const step3 = inverse_std_n_cdf(step0)
-    const step4 = std_n_pdf(step3 + step1)
-    const step5 = step0 * (1 / strike.float)
-    const step6 = quantilePrime(step5)
-    const step7 = gamma * step4 * step6
-    return 1 / step7
-  }
-
-  /**
-   * @notice Calculates the current value of the pool, compare this to the current theoretical value
+   * @notice Calculates the current value of the pool in units of `priceOfRisky`
    * @dev Denominating prices in a dollar-pegged stable coin will be easiest to calculate other values with
    * @param priceOfRisky Multiplier for the price of the risky asset
    * @param priceOfStable Multiplier for the price of the stable asset, defaults to 1 given the priceOfRisky is denominated in that asset
@@ -512,14 +261,170 @@ export class Pool extends Calibration {
     return { valuePerLiquidity, values }
   }
 
+  // ===== Computing Reserves using Trading Functions ====
+
   /**
-   * @notice Calculates the theoretical fee's generated using a pool's creation timestamp
-   * @param lastTimestamp Unix timestamp in seconds of the pool's last update
-   * @returns Strike price - call premium, denominated in a stable asset
+   * @param reserveRisky Amount of risky tokens in reserve
+   * @return reserveStable Expected amount of stable token reserves
    */
-  getTheoreticalLiquidityValue(lastTimestamp = this.lastTimestamp.raw): number {
-    const totalTau = new Time(this.maturity.raw - lastTimestamp).years
-    const premium = callPremiumApproximation(this.strike.float, this.sigma.float, totalTau, this.spot.float)
-    return this.strike.float - premium
+  public static getStableGivenRisky(
+    strikeFloating: number,
+    sigmaBasisPts: number,
+    tauYears: number,
+    reserveRiskyFloating: number,
+    invariantFloating?: number
+  ): number | undefined {
+    const stable = getStableGivenRiskyApproximation(
+      reserveRiskyFloating,
+      strikeFloating,
+      sigmaBasisPts,
+      tauYears,
+      invariantFloating ? invariantFloating : 0
+    )
+
+    if (isNaN(stable)) return undefined
+    return stable
+  }
+
+  /**
+   * @param reserveStable Amount of stable tokens in reserve
+   * @return reserveRisky Expected amount of risky token reserves
+   */
+  public static getRiskyGivenStable(
+    strikeFloating: number,
+    sigmaBasisPts: number,
+    tauYears: number,
+    reserveStableFloating: number,
+    invariantFloating?: number
+  ): number | undefined {
+    const stable = getRiskyGivenStableApproximation(
+      reserveStableFloating,
+      strikeFloating,
+      sigmaBasisPts,
+      tauYears,
+      invariantFloating ? invariantFloating : 0
+    )
+
+    if (isNaN(stable)) return undefined
+    return stable
+  }
+
+  // ===== Swap Routing Info =====
+
+  /**
+   * @returns Spot price of this pool, in units of Token1 per Token0
+   */
+  get reportedPriceOfRisky(): Wei {
+    const risky = this.reserveRisky.float / this.liquidity.float
+    const tau = this.tau.years
+    const spot = Pool.getReportedPriceOfRisky(risky, this.strike.float, this.sigma.bps, tau).toFixed(
+      this.stable.decimals
+    )
+    return parseWei(spot, this.stable.decimals)
+  }
+
+  /**
+   * @returns Price of Risky denominated in Stable
+   */
+  public static getReportedPriceOfRisky(
+    balance0Floating: number,
+    strikeFloating: number,
+    sigmaBasisPts: number,
+    tauYears: number
+  ): number {
+    return (
+      getStableGivenRiskyApproximation(balance0Floating, strikeFloating, sigmaBasisPts, tauYears) *
+      quantilePrime(1 - balance0Floating)
+    )
+  }
+
+  /**
+   * @return Marginal price after an exact trade in with size `amountIn`
+   */
+  marginalPriceAfterSwapRiskyIn(amountIn: number) {
+    return Pool.getMarginalPriceSwapRiskyIn(
+      this.reserveRisky.float,
+      this.strike.float,
+      this.sigma.bps,
+      this.tau.years,
+      this.gamma.bps,
+      amountIn
+    )
+  }
+
+  /**
+   * @notice See https://arxiv.org/pdf/2012.08040.pdf
+   * @param amountIn Amount of risky token to add to risky reserve
+   * @return Marginal price after an exact trade in of the RISKY asset with size `amountIn`
+   */
+  public static getMarginalPriceSwapRiskyIn(
+    reserve0Floating: number,
+    strikeFloating: number,
+    sigmaBasisPts: number,
+    tauYears: number,
+    gammaBasisPts: number,
+    amountIn: number
+  ) {
+    if (!nonNegative(amountIn)) return 0
+    const step0 = 1 - reserve0Floating - gammaBasisPts * amountIn
+    const step1 = sigmaBasisPts * Math.sqrt(tauYears)
+    const step2 = quantilePrime(step0)
+    const step3 = gammaBasisPts * strikeFloating
+    const step4 = inverse_std_n_cdf(step0)
+    const step5 = std_n_pdf(step4 - step1)
+    return step3 * step5 * step2
+  }
+
+  /**
+   * @return Marginal price after an exact trade in of the STABLE asset with size `amountIn`
+   */
+  marginalPriceAfterSwapStableIn(amountIn: number) {
+    return Pool.getMarginalPriceSwapStableIn(
+      this.invariant.float,
+      this.reserveStable.float,
+      this.strike.float,
+      this.sigma.bps,
+      this.tau.years,
+      this.gamma.bps,
+      amountIn
+    )
+  }
+
+  /**
+   * @notice See https://arxiv.org/pdf/2012.08040.pdf
+   * @param amountIn Amount of stable token to add to stable reserve
+   * @return Marginal price after an exact trade in with size `amountIn`
+   */
+  public static getMarginalPriceSwapStableIn(
+    invariantFloating: number,
+    reserve1Floating: number,
+    strikeFloating: number,
+    sigmaBasisPts: number,
+    tauYears: number,
+    gammaBasisPts: number,
+    amountIn: number
+  ) {
+    if (!nonNegative(amountIn)) return 0
+    const step0 = (reserve1Floating + gammaBasisPts * amountIn - invariantFloating) / strikeFloating
+    const step1 = sigmaBasisPts * Math.sqrt(tauYears)
+    const step3 = inverse_std_n_cdf(step0)
+    const step4 = std_n_pdf(step3 + step1)
+    const step5 = step0 * (1 / strikeFloating)
+    const step6 = quantilePrime(step5)
+    const step7 = gammaBasisPts * step4 * step6
+    return 1 / step7
+  }
+
+  /**
+   * @notice  Equal to the Delta (option greeks) exposure of one liquidity
+   * @returns Amount of optimal risky reserves per liquidity given a reference price of the risky
+   */
+  public static getRiskyReservesGivenReferencePrice(
+    strikeFloating: number,
+    sigmaBasisPts: number,
+    tauYears: number,
+    referencePriceOfRisky: number
+  ): number {
+    return 1 - callDelta(strikeFloating, sigmaBasisPts, tauYears, referencePriceOfRisky)
   }
 }

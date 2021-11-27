@@ -109,7 +109,7 @@ export class Calibration extends Engine {
     isValidGamma(gamma)
     invariant(isAddress(engine), 'Invalid address when computing pool id')
     invariant(Math.floor(+strike) > 0, `Strike must be an integer in units of wei: ${strike}`)
-    invariant(+maturity > 0 && +maturity < (2 ^ 32) - 1, `Maturity out of bounds > 0 && < 2^32 -1: ${maturity}`)
+    invariant(+maturity > 0 && +maturity < 2e32 - 1, `Maturity out of bounds > 0 && < 2^32 -1: ${maturity}`)
     return keccak256(
       solidityPack(['address', 'uint128', 'uint32', 'uint32', 'uint32'], [engine, strike, sigma, maturity, gamma])
     )

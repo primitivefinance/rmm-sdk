@@ -11,37 +11,37 @@ export interface CalibrationInterface {
  */
 export interface PoolInterface {
   name: string
-  image: string
-  license: string
-  creator: string
-  description: string
+  image?: string
+  license?: string
+  creator?: string
+  description?: string
   properties: {
     factory: string
     risky: {
       address: string
-      decimals: string
-      symbol: string
-      name: string
+      decimals: string | number
+      symbol?: string
+      name?: string
     }
     stable: {
       address: string
-      decimals: string
-      symbol: string
-      name: string
+      decimals: string | number
+      symbol?: string
+      name?: string
     }
-    invariant: string
+    invariant?: string
     calibration: {
       strike: string
       sigma: string
       maturity: string
-      lastTimestamp: string
+      lastTimestamp?: string
       gamma: string
     }
     reserve: {
-      blockTimestamp: string
-      cumulativeLiquidity: string
-      cumulativeRisky: string
-      cumulativeStable: string
+      blockTimestamp?: string
+      cumulativeLiquidity?: string
+      cumulativeRisky?: string
+      cumulativeStable?: string
       liquidity: string
       reserveRisky: string
       reserveStable: string
