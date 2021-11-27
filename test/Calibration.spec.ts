@@ -3,7 +3,7 @@ import { AddressZero } from '@ethersproject/constants'
 import { parseWei, Percentage, Time } from 'web3-units'
 
 import { Engine } from '../src/entities/engine'
-import { Calibration } from '../src/entities/calibration'
+import { Calibration, parseCalibration } from '../src/entities/calibration'
 import { formatUnits } from '@ethersproject/units'
 
 describe('Calibration', function() {
@@ -13,7 +13,7 @@ describe('Calibration', function() {
     token0 = new Token(1, AddressZero, 18)
     token1 = new Token(1, AddressZero, 18)
     ;[strike, sigma, maturity, gamma] = [parseWei(10).toString(), '1000', Time.YearInSeconds.toString(), '9985']
-    cal = Calibration.from(AddressZero, token0, token1, { strike, sigma, maturity, gamma })
+    cal = parseCalibration(AddressZero, token0, token1, { strike, sigma, maturity, gamma })
   })
 
   it('#poolId', async function() {

@@ -1,9 +1,6 @@
 import invariant from 'tiny-invariant'
-
-import { isAddress } from '@ethersproject/address'
-import { formatFixed, BigNumber } from '@ethersproject/bignumber'
-import { keccak256 } from '@ethersproject/keccak256'
-import { solidityPack } from 'ethers/lib/utils'
+import { formatFixed } from '@ethersproject/bignumber'
+import { Token } from '@uniswap/sdk-core'
 import { FixedPointX64, parseFixedPointX64, parseWei, Time, toBN, Wei } from 'web3-units'
 
 import {
@@ -17,6 +14,7 @@ import {
   std_n_pdf
 } from '@primitivefinance/v2-math'
 import { PoolInterface } from './interfaces'
+import { Calibration } from '.'
 
 export enum PoolSides {
   RISKY = 'RISKY',
@@ -26,26 +24,14 @@ export enum PoolSides {
 
 /**
  * @notice RMM-01 Pool Entity
+ * @dev    Has slots for reserves, invariant, and lastTimestamp state
  */
-export class PoolSimple {
-  public readonly address: string
-  public readonly decimals = 18
-  public readonly risky: string
-  public readonly token1: string
-  public readonly decimalsRisky: number
-  public readonly decimalsStable: number
-  public readonly strike: Wei
-  public readonly maturityTimestamp: number
-  public readonly lastTimestamp: number
-  public readonly sigmaBasisPts: number
-  public readonly feeBasisPts: number
-  public readonly gammaBasisPts: number
-
+export class PoolSimple extends Calibration {
   /**
    * @notice Reference market spot price of the Risky asset denominated in the Stable asset
    */
   public readonly referencePriceOfRisky?: number
-
+  public readonly lastTimestamp: Time
   public readonly invariant: FixedPointX64
   public readonly reserveRisky: Wei
   public readonly reserveStable: Wei
@@ -55,69 +41,56 @@ export class PoolSimple {
    * @notice Constructs a Pool entity from on-chain data
    * @param address Engine address which had the pool created
    * @param pool Returned data from on-chain, reconstructed to match PoolInterface or returned from the `house.uri(id)` call
-   * @param decimalsRisky Decimal places of the risky token
-   * @param decimalsStable Decimal places of the stable token
+   * @param risky Decimal places of the risky token
+   * @param stable Decimal places of the stable token
    * @returns Pool entity
    */
-  public static from(address: string, pool: PoolInterface, decimalsRisky: number, decimalsStable: number): PoolSimple {
-    const { risky, stable, calibration, reserve, invariant } = pool.properties
+  public static from(pool: PoolInterface, chainId?: number): PoolSimple {
+    const { factory, risky, stable, calibration, reserve, invariant } = pool.properties
+
     return new PoolSimple(
-      address,
-      risky,
-      stable,
-      decimalsRisky,
-      decimalsStable,
-      calibration.strike,
-      calibration.maturity,
-      calibration.lastTimestamp,
-      calibration.sigma,
-      calibration.gamma,
-      undefined,
+      factory,
+      { ...risky },
+      { ...stable },
+      { ...calibration },
       { ...reserve },
-      invariant
+      invariant,
+      chainId ?? undefined,
+      undefined
     )
   }
 
   constructor(
-    address: string,
-    risky: string,
-    token1: string,
-    decimalsRisky: number,
-    decimalsStable: number,
-    strike: string,
-    maturityTimestamp: number | string,
-    lastTimestamp: number | string,
-    sigmaBasisPts: number | string,
-    gammaBasisPts: number | string,
-    referencePriceOfRisky?: number,
+    factory: string,
+    risky: { address: string; decimals: string | number; name?: string; symbol?: string },
+    stable: { address: string; decimals: string | number; name?: string; symbol?: string },
+    calibration: { strike: string; sigma: string; maturity: string; gamma: string; lastTimestamp?: string },
     overrideReserves?: {
-      risky?: string
-      stable?: string
+      reserveRisky?: string
+      reserveStable?: string
       liquidity?: string
     },
-    overrideInvariant?: string
+    overrideInvariant?: string,
+    chainId?: number,
+    referencePriceOfRisky?: number
   ) {
-    this.address = address
-    this.risky = risky
-    this.token1 = token1
-    this.decimalsRisky = decimalsRisky
-    this.decimalsStable = decimalsStable
+    const token0 = new Token(chainId ?? 1, risky.address, +risky.decimals, risky?.symbol, risky?.name)
+    const token1 = new Token(chainId ?? 1, stable.address, +stable.decimals, stable?.symbol, stable?.name)
 
-    this.strike = new Wei(toBN(strike), decimalsStable)
-    this.maturityTimestamp = Number(maturityTimestamp)
-    this.lastTimestamp = Number(lastTimestamp)
-    this.sigmaBasisPts = Number(sigmaBasisPts)
-    this.gammaBasisPts = Number(gammaBasisPts)
+    let { strike, sigma, maturity, gamma, lastTimestamp } = calibration
+    super(factory, token0, token1, strike, sigma, maturity, gamma)
+
+    lastTimestamp = lastTimestamp ? lastTimestamp : new Time(Time.now)
+    this.lastTimestamp = lastTimestamp
+
     this.referencePriceOfRisky = referencePriceOfRisky
-    this.feeBasisPts = Math.floor(1e4 - Number(gammaBasisPts))
 
-    const maxPrice = parseFloat(formatFixed(strike, decimalsStable))
-    const tau = new Time(Number(maturityTimestamp)).sub(lastTimestamp)
+    const maxPrice = parseFloat(formatFixed(strike, stable.decimals))
+    const tau = new Time(Number(maturity)).sub(lastTimestamp)
 
     let reserveRisky: Wei // store in memory to reference if needed to compute stable side of pool
-    if (overrideReserves?.risky) {
-      const { risky } = overrideReserves
-      reserveRisky = new Wei(toBN(risky), decimalsRisky)
+    if (overrideReserves?.reserveRisky) {
+      reserveRisky = new Wei(toBN(overrideReserves.reserveRisky), Number(risky.decimals))
     } else {
       if (!referencePriceOfRisky) {
         const e = `Thrown on Pool constructor, if override risky reserve, must enter a stable per risky price`
@@ -125,22 +98,22 @@ export class PoolSimple {
       }
       const oppositeDelta = PoolSimple.getRiskyReservesGivenReferencePrice(
         maxPrice,
-        Number(sigmaBasisPts),
+        Number(sigma),
         tau.years,
         referencePriceOfRisky
       )
-      const formatted = oppositeDelta.toFixed(decimalsRisky)
-      reserveRisky = parseWei(formatted, decimalsRisky)
+      const formatted = oppositeDelta.toFixed(Number(risky.decimals))
+      reserveRisky = parseWei(formatted, Number(risky.decimals))
     }
     this.reserveRisky = reserveRisky
 
-    if (overrideReserves?.stable) {
-      const { stable } = overrideReserves
-      this.reserveStable = new Wei(toBN(stable), decimalsStable)
+    if (overrideReserves?.reserveStable) {
+      const { reserveStable } = overrideReserves
+      this.reserveStable = new Wei(toBN(reserveStable), Number(stable.decimals))
     } else {
-      const balance = getStableGivenRiskyApproximation(reserveRisky.float, maxPrice, Number(sigmaBasisPts), tau.years)
-      const formatted = balance.toFixed(decimalsStable)
-      this.reserveStable = parseWei(formatted, decimalsStable)
+      const balance = getStableGivenRiskyApproximation(reserveRisky.float, maxPrice, Number(sigma), tau.years)
+      const formatted = balance.toFixed(Number(stable.decimals))
+      this.reserveStable = parseWei(formatted, Number(stable.decimals))
     }
 
     if (overrideReserves?.liquidity) {
@@ -151,64 +124,25 @@ export class PoolSimple {
     }
 
     if (overrideInvariant) {
-      this.invariant = new FixedPointX64(toBN(overrideInvariant), decimalsStable)
+      this.invariant = new FixedPointX64(toBN(overrideInvariant), Number(stable.decimals))
     } else {
-      this.invariant = parseFixedPointX64(0, decimalsStable)
+      this.invariant = parseFixedPointX64(0, Number(stable.decimals))
     }
-  }
-
-  /**
-   * @notice Keccak256 hash of the parameters and the engine address
-   */
-  get poolId(): string {
-    return PoolSimple.computePoolId(
-      this.address,
-      this.strike.raw,
-      this.sigmaBasisPts,
-      this.maturityTimestamp,
-      this.gammaBasisPts
-    )
-  }
-
-  /**
-   * @notice Each Primitive pool has a unique pool identifier
-   * @param engine Address of Engine which the pool is created from
-   * @param strike Max price in wei, with same decimals as the `stable` token
-   * @param sigma Implied volatility in basis points
-   * @param maturity Maturity timestamp in seconds
-   * @param gamma 1 - fee, in basis points
-   * @returns poolId Keccak256 hash of these parameters
-   */
-  public static computePoolId(
-    engine: string,
-    strike: number | string | BigNumber,
-    sigma: number | string | BigNumber,
-    maturity: number | string | number,
-    gamma: number | string | BigNumber
-  ): string {
-    invariant(isAddress(engine), 'Invalid address when computing pool id')
-    invariant(Math.floor(Number(strike)) > 0, `Strike must be an integer in units of wei: ${strike}`)
-    invariant(sigma > 1 && sigma <= 1e7, `Sigma out of bounds > 1 || <= 1e7 bps: ${sigma}`)
-    invariant(gamma >= 9e3 && gamma < 1e4, `Gamma out of bounds >= 9e3 && < 1e4 bps: ${gamma}`)
-    invariant(maturity > 0 && maturity < (2 ^ 32) - 1, `Maturity out of bounds > 0 && < 2^32 -1: ${maturity}`)
-    return keccak256(
-      solidityPack(['address', 'uint128', 'uint32', 'uint32', 'uint32'], [engine, strike, sigma, maturity, gamma])
-    )
   }
 
   /**
    * @returns Time until pool expires in seconds
    */
   get tau(): Time {
-    return new Time(this.maturityTimestamp).sub(this.lastTimestamp)
+    return this.maturity.sub(this.lastTimestamp)
   }
 
   /**
    * @returns Total remaining time of a pool in seconds
    */
   get remaining(): Time {
-    const expiring = new Time(this.maturityTimestamp)
-    if (expiring.now >= expiring.raw) return new Time(0)
+    const expiring = new Time(this.maturity)
+    if (Time.now >= expiring.raw) return new Time(0)
     return expiring.sub(this.lastTimestamp)
   }
 
@@ -224,7 +158,7 @@ export class PoolSimple {
    */
   get delta(): number {
     const priceOfRisky = this.referencePriceOfRisky ?? this.reportedPriceOfRisky.float
-    return callDelta(this.strike.float, this.sigmaBasisPts, this.tau.years, priceOfRisky)
+    return callDelta(this.strike.float, this.sigma.bps, this.tau.years, priceOfRisky)
   }
 
   /**
@@ -232,7 +166,7 @@ export class PoolSimple {
    */
   get premium(): number {
     const priceOfRisky = this.referencePriceOfRisky ?? this.reportedPriceOfRisky.float
-    return callPremium(this.strike.float, this.sigmaBasisPts, this.tau.years, priceOfRisky)
+    return callPremium(this.strike.float, this.sigma.bps, this.tau.years, priceOfRisky)
   }
 
   /**
@@ -349,10 +283,10 @@ export class PoolSimple {
   get reportedPriceOfRisky(): Wei {
     const risky = this.reserveRisky.float / this.liquidity.float
     const tau = this.tau.years
-    const spot = PoolSimple.getReportedPriceOfRisky(risky, this.strike.float, this.sigmaBasisPts, tau).toFixed(
-      this.decimalsStable
+    const spot = PoolSimple.getReportedPriceOfRisky(risky, this.strike.float, this.sigma.bps, tau).toFixed(
+      this.stable.decimals
     )
-    return parseWei(spot, this.decimalsStable)
+    return parseWei(spot, this.stable.decimals)
   }
 
   /**
@@ -377,9 +311,9 @@ export class PoolSimple {
     return PoolSimple.getMarginalPriceSwapRiskyIn(
       this.reserveRisky.float,
       this.strike.float,
-      this.sigmaBasisPts,
+      this.sigma.bps,
       this.tau.years,
-      this.gammaBasisPts,
+      this.gamma.bps,
       amountIn
     )
   }
@@ -415,9 +349,9 @@ export class PoolSimple {
       this.invariant.float,
       this.reserveStable.float,
       this.strike.float,
-      this.sigmaBasisPts,
+      this.sigma.bps,
       this.tau.years,
-      this.gammaBasisPts,
+      this.gamma.bps,
       amountIn
     )
   }

@@ -16,6 +16,7 @@ export interface PoolInterface {
   creator: string
   description: string
   properties: {
+    factory: string
     risky: {
       address: string
       decimals: string
