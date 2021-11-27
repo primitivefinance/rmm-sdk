@@ -1,3 +1,11 @@
+export interface CalibrationInterface {
+  strike: string
+  sigma: string
+  maturity: string
+  lastTimestamp: string
+  gamma: string
+}
+
 /**
  * @notice Calling the `uri` function on the PrimitiveHouse contract returns this api
  */
@@ -8,8 +16,18 @@ export interface PoolInterface {
   creator: string
   description: string
   properties: {
-    risky: string
-    stable: string
+    risky: {
+      address: string
+      decimals: string
+      symbol: string
+      name: string
+    }
+    stable: {
+      address: string
+      decimals: string
+      symbol: string
+      name: string
+    }
     invariant: string
     calibration: {
       strike: string

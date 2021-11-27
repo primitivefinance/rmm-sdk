@@ -14,7 +14,6 @@ import {
 import { Engine } from './engine'
 import { Calibration } from './calibration'
 import { Token } from '@uniswap/sdk-core'
-import { PERCENTAGE } from '../constants'
 import { callDelta, callPremium } from '@primitivefinance/v2-math'
 import invariant from 'tiny-invariant'
 
@@ -34,7 +33,7 @@ export interface DebugReturn extends SwapReturn {
  * @notice Virtualized instance of a pool using reserve and liquidity amounts from state
  */
 export class Pool extends Calibration {
-  public static readonly FEE: number = Engine.GAMMA / PERCENTAGE
+  public static readonly FEE: number = Engine.GAMMA / Percentage.BasisPoints
 
   /// ===== State of Virtual Pool =====
   public liquidity: Wei
@@ -110,7 +109,7 @@ export class Pool extends Calibration {
    * @returns Total lifetime of a pool in seconds
    */
   get remaining(): Time {
-    const now = this.maturity.now
+    const now = Time.now
     if (now >= this.maturity.raw) return new Time(0)
 
     return this.maturity.sub(now)
@@ -272,7 +271,7 @@ export class Pool extends Calibration {
     const invariantLast: FixedPointX64 = this.calcInvariant()
 
     // 0. Calculate the new risky reserves (we know the new risky reserves because we are swapping in risky)
-    const deltaInWithFee = deltaIn.mul(Engine.GAMMA).div(PERCENTAGE)
+    const deltaInWithFee = deltaIn.mul(Engine.GAMMA).div(Percentage.BasisPoints)
     // 1. Calculate the new stable reserve using the new risky reserve
     const newRiskyReserve = reserveRiskyLast
       .add(deltaInWithFee)
@@ -308,7 +307,7 @@ export class Pool extends Calibration {
     const reserveRiskyLast = this.reserveRisky
     const reserveStableLast = this.reserveStable
     const invariantLast: FixedPointX64 = this.calcInvariant()
-    const deltaInWithFee = deltaIn.mul(Engine.GAMMA).div(PERCENTAGE)
+    const deltaInWithFee = deltaIn.mul(Engine.GAMMA).div(Percentage.BasisPoints)
 
     const newReserveRisky = reserveRiskyLast
       .add(deltaInWithFee)
@@ -357,7 +356,7 @@ export class Pool extends Calibration {
     const invariantLast: FixedPointX64 = this.calcInvariant()
 
     // 0. Calculate the new risky reserve since we know how much risky is being swapped out
-    const deltaInWithFee = deltaIn.mul(Engine.GAMMA).div(PERCENTAGE)
+    const deltaInWithFee = deltaIn.mul(Engine.GAMMA).div(Percentage.BasisPoints)
     // 1. Calculate the new risky reserves using the known new stable reserves
     const newStableReserve = reserveStableLast
       .add(deltaInWithFee)
@@ -393,7 +392,7 @@ export class Pool extends Calibration {
     const reserveRiskyLast = this.reserveRisky
     const reserveStableLast = this.reserveStable
     const invariantLast: FixedPointX64 = this.calcInvariant()
-    const deltaInWithFee = deltaIn.mul(Engine.GAMMA).div(PERCENTAGE)
+    const deltaInWithFee = deltaIn.mul(Engine.GAMMA).div(Percentage.BasisPoints)
 
     const newStableReserve = reserveStableLast
       .add(deltaInWithFee)

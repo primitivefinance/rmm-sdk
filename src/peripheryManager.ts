@@ -9,8 +9,7 @@ import { abi } from '@primitivefinance/rmm-periphery/artifacts/contracts/Primiti
 import { Pool } from './entities/pool'
 import { Engine } from './entities/engine'
 import { PermitOptions, SelfPermit } from './selfPermit'
-import { MethodParameters, validateAndParseAddress } from './utils'
-import { checkDecimals } from '.'
+import { MethodParameters, validateAndParseAddress, checkDecimals } from './utils'
 
 export interface NativeOptions {
   useNative?: NativeCurrency
