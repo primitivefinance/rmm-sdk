@@ -1,4 +1,3 @@
-import { parseWei } from 'web3-units'
 import { Token } from '@uniswap/sdk-core'
 import { AddressZero } from '@ethersproject/constants'
 
@@ -14,9 +13,9 @@ describe('Engine entity', function() {
     engine = new Engine(AddressZero, token0, token1)
   })
 
-  it('#scaleFactor', async function() {
-    expect(engine.scaleFactorRisky.raw).toStrictEqual(parseWei(1, 18 - token0.decimals).raw)
-    expect(engine.scaleFactorStable.raw).toStrictEqual(parseWei(1, 18 - token1.decimals).raw)
+  it('#scaleFactor - 18 decimals', async function() {
+    expect(engine.scaleFactorRisky.raw.toNumber()).toStrictEqual(1)
+    expect(engine.scaleFactorStable.raw.toNumber()).toStrictEqual(1)
   })
 
   it('#involvesToken successful', async function() {

@@ -1,4 +1,4 @@
-import { utils } from 'ethers'
+import { utils, constants } from 'ethers'
 import { Token } from '@uniswap/sdk-core'
 import { parseWei, Wei } from 'web3-units'
 import { Interface } from '@ethersproject/abi'
@@ -68,8 +68,8 @@ export class Engine extends Token {
     this.factory = factory
     this.risky = risky
     this.stable = stable
-    this.scaleFactorRisky = parseWei(1, 18 - risky.decimals)
-    this.scaleFactorStable = parseWei(1, 18 - stable.decimals)
+    this.scaleFactorRisky = risky.decimals === 18 ? new Wei(constants.One) : parseWei(1, 18 - risky.decimals)
+    this.scaleFactorStable = stable.decimals === 18 ? new Wei(constants.One) : parseWei(1, 18 - stable.decimals)
   }
 
   public involvesToken(token: Token): boolean {
