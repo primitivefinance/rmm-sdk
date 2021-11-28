@@ -40,7 +40,7 @@ describe('Periphery Manager', function() {
           )
         : undefined
 
-      if (!riskyPerLp) throw Error('Risky per lp is undefined')
+      if (!riskyPerLp) fail()
 
       const frag = 'create'
       const data = [
@@ -61,6 +61,12 @@ describe('Periphery Manager', function() {
 
     it('fails with wrong liquidity decimals', async function() {
       const liquidity = parseWei(1, 9)
+      expect(() => PeripheryManager.encodeCreate(pool, liquidity)).toThrow()
+    })
+
+    it('fails if reference price is not set', async function() {
+      pool.referencePriceOfRisky = undefined
+      const liquidity = parseWei(1, 18)
       expect(() => PeripheryManager.encodeCreate(pool, liquidity)).toThrow()
     })
   })
