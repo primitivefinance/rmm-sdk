@@ -26,8 +26,22 @@ describe('Periphery Manager', function() {
     it('successful', async function() {
       const liquidity = parseWei(1, 18)
       const decimals = pool.risky.decimals
-      const delta = parseWei(pool.delta, decimals)
-      const riskyPerLp = parseWei(1, decimals).sub(delta)
+
+      const reference = pool.referencePriceOfRisky ?? pool.reportedPriceOfRisky
+      const riskyPerLp = reference
+        ? parseWei(
+            Pool.getRiskyReservesGivenReferencePrice(
+              pool.strike.float,
+              pool.sigma.float,
+              pool.tau.years,
+              reference.float
+            ),
+            decimals
+          )
+        : undefined
+
+      if (!riskyPerLp) throw Error('Risky per lp is undefined')
+
       const frag = 'create'
       const data = [
         pool.risky.address,
@@ -55,8 +69,21 @@ describe('Periphery Manager', function() {
     it('successful', async function() {
       const liquidity = parseWei(1, 18)
       const decimals = pool.risky.decimals
-      const delta = parseWei(pool.delta, decimals)
-      const riskyPerLp = parseWei(1, decimals).sub(delta)
+      const reference = pool.referencePriceOfRisky ?? pool.reportedPriceOfRisky
+      const riskyPerLp = reference
+        ? parseWei(
+            Pool.getRiskyReservesGivenReferencePrice(
+              pool.strike.float,
+              pool.sigma.float,
+              pool.tau.years,
+              reference.float
+            ),
+            decimals
+          )
+        : undefined
+
+      if (!riskyPerLp) throw Error('Risky per lp is undefined')
+
       const frag = 'create'
       const data = [
         pool.risky.address,
@@ -338,8 +365,20 @@ describe('Periphery Manager', function() {
       })
 
       const decimals = pool.risky.decimals
-      const delta = parseWei(pool.delta, decimals)
-      const riskyPerLp = parseWei(1, decimals).sub(delta)
+      const reference = pool.referencePriceOfRisky ?? pool.reportedPriceOfRisky
+      const riskyPerLp = reference
+        ? parseWei(
+            Pool.getRiskyReservesGivenReferencePrice(
+              pool.strike.float,
+              pool.sigma.float,
+              pool.tau.years,
+              reference.float
+            ),
+            decimals
+          )
+        : undefined
+      if (!riskyPerLp) throw Error('Risky per lp is undefined')
+
       const createData = [
         wethPool.risky.address,
         wethPool.stable.address,

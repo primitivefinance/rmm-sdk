@@ -60,9 +60,17 @@ export abstract class PeripheryManager extends SelfPermit {
   // create pool
   public static encodeCreate(pool: Pool, liquidity: Wei): string {
     checkDecimals(liquidity, pool)
-    const decimals = pool.risky.decimals
-    const delta = parseWei(pool.delta, decimals)
-    const riskyPerLp = parseWei(1, decimals).sub(delta)
+    invariant(typeof pool.referencePriceOfRisky !== 'undefined', `Attempting to create a pool without reference price`)
+    const riskyPerLp = parseWei(
+      Pool.getRiskyReservesGivenReferencePrice(
+        pool.strike.float,
+        pool.sigma.float,
+        pool.tau.years,
+        pool.referencePriceOfRisky.float
+      ),
+      pool.risky.decimals
+    )
+
     return PeripheryManager.INTERFACE.encodeFunctionData('create', [
       pool.risky.address,
       pool.stable.address,

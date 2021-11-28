@@ -27,15 +27,24 @@ export enum PoolSides {
  * @dev    Has slots for reserves, invariant, and lastTimestamp state
  */
 export class Pool extends Calibration {
-  /**
-   * @notice Reference market spot price of the Risky asset denominated in the Stable asset
-   */
-  public readonly referencePriceOfRisky?: number
   public readonly lastTimestamp: Time
   public readonly invariant: FixedPointX64
   public readonly reserveRisky: Wei
   public readonly reserveStable: Wei
   public readonly liquidity: Wei
+
+  private _referencePriceOfRisky?: Wei
+
+  set referencePriceOfRisky(x: Wei | undefined) {
+    this._referencePriceOfRisky = x
+  }
+
+  /**
+   * @notice Reference market spot price of the Risky asset denominated in the Stable asset
+   */
+  get referencePriceOfRisky(): Wei | undefined {
+    return this._referencePriceOfRisky
+  }
 
   /**
    * @notice Constructs a Pool entity from on-chain data
@@ -45,7 +54,7 @@ export class Pool extends Calibration {
    * @param stable Decimal places of the stable token
    * @returns Pool entity
    */
-  public static from(pool: PoolInterface, chainId?: number): Pool {
+  public static from(pool: PoolInterface, referencePrice?: number, chainId?: number): Pool {
     const { factory, risky, stable, calibration, reserve, invariant } = pool.properties
 
     return new Pool(
@@ -56,7 +65,7 @@ export class Pool extends Calibration {
       { ...reserve },
       invariant,
       chainId ?? undefined,
-      undefined
+      referencePrice ?? undefined
     )
   }
 
@@ -82,7 +91,7 @@ export class Pool extends Calibration {
 
     this.lastTimestamp = lastTimestamp ? new Time(Number(lastTimestamp)) : new Time(Time.now)
 
-    this.referencePriceOfRisky = referencePriceOfRisky
+    this._referencePriceOfRisky = referencePriceOfRisky ? parseWei(referencePriceOfRisky, token1.decimals) : undefined
 
     const maxPrice = parseFloat(formatFixed(strike, stable.decimals))
     const tau = new Time(Number(maturity)).sub(lastTimestamp ?? new Time(Time.now))
@@ -157,25 +166,25 @@ export class Pool extends Calibration {
   /**
    * @returns Change in Black-Scholes implied premium premium wrt change in underlying spot price
    */
-  get delta(): number {
-    const priceOfRisky = this.referencePriceOfRisky ?? this.reportedPriceOfRisky.float
-    return callDelta(this.strike.float, this.sigma.bps, this.tau.years, priceOfRisky)
+  get delta(): number | undefined {
+    const priceOfRisky = this.referencePriceOfRisky ?? this.reportedPriceOfRisky
+    return priceOfRisky ? callDelta(this.strike.float, this.sigma.bps, this.tau.years, priceOfRisky.float) : undefined
   }
 
   /**
    * @returns Black-Scholes implied premium
    */
-  get premium(): number {
-    const priceOfRisky = this.referencePriceOfRisky ?? this.reportedPriceOfRisky.float
-    return callPremium(this.strike.float, this.sigma.bps, this.tau.years, priceOfRisky)
+  get premium(): number | undefined {
+    const priceOfRisky = this.referencePriceOfRisky ?? this.reportedPriceOfRisky
+    return priceOfRisky ? callPremium(this.strike.float, this.sigma.bps, this.tau.years, priceOfRisky.float) : undefined
   }
 
   /**
    * @returns Price of Risky asset, whether reference or reported, is greater than or equal to strike
    */
-  get inTheMoney(): boolean {
-    const priceOfRisky = this.referencePriceOfRisky ?? this.reportedPriceOfRisky.float
-    return priceOfRisky >= this.strike.float
+  get inTheMoney(): boolean | undefined {
+    const priceOfRisky = this.referencePriceOfRisky ?? this.reportedPriceOfRisky
+    return priceOfRisky ? priceOfRisky.float >= this.strike.float : undefined
   }
 
   // ===== Liquidity Token Info =====
@@ -269,7 +278,7 @@ export class Pool extends Calibration {
    */
   public static getStableGivenRisky(
     strikeFloating: number,
-    sigmaBasisPts: number,
+    sigmaFloating: number,
     tauYears: number,
     reserveRiskyFloating: number,
     invariantFloating?: number
@@ -277,7 +286,7 @@ export class Pool extends Calibration {
     const stable = getStableGivenRiskyApproximation(
       reserveRiskyFloating,
       strikeFloating,
-      sigmaBasisPts,
+      sigmaFloating,
       tauYears,
       invariantFloating ? invariantFloating : 0
     )
@@ -292,7 +301,7 @@ export class Pool extends Calibration {
    */
   public static getRiskyGivenStable(
     strikeFloating: number,
-    sigmaBasisPts: number,
+    sigmaFloating: number,
     tauYears: number,
     reserveStableFloating: number,
     invariantFloating?: number
@@ -300,7 +309,7 @@ export class Pool extends Calibration {
     const stable = getRiskyGivenStableApproximation(
       reserveStableFloating,
       strikeFloating,
-      sigmaBasisPts,
+      sigmaFloating,
       tauYears,
       invariantFloating ? invariantFloating : 0
     )
@@ -314,12 +323,11 @@ export class Pool extends Calibration {
   /**
    * @returns Spot price of this pool, in units of Token1 per Token0
    */
-  get reportedPriceOfRisky(): Wei {
+  get reportedPriceOfRisky(): Wei | undefined {
     const risky = this.reserveRisky.float / this.liquidity.float
     const tau = this.tau.years
-    const spot = Pool.getReportedPriceOfRisky(risky, this.strike.float, this.sigma.bps, tau).toFixed(
-      this.stable.decimals
-    )
+    const spot = Pool.getReportedPriceOfRisky(risky, this.strike.float, this.sigma.float, tau)
+    if (isNaN(spot)) return undefined
     return parseWei(spot, this.stable.decimals)
   }
 
@@ -329,11 +337,15 @@ export class Pool extends Calibration {
   public static getReportedPriceOfRisky(
     balance0Floating: number,
     strikeFloating: number,
-    sigmaBasisPts: number,
+    sigmaFloating: number,
     tauYears: number
   ): number {
+    console.log(
+      getStableGivenRiskyApproximation(balance0Floating, strikeFloating, sigmaFloating, tauYears),
+      quantilePrime(1 - balance0Floating)
+    )
     return (
-      getStableGivenRiskyApproximation(balance0Floating, strikeFloating, sigmaBasisPts, tauYears) *
+      getStableGivenRiskyApproximation(balance0Floating, strikeFloating, sigmaFloating, tauYears) *
       quantilePrime(1 - balance0Floating)
     )
   }
@@ -345,9 +357,9 @@ export class Pool extends Calibration {
     return Pool.getMarginalPriceSwapRiskyIn(
       this.reserveRisky.float,
       this.strike.float,
-      this.sigma.bps,
+      this.sigma.float,
       this.tau.years,
-      this.gamma.bps,
+      this.gamma.float,
       amountIn
     )
   }
@@ -360,16 +372,16 @@ export class Pool extends Calibration {
   public static getMarginalPriceSwapRiskyIn(
     reserve0Floating: number,
     strikeFloating: number,
-    sigmaBasisPts: number,
+    sigmaFloating: number,
     tauYears: number,
-    gammaBasisPts: number,
+    gammaFloating: number,
     amountIn: number
   ) {
     if (!nonNegative(amountIn)) return 0
-    const step0 = 1 - reserve0Floating - gammaBasisPts * amountIn
-    const step1 = sigmaBasisPts * Math.sqrt(tauYears)
+    const step0 = 1 - reserve0Floating - gammaFloating * amountIn
+    const step1 = sigmaFloating * Math.sqrt(tauYears)
     const step2 = quantilePrime(step0)
-    const step3 = gammaBasisPts * strikeFloating
+    const step3 = gammaFloating * strikeFloating
     const step4 = inverse_std_n_cdf(step0)
     const step5 = std_n_pdf(step4 - step1)
     return step3 * step5 * step2
@@ -383,9 +395,9 @@ export class Pool extends Calibration {
       this.invariant.float,
       this.reserveStable.float,
       this.strike.float,
-      this.sigma.bps,
+      this.sigma.float,
       this.tau.years,
-      this.gamma.bps,
+      this.gamma.float,
       amountIn
     )
   }
@@ -399,19 +411,19 @@ export class Pool extends Calibration {
     invariantFloating: number,
     reserve1Floating: number,
     strikeFloating: number,
-    sigmaBasisPts: number,
+    sigmaFloating: number,
     tauYears: number,
-    gammaBasisPts: number,
+    gammaFloating: number,
     amountIn: number
   ) {
     if (!nonNegative(amountIn)) return 0
-    const step0 = (reserve1Floating + gammaBasisPts * amountIn - invariantFloating) / strikeFloating
-    const step1 = sigmaBasisPts * Math.sqrt(tauYears)
+    const step0 = (reserve1Floating + gammaFloating * amountIn - invariantFloating) / strikeFloating
+    const step1 = sigmaFloating * Math.sqrt(tauYears)
     const step3 = inverse_std_n_cdf(step0)
     const step4 = std_n_pdf(step3 + step1)
     const step5 = step0 * (1 / strikeFloating)
     const step6 = quantilePrime(step5)
-    const step7 = gammaBasisPts * step4 * step6
+    const step7 = gammaFloating * step4 * step6
     return 1 / step7
   }
 
@@ -421,10 +433,10 @@ export class Pool extends Calibration {
    */
   public static getRiskyReservesGivenReferencePrice(
     strikeFloating: number,
-    sigmaBasisPts: number,
+    sigmaFloating: number,
     tauYears: number,
     referencePriceOfRisky: number
   ): number {
-    return 1 - callDelta(strikeFloating, sigmaBasisPts, tauYears, referencePriceOfRisky)
+    return 1 - callDelta(strikeFloating, sigmaFloating, tauYears, referencePriceOfRisky)
   }
 }
