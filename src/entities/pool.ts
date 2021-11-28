@@ -340,10 +340,6 @@ export class Pool extends Calibration {
     sigmaFloating: number,
     tauYears: number
   ): number {
-    console.log(
-      getStableGivenRiskyApproximation(balance0Floating, strikeFloating, sigmaFloating, tauYears),
-      quantilePrime(1 - balance0Floating)
-    )
     return (
       getStableGivenRiskyApproximation(balance0Floating, strikeFloating, sigmaFloating, tauYears) *
       quantilePrime(1 - balance0Floating)
