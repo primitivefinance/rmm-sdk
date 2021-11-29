@@ -19,7 +19,7 @@ import { Calibration } from '.'
 export enum PoolSides {
   RISKY = 'RISKY',
   STABLE = 'STABLE',
-  RMM_01 = 'RMM_01'
+  RMM_LP = 'RMM_LP'
 }
 
 /**
@@ -213,9 +213,11 @@ export class Pool extends Calibration {
     reserveStable: Wei,
     liquidity: Wei
   ): { delRisky: Wei; delStable: Wei; delLiquidity: Wei } {
-    let delRisky: Wei = parseWei(0)
-    let delStable: Wei = parseWei(0)
-    let delLiquidity: Wei = parseWei(0)
+    invariant(liquidity.gt(0), `Liquidity must be greater than zero`)
+
+    let delRisky: Wei = parseWei(0, reserveRisky.decimals)
+    let delStable: Wei = parseWei(0, reserveStable.decimals)
+    let delLiquidity: Wei = parseWei(0, liquidity.decimals)
 
     switch (sideOfPool) {
       case PoolSides.RISKY:
@@ -228,7 +230,7 @@ export class Pool extends Calibration {
         delLiquidity = liquidity.mul(delStable).div(reserveStable)
         delRisky = reserveRisky.mul(delLiquidity).div(liquidity)
         break
-      case PoolSides.RMM_01:
+      case PoolSides.RMM_LP:
         delLiquidity = amount
         delRisky = reserveRisky.mul(delLiquidity).div(liquidity)
         delStable = reserveStable.mul(delLiquidity).div(liquidity)
@@ -237,9 +239,18 @@ export class Pool extends Calibration {
         break
     }
 
-    invariant(delRisky.decimals === reserveRisky.decimals, 'Risky amount decimals does not match')
-    invariant(delStable.decimals === reserveStable.decimals, 'Stable amount decimals does not match')
-    invariant(delLiquidity.decimals === liquidity.decimals, 'Liquidity amount decimals is not 18')
+    invariant(
+      delRisky.decimals === reserveRisky.decimals,
+      `Computed risky amount decimals: ${delRisky.decimals} != reserve risky decimals: ${reserveRisky.decimals}`
+    )
+    invariant(
+      delStable.decimals === reserveStable.decimals,
+      `Computed stable amount decimals: ${delRisky.decimals} != reserve stable decimals: ${reserveRisky.decimals}`
+    )
+    invariant(
+      delLiquidity.decimals === liquidity.decimals,
+      `Computed liquidity amount decimals: ${delRisky.decimals} != 18`
+    )
     return { delRisky, delStable, delLiquidity }
   }
 

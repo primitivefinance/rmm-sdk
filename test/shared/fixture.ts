@@ -21,8 +21,8 @@ export function usePoolWithDecimals(decimals: number): Pool {
   const risky = Pool.getRiskyReservesGivenReferencePrice(strike.float, sigma.float, tau, spot.float)
   const stable = Pool.getStableGivenRisky(strike.float, sigma.float, tau, risky)
   const reserve = {
-    reserveRisky: risky ? risky.toString() : '0',
-    reserveStable: stable ? stable.toString() : '0',
+    reserveRisky: risky ? parseWei(risky, token0.decimals).toString() : '0',
+    reserveStable: stable ? parseWei(stable, token1.decimals).toString() : '0',
     liquidity: parseWei(1, 18).toString()
   }
   const pool = Pool.from(
@@ -64,8 +64,8 @@ export function usePool(): Pool {
   const risky = Pool.getRiskyReservesGivenReferencePrice(strike.float, sigma.float, tau, spot.float)
   const stable = Pool.getStableGivenRisky(strike.float, sigma.float, tau, risky)
   const reserve = {
-    reserveRisky: risky ? risky.toString() : '0',
-    reserveStable: stable ? stable.toString() : '0',
+    reserveRisky: risky ? parseWei(risky, token0.decimals).toString() : '0',
+    reserveStable: stable ? parseWei(stable, token1.decimals).toString() : '0',
     liquidity: parseWei(1, 18).toString()
   }
   const pool = Pool.from(
@@ -87,7 +87,7 @@ export function usePool(): Pool {
           gamma: gamma.toString(),
           lastTimestamp: lastTimestamp.toString()
         },
-        reserve
+        reserve: { ...reserve }
       }
     },
     spot.float,
@@ -112,8 +112,8 @@ export function useWethPool(): Pool {
   const risky = Pool.getRiskyReservesGivenReferencePrice(strike.float, sigma.float, tau, spot.float)
   const stable = Pool.getStableGivenRisky(strike.float, sigma.float, tau, risky)
   const reserve = {
-    reserveRisky: risky ? risky.toString() : '0',
-    reserveStable: stable ? stable.toString() : '0',
+    reserveRisky: risky ? parseWei(risky, token0.decimals).toString() : '0',
+    reserveStable: stable ? parseWei(stable, token1.decimals).toString() : '0',
     liquidity: parseWei(1, 18).toString()
   }
   const pool = Pool.from(

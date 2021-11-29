@@ -6946,10 +6946,10 @@ wcwidth@^1.0.1:
   dependencies:
     defaults "^1.0.3"
 
-web3-units@^1.3.0:
-  version "1.3.0"
-  resolved "https://registry.yarnpkg.com/web3-units/-/web3-units-1.3.0.tgz#66b23ab46da5e5435105047fda3a007c6c625933"
-  integrity sha512-YLjhqfUim2ND60paDCYv/1FqUT8cvQFMZVul+dXmtdRaAdZpbCpQc81yfx7HOV8umam2Q35ZBtEJ8ActeNiHFg==
+web3-units@^1.3.2:
+  version "1.3.2"
+  resolved "https://registry.yarnpkg.com/web3-units/-/web3-units-1.3.2.tgz#3650ffea9a0f8fa17659898d1761c8f4a6b2e25a"
+  integrity sha512-uqqLOUphN28IOD7tpa/FxERBCHxRucoBCRA09nAKYBapQGOFDYSCRv3I/ZuzzLBV97rPjepOEnAZzynsiyWlCg==
   dependencies:
     "@ethersproject/bignumber" "^5.4.0"
     "@ethersproject/constants" "^5.4.0"
