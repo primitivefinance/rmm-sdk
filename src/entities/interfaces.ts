@@ -15,14 +15,7 @@ export interface CalibrationInterface {
 }
 
 /**
- * @notice Calling the `uri` function on the PrimitiveHouse contract returns this api
- * @param name Title of token
- * @param symbol Token simplified into an identifiable symbol
- * @param image Encoded image or link to an image file
- * @param license License on the token info or image
- * @param creator  Canonical deployer of the contract
- * @param description Brief explanation of the data or token
- * @param properties All meta-data related to the Primitive Engine's pool for this token id
+ * @notice Calling the `uri` function on the PrimitiveManager contract returns this api
  */
 export interface PoolInterface {
   name?: string

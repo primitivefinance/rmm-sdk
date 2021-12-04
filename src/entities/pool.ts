@@ -12,7 +12,7 @@ import {
   nonNegative,
   quantilePrime,
   std_n_pdf
-} from '@primitivefinance/v2-math'
+} from '@primitivefinance/rmm-math'
 import { PoolInterface } from './interfaces'
 import { Calibration } from '.'
 

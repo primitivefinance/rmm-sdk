@@ -2,7 +2,7 @@ import { Pool } from '../../src/entities/pool'
 import { Token, WETH9 } from '@uniswap/sdk-core'
 import { parseWei, Time } from 'web3-units'
 import { AddressZero } from '@ethersproject/constants'
-import { EMPTY_CALIBRATION } from '../../src/constants'
+import { EMPTY_CALIBRATION } from './constants'
 import { parseCalibration } from '../../src/entities'
 
 export function usePoolWithDecimals(decimals: number): Pool {
