@@ -14,7 +14,7 @@ import {
   std_n_pdf
 } from '@primitivefinance/rmm-math'
 import { PoolInterface } from './interfaces'
-import { Calibration } from '.'
+import { Calibration } from './calibration'
 
 export enum PoolSides {
   RISKY = 'RISKY',

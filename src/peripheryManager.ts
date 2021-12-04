@@ -290,7 +290,7 @@ export abstract class PeripheryManager extends SelfPermit {
 
     let calldatas: string[] = []
 
-    const { delRisky, delStable } = pool.liquidityQuote(options.delLiquidity, PoolSides.RMM_01)
+    const { delRisky, delStable } = pool.liquidityQuote(options.delLiquidity, PoolSides.RMM_LP)
     const minRisky = delRisky.mul(options.slippageTolerance.bps).div(Percentage.BasisPoints)
     const minStable = delStable.mul(options.slippageTolerance.bps).div(Percentage.BasisPoints)
 
