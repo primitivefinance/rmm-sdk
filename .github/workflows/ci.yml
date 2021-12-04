@@ -1,0 +1,44 @@
+name: CI
+on: [push]
+jobs:
+  lint-test:
+    name: Lint and Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check Out Git Repository
+        uses: actions/checkout@v2
+
+      - name: Set Up Node
+        uses: actions/setup-node@v2-beta
+        with:
+          node-version: '14.x'
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@primitivefinance'
+          always-auth: true
+
+      - name: Authenticate with GitHub package registry
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: echo "//npm.pkg.github.com:_authToken=${{ secrets.GH_TOKEN }}" >
+          ~/.npmrc
+
+      - run: yarn install --ignore-scripts
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}l'
+
+      - name: Lint
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: yarn lint
+
+      - name: Test
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: yarn test --ci --coverage --maxWorkers=2
+
+      - name: Build
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: yarn build
