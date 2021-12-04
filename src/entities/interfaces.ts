@@ -23,6 +23,7 @@ export interface CalibrationInterface {
  * @param creator  Canonical deployer of the contract
  * @param description Brief explanation of the data or token
  * @param properties All meta-data related to the Primitive Engine's pool for this token id
+ * @notice Calling the `uri` function on the PrimitiveManager contract returns this api
  */
 export interface PoolInterface {
   name?: string

@@ -1,12 +1,12 @@
 import { BigNumber } from 'ethers'
 import invariant from 'tiny-invariant'
 import { Interface } from '@ethersproject/abi'
-import { parseWei, toBN, Wei } from 'web3-units'
+import { parseWei, Percentage, toBN, Wei } from 'web3-units'
 import { NativeCurrency } from '@uniswap/sdk-core'
 import { AddressZero } from '@ethersproject/constants'
-import { abi } from '@primitivefinance/rmm-periphery/artifacts/contracts/PrimitiveHouse.sol/PrimitiveHouse.json'
+import { abi } from '@primitivefinance/rmm-manager/artifacts/contracts/PrimitiveManager.sol/PrimitiveManager.json'
 
-import { Pool } from './entities/pool'
+import { Pool, PoolSides } from './entities/pool'
 import { Engine } from './entities/engine'
 import { PermitOptions, SelfPermit } from './selfPermit'
 import { MethodParameters, validateAndParseAddress, checkDecimals } from './utils'
@@ -41,6 +41,7 @@ export interface LiquidityOptions {
 
 export interface AllocateOptions extends PermitTokens, LiquidityOptions, RecipientOptions, NativeOptions, Deadline {
   fromMargin: boolean
+  slippageTolerance: Percentage
   createPool?: boolean
 }
 
@@ -48,6 +49,7 @@ export interface RemoveOptions extends LiquidityOptions, RecipientOptions, Nativ
   expectedRisky: Wei
   expectedStable: Wei
   toMargin: boolean
+  slippageTolerance: Percentage
 }
 
 export abstract class PeripheryManager extends SelfPermit {
@@ -236,6 +238,8 @@ export abstract class PeripheryManager extends SelfPermit {
       calldatas.push(PeripheryManager.encodePermit(pool.stable, options.permitStable))
     }
 
+    const minLiquidity = options.delLiquidity.mul(options.slippageTolerance.raw).div(Percentage.BasisPoints)
+
     // if curve should be created
     if (options.createPool) {
       invariant(!options.fromMargin, 'Cannot pay from margin when creating')
@@ -248,7 +252,8 @@ export abstract class PeripheryManager extends SelfPermit {
           pool.stable.address,
           options.delRisky.raw.toHexString(),
           options.delStable.raw.toHexString(),
-          options.fromMargin
+          options.fromMargin,
+          minLiquidity.raw.toHexString()
         ])
       )
     }
@@ -285,12 +290,18 @@ export abstract class PeripheryManager extends SelfPermit {
 
     let calldatas: string[] = []
 
+    const { delRisky, delStable } = pool.liquidityQuote(options.delLiquidity, PoolSides.RMM_LP)
+    const minRisky = delRisky.mul(options.slippageTolerance.bps).div(Percentage.BasisPoints)
+    const minStable = delStable.mul(options.slippageTolerance.bps).div(Percentage.BasisPoints)
+
     // tokens are by default removed from curve and deposited to margin
     calldatas.push(
       PeripheryManager.INTERFACE.encodeFunctionData('remove', [
         pool.address,
         pool.poolId,
-        options.delLiquidity.raw.toHexString()
+        options.delLiquidity.raw.toHexString(),
+        minRisky.raw.toHexString(),
+        minStable.raw.toHexString()
       ])
     )
 

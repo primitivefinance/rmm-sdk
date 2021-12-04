@@ -1,6 +1,6 @@
-import { getInvariantApproximation } from '@primitivefinance/v2-math'
+import { getInvariantApproximation } from '@primitivefinance/rmm-math'
 import { parseWei, Wei } from 'web3-units'
-import { Engine } from '.'
+import { Engine } from './engine'
 import { Pool } from './pool'
 
 export class Swaps {

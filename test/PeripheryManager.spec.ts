@@ -1,4 +1,4 @@
-import { parseWei } from 'web3-units'
+import { parsePercentage, parseWei } from 'web3-units'
 import { AddressZero } from '@ethersproject/constants'
 import { Ether, NativeCurrency } from '@uniswap/sdk-core'
 
@@ -13,6 +13,8 @@ function decode(frag: string, data: any) {
 
 describe('Periphery Manager', function() {
   let pool: Pool, from: string, wethPool: Pool, useNative: NativeCurrency, lowDecimalPool: Pool
+
+  const slippageTolerance = parsePercentage(0.05)
 
   beforeEach(async function() {
     pool = usePool()
@@ -246,6 +248,7 @@ describe('Periphery Manager', function() {
       expect(() => PeripheryManager.encodeWithdraw(pool, { recipient, amountRisky, amountStable, useNative })).toThrow()
     })
   })
+
   describe('#withdrawCallParameters', function() {
     it('successful', async function() {
       const recipient = from
@@ -310,7 +313,8 @@ describe('Periphery Manager', function() {
         fromMargin,
         delRisky,
         delStable,
-        delLiquidity
+        delLiquidity,
+        slippageTolerance
       })
       const data = [pool.poolId, pool.risky.address, pool.stable.address, delRisky.raw, delStable.raw, fromMargin]
       const decoded = decode('allocate', calldata)
@@ -331,7 +335,8 @@ describe('Periphery Manager', function() {
         delRisky,
         delStable,
         delLiquidity,
-        useNative
+        useNative,
+        slippageTolerance
       })
 
       const allocateData = [
@@ -367,7 +372,8 @@ describe('Periphery Manager', function() {
         delRisky,
         delStable,
         delLiquidity,
-        createPool
+        createPool,
+        slippageTolerance
       })
 
       const decimals = pool.risky.decimals
@@ -415,7 +421,8 @@ describe('Periphery Manager', function() {
           fromMargin,
           delRisky,
           delStable,
-          delLiquidity
+          delLiquidity,
+          slippageTolerance
         })
       ).toThrow()
     })
@@ -432,7 +439,8 @@ describe('Periphery Manager', function() {
           fromMargin,
           delRisky,
           delStable,
-          delLiquidity
+          delLiquidity,
+          slippageTolerance
         })
       ).toThrow()
     })
@@ -449,7 +457,8 @@ describe('Periphery Manager', function() {
           fromMargin,
           delRisky,
           delStable,
-          delLiquidity
+          delLiquidity,
+          slippageTolerance
         })
       ).toThrow()
     })
@@ -467,7 +476,8 @@ describe('Periphery Manager', function() {
           fromMargin,
           delRisky,
           delStable,
-          delLiquidity
+          delLiquidity,
+          slippageTolerance
         })
       ).toThrow()
     })
@@ -485,7 +495,8 @@ describe('Periphery Manager', function() {
           fromMargin,
           delRisky,
           delStable,
-          delLiquidity
+          delLiquidity,
+          slippageTolerance
         })
       ).toThrow()
     })
@@ -505,7 +516,8 @@ describe('Periphery Manager', function() {
           delRisky,
           delStable,
           delLiquidity,
-          createPool
+          createPool,
+          slippageTolerance
         })
       ).toThrow()
     })
@@ -528,7 +540,8 @@ describe('Periphery Manager', function() {
         toMargin,
         delRisky,
         delStable,
-        recipient
+        recipient,
+        slippageTolerance
       })
 
       const data = [pool.address, pool.poolId, delLiquidity.raw]
@@ -554,7 +567,8 @@ describe('Periphery Manager', function() {
           toMargin,
           delRisky,
           delStable,
-          recipient
+          recipient,
+          slippageTolerance
         })
       ).toThrow()
     })
@@ -575,7 +589,8 @@ describe('Periphery Manager', function() {
           toMargin,
           delRisky,
           delStable,
-          recipient
+          recipient,
+          slippageTolerance
         })
       ).toThrow()
     })
@@ -596,7 +611,8 @@ describe('Periphery Manager', function() {
           toMargin,
           delRisky,
           delStable,
-          recipient
+          recipient,
+          slippageTolerance
         })
       ).toThrow()
     })
@@ -617,7 +633,8 @@ describe('Periphery Manager', function() {
           toMargin,
           delRisky,
           delStable,
-          recipient
+          recipient,
+          slippageTolerance
         })
       ).toThrow()
     })
