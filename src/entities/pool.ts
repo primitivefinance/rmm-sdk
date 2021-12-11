@@ -132,7 +132,7 @@ export class Pool extends Calibration {
     }
 
     if (overrideInvariant) {
-      this.invariant = new FixedPointX64(toBN(overrideInvariant), Number(stable.decimals))
+      this.invariant = FixedPointX64.from(overrideInvariant, Number(stable.decimals))
     } else {
       this.invariant = parseFixedPointX64(0, Number(stable.decimals))
     }
