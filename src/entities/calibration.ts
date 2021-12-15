@@ -6,9 +6,12 @@ import { Engine } from './engine'
 import invariant from 'tiny-invariant'
 const { keccak256, solidityPack } = utils
 
+export const MIN_SIGMA = 1
+export const MAX_SIGMA = Percentage.BasisPoints * 1e3
+
 export function isValidSigma(sigma: string): void {
   invariant(
-    parseFloat(sigma) <= Percentage.BasisPoints * 3 && parseFloat(sigma) >= 1,
+    parseFloat(sigma) <= MAX_SIGMA && parseFloat(sigma) >= MIN_SIGMA,
     `Sigma Error: Implied volatility outside of bounds 1-10_000_000 basis points: ${sigma}`
   )
 }
