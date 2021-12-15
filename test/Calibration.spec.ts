@@ -42,4 +42,17 @@ describe('Calibration', function() {
   it('#gamma', async function() {
     expect(cal.gamma.float).toBe(parseFloat(gamma) / Percentage.BasisPoints)
   })
+
+  it('#gamma fails out of bounds', async function() {
+    expect(() => parseCalibration(AddressZero, token0, token1, { strike, sigma, maturity, gamma: '0' })).toThrow()
+    expect(() =>
+      parseCalibration(AddressZero, token0, token1, { strike, sigma, maturity, gamma: (1e8).toString() })
+    ).toThrow()
+  })
+  it('#gamma succeeds on bounds', async function() {
+    expect(() => parseCalibration(AddressZero, token0, token1, { strike, sigma, maturity, gamma: '1' })).toBeDefined()
+    expect(() =>
+      parseCalibration(AddressZero, token0, token1, { strike, sigma, maturity, gamma: (1e7).toString() })
+    ).toBeDefined()
+  })
 })
