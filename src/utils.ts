@@ -1,10 +1,22 @@
-import { Wei } from 'web3-units'
+import { parseWei, Wei } from 'web3-units'
 import invariant from 'tiny-invariant'
 import { getAddress } from '@ethersproject/address'
 import { Token } from '@uniswap/sdk-core'
 
 export function checkDecimals(amount: Wei, token: Token) {
   invariant(amount.decimals === token.decimals, 'Amount decimals does not match token decimals')
+}
+
+/**
+ * @notice A smart contract returns a wei value as a string,
+ * this converts that string value by using the parseWei function, which multiplies
+ * it by 10^decimals. Therefore, to get the actual string as a wei we have to divided it back.
+ * @returns `wei` but as a Wei instance
+ */
+export function weiToWei(wei: string, decimals = 18): Wei {
+  const parsed = parseWei(wei, decimals)
+  const formatted = parsed.div(parseWei('1', decimals))
+  return formatted
 }
 
 /**

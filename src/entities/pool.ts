@@ -1,7 +1,7 @@
 import invariant from 'tiny-invariant'
 import { formatFixed } from '@ethersproject/bignumber'
 import { Token } from '@uniswap/sdk-core'
-import { FixedPointX64, parseFixedPointX64, parseWei, Time, toBN, Wei } from 'web3-units'
+import { FixedPointX64, parseFixedPointX64, parseWei, Time, Wei } from 'web3-units'
 
 import {
   callDelta,
@@ -15,6 +15,7 @@ import {
 } from '@primitivefinance/rmm-math'
 import { PoolInterface } from './interfaces'
 import { Calibration } from './calibration'
+import { weiToWei } from '../utils'
 
 export enum PoolSides {
   RISKY = 'RISKY',
@@ -98,10 +99,10 @@ export class Pool extends Calibration {
 
     let reserveRisky: Wei // store in memory to reference if needed to compute stable side of pool
     if (overrideReserves?.reserveRisky) {
-      reserveRisky = new Wei(toBN(overrideReserves.reserveRisky), Number(risky.decimals))
+      reserveRisky = weiToWei(overrideReserves.reserveRisky, Number(risky.decimals))
     } else {
       if (!referencePriceOfRisky) {
-        const e = `Thrown on Pool constructor, if override risky reserve, must enter a stable per risky price`
+        const e = `Thrown on Pool constructor, if not overriding risky reserve, must enter a reference price`
         throw e
       }
       const oppositeDelta = Pool.getRiskyReservesGivenReferencePrice(
@@ -117,7 +118,7 @@ export class Pool extends Calibration {
 
     if (overrideReserves?.reserveStable) {
       const { reserveStable } = overrideReserves
-      this.reserveStable = new Wei(toBN(reserveStable), Number(stable.decimals))
+      this.reserveStable = weiToWei(reserveStable, Number(stable.decimals))
     } else {
       const balance = getStableGivenRiskyApproximation(reserveRisky.float, maxPrice, Number(sigma), tau.years)
       const formatted = balance.toFixed(Number(stable.decimals))
@@ -126,7 +127,7 @@ export class Pool extends Calibration {
 
     if (overrideReserves?.liquidity) {
       const { liquidity } = overrideReserves
-      this.liquidity = new Wei(toBN(liquidity), 18)
+      this.liquidity = weiToWei(liquidity, 18)
     } else {
       this.liquidity = parseWei(1, 18)
     }
@@ -265,6 +266,8 @@ export class Pool extends Calibration {
     const reserve0 = this.reserveRisky
     const reserve1 = this.reserveStable
     const liquidity = this.liquidity
+
+    invariant(liquidity.gt(0), `Liquidity must be greater than zero`)
 
     // Computes the price of the token multiplied by amount of the token and dividing by 10^decimals, canceling out the tokens decimals
     const values = [
