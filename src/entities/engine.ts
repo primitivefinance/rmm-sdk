@@ -3,16 +3,16 @@ import { Token } from '@uniswap/sdk-core'
 import { parseWei, Wei } from 'web3-units'
 import { Interface } from '@ethersproject/abi'
 import {
-  bytecode as EngineBytecode,
-  abi as EngineAbi
+  bytecode,
+  abi
 } from '@primitivefinance/rmm-core/artifacts/contracts/PrimitiveEngine.sol/PrimitiveEngine.json'
 
 /**
  * @notice Represents the PrimitiveEngine.sol smart contract
  */
 export class Engine extends Token {
-  public static BYTECODE: string = EngineBytecode
-  public static INTERFACE: Interface = new Interface(EngineAbi)
+  public static BYTECODE: string = bytecode
+  public static INTERFACE: Interface = new Interface(abi)
 
   /**
    * @notice Used to calculate minimum liquidity based on lowest decimals of risky/stable
@@ -60,7 +60,7 @@ export class Engine extends Token {
   constructor(factory: string, risky: Token, stable: Token) {
     super(
       risky.chainId,
-      Engine.computeEngineAddress(factory, risky.address, stable.address, EngineBytecode),
+      Engine.computeEngineAddress(factory, risky.address, stable.address, bytecode),
       18,
       'RMM-01',
       'Primitive RMM-01 LP Token'
@@ -91,14 +91,14 @@ export class Engine extends Token {
    * @param factory Deployer of the Engine contract
    * @param risky Risky token
    * @param stable Stable token
-   * @param bytecode Bytecode of the PrimitiveEngine.sol smart contract
+   * @param contractBytecode Bytecode of the PrimitiveEngine.sol smart contract
    * @returns engine address
    */
-  static computeEngineAddress(factory: string, risky: string, stable: string, bytecode: string): string {
+  static computeEngineAddress(factory: string, risky: string, stable: string, contractBytecode: string): string {
     const salt = utils.solidityKeccak256(
       ['bytes'],
       [utils.defaultAbiCoder.encode(['address', 'address'], [risky, stable])]
     )
-    return utils.getCreate2Address(factory, salt, utils.keccak256(bytecode))
+    return utils.getCreate2Address(factory, salt, utils.keccak256(contractBytecode))
   }
 }
