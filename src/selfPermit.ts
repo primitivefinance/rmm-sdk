@@ -1,7 +1,7 @@
-import { Token } from '@uniswap/sdk-core'
-import { Interface } from '@ethersproject/abi'
-import { abi } from '@primitivefinance/rmm-core/artifacts/contracts/PrimitiveFactory.sol/PrimitiveFactory.json' // todo: fix placeholder
 import { BigNumber } from 'ethers'
+import { Interface } from '@ethersproject/abi'
+import { Token } from '@uniswap/sdk-core'
+import ManagerArtifact from '@primitivefinance/rmm-manager/artifacts/contracts/PrimitiveManager.sol/PrimitiveManager.json'
 
 export interface StandardPermitArguments {
   v: 0 | 1 | 27 | 28
@@ -26,7 +26,7 @@ function isAllowedPermit(permitOptions: PermitOptions): permitOptions is Allowed
 }
 
 export abstract class SelfPermit {
-  public static INTERFACE: Interface = new Interface(abi)
+  public static INTERFACE: Interface = new Interface(ManagerArtifact.abi)
 
   protected constructor() {}
 
