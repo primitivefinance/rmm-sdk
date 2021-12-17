@@ -3,7 +3,7 @@ import invariant from 'tiny-invariant'
 import { Interface } from '@ethersproject/abi'
 import { AddressZero } from '@ethersproject/constants'
 import { parseWei, Percentage, toBN, Wei } from 'web3-units'
-import { abi } from '@primitivefinance/rmm-manager/artifacts/contracts/PrimitiveManager.sol/PrimitiveManager.json'
+import ManagerArtifact from '@primitivefinance/rmm-manager/artifacts/contracts/PrimitiveManager.sol/PrimitiveManager.json'
 
 import { Pool } from './entities/pool'
 import { PeripheryManager, NativeOptions } from './peripheryManager'
@@ -27,7 +27,9 @@ export interface SwapOptions extends DefaultOptions, NativeOptions {
 }
 
 export abstract class SwapManager extends SelfPermit {
-  public static INTERFACE: Interface = new Interface(abi)
+  public static INTERFACE: Interface = new Interface(ManagerArtifact.abi)
+  public static BYTECODE: string = ManagerArtifact.bytecode
+  public static ABI: any = ManagerArtifact.abi
 
   private constructor() {
     super()

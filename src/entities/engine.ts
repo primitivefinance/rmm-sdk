@@ -2,17 +2,15 @@ import { utils, constants } from 'ethers'
 import { Token } from '@uniswap/sdk-core'
 import { parseWei, Wei } from 'web3-units'
 import { Interface } from '@ethersproject/abi'
-import {
-  bytecode,
-  abi
-} from '@primitivefinance/rmm-core/artifacts/contracts/PrimitiveEngine.sol/PrimitiveEngine.json'
+import EngineArtifact from '@primitivefinance/rmm-core/artifacts/contracts/PrimitiveEngine.sol/PrimitiveEngine.json'
 
 /**
  * @notice Represents the PrimitiveEngine.sol smart contract
  */
 export class Engine extends Token {
-  public static BYTECODE: string = bytecode
-  public static INTERFACE: Interface = new Interface(abi)
+  public static BYTECODE: string = EngineArtifact.bytecode
+  public static INTERFACE: Interface = new Interface(EngineArtifact.abi)
+  public static ABI: any = EngineArtifact.abi
 
   /**
    * @notice Used to calculate minimum liquidity based on lowest decimals of risky/stable
@@ -60,7 +58,7 @@ export class Engine extends Token {
   constructor(factory: string, risky: Token, stable: Token) {
     super(
       risky.chainId,
-      Engine.computeEngineAddress(factory, risky.address, stable.address, bytecode),
+      Engine.computeEngineAddress(factory, risky.address, stable.address, EngineArtifact.bytecode),
       18,
       'RMM-01',
       'Primitive RMM-01 LP Token'

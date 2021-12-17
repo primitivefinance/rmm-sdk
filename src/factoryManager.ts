@@ -1,10 +1,12 @@
 import invariant from 'tiny-invariant'
 import { Interface } from '@ethersproject/abi'
 import { AddressZero } from '@ethersproject/constants'
-import { abi } from '@primitivefinance/rmm-core/artifacts/contracts/PrimitiveFactory.sol/PrimitiveFactory.json'
+import FactoryArtifact from '@primitivefinance/rmm-core/artifacts/contracts/PrimitiveFactory.sol/PrimitiveFactory.json'
 
 export abstract class FactoryManager {
-  public static INTERFACE: Interface = new Interface(abi)
+  public static INTERFACE: Interface = new Interface(FactoryArtifact.abi)
+  public static BYTECODE: string = FactoryArtifact.bytecode
+  public static ABI: any = FactoryArtifact.abi
 
   private constructor() {}
 

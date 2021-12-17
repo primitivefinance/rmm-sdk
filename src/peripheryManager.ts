@@ -4,7 +4,7 @@ import { Interface } from '@ethersproject/abi'
 import { parseWei, Percentage, toBN, Wei } from 'web3-units'
 import { NativeCurrency } from '@uniswap/sdk-core'
 import { AddressZero } from '@ethersproject/constants'
-import { abi } from '@primitivefinance/rmm-manager/artifacts/contracts/PrimitiveManager.sol/PrimitiveManager.json'
+import ManagerArtifact from '@primitivefinance/rmm-manager/artifacts/contracts/PrimitiveManager.sol/PrimitiveManager.json'
 
 import { Pool, PoolSides } from './entities/pool'
 import { Engine } from './entities/engine'
@@ -53,7 +53,9 @@ export interface RemoveOptions extends LiquidityOptions, RecipientOptions, Nativ
 }
 
 export abstract class PeripheryManager extends SelfPermit {
-  public static INTERFACE: Interface = new Interface(abi)
+  public static INTERFACE: Interface = new Interface(ManagerArtifact.abi)
+  public static BYTECODE: string = ManagerArtifact.bytecode
+  public static ABI: any = ManagerArtifact.abi
 
   private constructor() {
     super()
