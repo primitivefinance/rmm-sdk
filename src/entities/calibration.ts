@@ -1,21 +1,34 @@
 import { utils, BigNumber } from 'ethers'
 import { isAddress } from '@ethersproject/address'
+import invariant from 'tiny-invariant'
 import { Token } from '@uniswap/sdk-core'
 import { Percentage, Time, Wei, toBN } from 'web3-units'
+
 import { Engine } from './engine'
-import invariant from 'tiny-invariant'
 import { weiToWei } from '../utils'
 const { keccak256, solidityPack } = utils
 
-export const MIN_SIGMA = 1
-export const MAX_SIGMA = Percentage.BasisPoints * 1e3
+/**
+ * @returns Keccak256 hash of a solidity packed array of engine address and calibration struct
+ */
+export function hashParametersForPoolId(
+  engine: string,
+  strike: string,
+  sigma: string,
+  maturity: string,
+  gamma: string
+): string {
+  return keccak256(
+    solidityPack(['address', 'uint128', 'uint32', 'uint32', 'uint32'], [engine, strike, sigma, maturity, gamma])
+  )
+}
 
 export function isValidSigma(sigma: string): boolean {
-  return parseFloat(sigma) <= MAX_SIGMA && parseFloat(sigma) >= MIN_SIGMA
+  return parseFloat(sigma) <= Calibration.MAX_SIGMA && parseFloat(sigma) >= Calibration.MIN_SIGMA
 }
 
 export function isValidGamma(gamma: string): boolean {
-  return parseFloat(gamma) < Percentage.BasisPoints && parseFloat(gamma) > 0
+  return parseFloat(gamma) <= Calibration.MAX_GAMMA && parseFloat(gamma) >= Calibration.MIN_GAMMA
 }
 
 export function isValidMaturity(maturity: string): boolean {
@@ -23,7 +36,7 @@ export function isValidMaturity(maturity: string): boolean {
 }
 
 export function isValidStrike(strike: string): boolean {
-  return +strike < 2e128 - 1 && Math.floor(+strike) > 0
+  return parseFloat(strike) < 2e128 - 1 && Math.floor(parseFloat(strike)) > 0
 }
 
 /**
@@ -51,6 +64,23 @@ export function parseCalibration(
  * @dev    Can be stateless and used to compute poolId of arbitrary parameters
  */
 export class Calibration extends Engine {
+  /**
+   * @notice Minimum sigma value inclusive, equal to 1 basis point, or 0.01%
+   */
+  static readonly MIN_SIGMA = 1
+  /**
+   * @notice Maximum sigma value inclusive, equal to 10_000_000 basis points, or 1_000.00%
+   */
+  static readonly MAX_SIGMA = Percentage.BasisPoints * 1e3
+  /**
+   * @notice Minimum gamma value inclusive, equal to 9000 basis points, or 90.00%
+   */
+  static readonly MIN_GAMMA = Percentage.BasisPoints - 1e3
+  /**
+   * @notice Maximum gamma value inclusive, equal to 9999 basis points, or 99.99%
+   */
+  static readonly MAX_GAMMA = Percentage.BasisPoints - 1
+
   /**
    * @notice Strike price with the same precision as the stable asset
    */
@@ -85,16 +115,17 @@ export class Calibration extends Engine {
     gamma: string
   ) {
     super(factory, risky, stable)
+    invariant(isValidStrike(strike), `Strike must be an integer in units of wei: ${strike}`)
     invariant(
       isValidSigma(sigma),
       `Sigma Error: Implied volatility outside of bounds 1-10_000_000 basis points: ${sigma}`
     )
-    invariant(isValidGamma(gamma), `Gamma Error: Fee outside of bounds 1-9_9999 basis points: ${gamma}`)
     invariant(isValidMaturity(maturity), `Maturity out of bounds > 0 && < 2^32 -1: ${maturity}`)
+    invariant(isValidGamma(gamma), `Gamma Error: Fee outside of bounds 1-9_9999 basis points: ${gamma}`)
 
     this.strike = weiToWei(strike, stable.decimals)
     this.sigma = new Percentage(toBN(sigma))
-    this.maturity = new Time(+maturity)
+    this.maturity = new Time(parseFloat(maturity))
     this.gamma = new Percentage(toBN(gamma))
   }
 
@@ -105,6 +136,9 @@ export class Calibration extends Engine {
     return Calibration.computePoolId(this.address, this.strike.raw, this.sigma.raw, this.maturity.raw, this.gamma.raw)
   }
 
+  /**
+   * @notice Computes deterministic poolIds from hashing calibration parameters, throws on invalid parameter
+   */
   public static computePoolId(
     engine: string,
     strike: string | BigNumber,
@@ -116,16 +150,14 @@ export class Calibration extends Engine {
     sigma = typeof sigma !== 'string' ? sigma.toString() : sigma
     maturity = typeof maturity !== 'string' ? maturity.toString() : maturity
     gamma = typeof gamma !== 'string' ? gamma.toString() : gamma
+    invariant(isAddress(engine), 'Invalid address when computing pool id')
+    invariant(isValidStrike(strike), `Strike must be an integer in units of wei: ${strike}`)
     invariant(
       isValidSigma(sigma),
       `Sigma Error: Implied volatility outside of bounds 1-10_000_000 basis points: ${sigma}`
     )
-    invariant(isValidGamma(gamma), `Gamma Error: Fee outside of bounds 1-9_9999 basis points: ${gamma}`)
-    invariant(isAddress(engine), 'Invalid address when computing pool id')
-    invariant(isValidStrike(strike), `Strike must be an integer in units of wei: ${strike}`)
     invariant(isValidMaturity(maturity), `Maturity out of bounds > 0 && < 2^32 -1: ${maturity}`)
-    return keccak256(
-      solidityPack(['address', 'uint128', 'uint32', 'uint32', 'uint32'], [engine, strike, sigma, maturity, gamma])
-    )
+    invariant(isValidGamma(gamma), `Gamma Error: Fee outside of bounds 1-9_9999 basis points: ${gamma}`)
+    return hashParametersForPoolId(engine, strike, sigma, maturity, gamma)
   }
 }
