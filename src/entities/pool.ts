@@ -20,13 +20,21 @@ export enum PoolSides {
  * @dev    Has slots for reserves, invariant, and lastTimestamp state
  */
 export class Pool extends Calibration {
-  public readonly lastTimestamp: Time
   public readonly invariant: FixedPointX64
   public readonly reserveRisky: Wei
   public readonly reserveStable: Wei
   public readonly liquidity: Wei
 
+  private _lastTimestamp: Time
   private _referencePriceOfRisky?: Wei
+
+  set lastTimestamp(x: Time) {
+    this._lastTimestamp = x
+  }
+
+  get lastTimestamp(): Time {
+    return this._lastTimestamp
+  }
 
   set referencePriceOfRisky(x: Wei | undefined) {
     this._referencePriceOfRisky = x
@@ -127,7 +135,7 @@ export class Pool extends Calibration {
     let { strike, sigma, maturity, gamma, lastTimestamp } = calibration
     super(factory, token0, token1, strike, sigma, maturity, gamma)
 
-    this.lastTimestamp = lastTimestamp ? new Time(Number(lastTimestamp)) : new Time(Time.now)
+    this._lastTimestamp = lastTimestamp ? new Time(Number(lastTimestamp)) : new Time(Time.now)
 
     this.reserveRisky = weiToWei(reserves.reserveRisky, Number(risky.decimals))
     this.reserveStable = weiToWei(reserves.reserveStable, Number(stable.decimals))
