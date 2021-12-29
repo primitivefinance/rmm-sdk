@@ -1,4 +1,5 @@
 import {
+  callDelta,
   getInvariantApproximation,
   getMarginalPriceSwapRiskyInApproximation,
   getMarginalPriceSwapStableInApproximation,
@@ -7,29 +8,23 @@ import {
   getSpotPriceApproximation,
   getStableGivenRiskyApproximation
 } from '@primitivefi/rmm-math'
-import { getAddress } from 'ethers/lib/utils'
-import { parseWei, Time, Wei } from 'web3-units'
-import { Engine } from './engine'
 import { Floating } from './Floating'
-import { Pool } from './pool'
 
-type Coin = string
-
-interface ExactInResult extends SwapResult {
+export interface ExactInResult extends SwapResult {
   /**
    * @notice Amount of tokens output from a swap
    */
   output: number
 }
 
-interface ExactOutResult extends SwapResult {
+export interface ExactOutResult extends SwapResult {
   /**
    * @notice Amount of tokens input to a swap
    */
   input: number
 }
 
-interface SwapResult {
+export interface SwapResult {
   /**
    * @notice Post-swap invariant of the pool
    */
@@ -40,73 +35,10 @@ interface SwapResult {
   priceIn: number
 }
 
+/**
+ * @notice Static functions to compute swap in/out amounts and marginal prices
+ */
 export class Swaps {
-  coin0: Coin
-  coin1: Coin
-
-  decimals0: number
-  decimals1: number
-
-  res0: number
-  res1: number
-  liq: number
-
-  strike: number
-  sigma: number
-  maturity: number
-  gamma: number
-  lastTimestamp: number
-
-  invariant: number
-
-  static fromPool(pool: Pool): Swaps {
-    return new Swaps(
-      pool.risky.address,
-      pool.stable.address,
-      pool.reserveRisky.float,
-      pool.reserveStable.float,
-      pool.liquidity.float,
-      pool.strike.float,
-      pool.sigma.float,
-      pool.maturity.raw,
-      pool.gamma.float,
-      pool.invariant.float,
-      pool.lastTimestamp.raw,
-      pool.risky.decimals,
-      pool.stable.decimals
-    )
-  }
-
-  constructor(
-    coin0: string,
-    coin1: string,
-    res0: number,
-    res1: number,
-    liq: number,
-    strike: number,
-    sigma: number,
-    maturity: number,
-    gamma: number,
-    invariant: number,
-    lastTimestamp: number = Time.now,
-    decimals0 = 18,
-    decimals1 = 18
-  ) {
-    this.coin0 = getAddress(coin0)
-    this.coin1 = getAddress(coin1)
-    this.decimals0 = decimals0
-    this.decimals1 = decimals1
-    this.res0 = res0
-    this.res1 = res1
-    this.liq = liq
-    this.strike = strike
-    this.sigma = sigma
-    this.maturity = maturity
-    this.gamma = gamma
-    this.invariant = invariant
-    this.lastTimestamp = lastTimestamp
-  }
-
   /**
    * @returns Price of Risky denominated in Stable
    */
@@ -120,6 +52,19 @@ export class Swaps {
   }
 
   // ===== Computing Reserves =====
+
+  /**
+   * @notice  Equal to the Delta (option greeks) exposure of one liquidity
+   * @returns Amount of optimal risky reserves per liquidity given a reference price of the risky
+   */
+  public static getRiskyReservesGivenReferencePrice(
+    strikeFloating: number,
+    sigmaFloating: number,
+    tauYears: number,
+    referencePriceOfRisky: number
+  ): number {
+    return 1 - callDelta(strikeFloating, sigmaFloating, tauYears, referencePriceOfRisky)
+  }
 
   /**
    * @param reserveStable Amount of stable tokens in reserve

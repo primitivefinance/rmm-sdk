@@ -3,17 +3,10 @@ import { formatFixed } from '@ethersproject/bignumber'
 import { Token } from '@uniswap/sdk-core'
 import { FixedPointX64, parseFixedPointX64, parseWei, Time, Wei } from 'web3-units'
 
-import {
-  callDelta,
-  callPremium,
-  getMarginalPriceSwapRiskyInApproximation,
-  getMarginalPriceSwapStableInApproximation,
-  getRiskyGivenStableApproximation,
-  getSpotPriceApproximation,
-  getStableGivenRiskyApproximation
-} from '@primitivefi/rmm-math'
-import { PoolInterface } from './interfaces'
+import { callDelta, callPremium } from '@primitivefi/rmm-math'
 import { Calibration } from './calibration'
+import { PoolInterface } from './interfaces'
+import { Swaps, ExactInResult, ExactOutResult } from './swaps'
 import { weiToWei } from '../utils'
 
 export enum PoolSides {
@@ -89,13 +82,13 @@ export class Pool extends Calibration {
     const strikePrice = parseFloat(formatFixed(strike, stable.decimals))
     const tau = new Time(Number(maturity)).sub(latestTimestamp)
 
-    const oppositeDelta = Pool.getRiskyReservesGivenReferencePrice(
+    const oppositeDelta = Swaps.getRiskyReservesGivenReferencePrice(
       strikePrice,
       Number(sigma),
       tau.years,
       referencePrice
     )
-    const balance = getStableGivenRiskyApproximation(oppositeDelta, strikePrice, Number(sigma), tau.years, invariant)
+    const balance = Swaps.getStableGivenRisky(oppositeDelta, strikePrice, Number(sigma), tau.years, invariant) ?? 0
 
     const reserveRisky = weiToWei(oppositeDelta.toString(), Number(risky.decimals)).toString()
     const reserveStable = weiToWei(balance.toString(), Number(stable.decimals)).toString()
@@ -294,54 +287,6 @@ export class Pool extends Calibration {
     return { valuePerLiquidity, values }
   }
 
-  // ===== Computing Reserves using Trading Functions ====
-
-  /**
-   * @param reserveRisky Amount of risky tokens in reserve
-   * @return reserveStable Expected amount of stable token reserves
-   */
-  public static getStableGivenRisky(
-    strikeFloating: number,
-    sigmaFloating: number,
-    tauYears: number,
-    reserveRiskyFloating: number,
-    invariantFloating?: number
-  ): number | undefined {
-    const stable = getStableGivenRiskyApproximation(
-      reserveRiskyFloating,
-      strikeFloating,
-      sigmaFloating,
-      tauYears,
-      invariantFloating ? invariantFloating : 0
-    )
-
-    if (isNaN(stable)) return undefined
-    return stable
-  }
-
-  /**
-   * @param reserveStable Amount of stable tokens in reserve
-   * @return reserveRisky Expected amount of risky token reserves
-   */
-  public static getRiskyGivenStable(
-    strikeFloating: number,
-    sigmaFloating: number,
-    tauYears: number,
-    reserveStableFloating: number,
-    invariantFloating?: number
-  ): number | undefined {
-    const stable = getRiskyGivenStableApproximation(
-      reserveStableFloating,
-      strikeFloating,
-      sigmaFloating,
-      tauYears,
-      invariantFloating ? invariantFloating : 0
-    )
-
-    if (isNaN(stable)) return undefined
-    return stable
-  }
-
   // ===== Swap Routing Info =====
 
   /**
@@ -350,110 +295,79 @@ export class Pool extends Calibration {
   get reportedPriceOfRisky(): Wei | undefined {
     const risky = this.reserveRisky.float / this.liquidity.float
     const tau = this.tau.years
-    const spot = Pool.getReportedPriceOfRisky(risky, this.strike.float, this.sigma.float, tau)
+    const spot = Swaps.getReportedPriceOfRisky(risky, this.strike.float, this.sigma.float, tau)
     if (isNaN(spot)) return undefined
     return parseWei(spot, this.stable.decimals)
   }
 
-  /**
-   * @returns Price of Risky denominated in Stable
-   */
-  public static getReportedPriceOfRisky(
-    balance0Floating: number,
-    strikeFloating: number,
-    sigmaFloating: number,
-    tauYears: number
-  ): number {
-    return getSpotPriceApproximation(balance0Floating, strikeFloating, sigmaFloating, tauYears)
-  }
-
-  /**
-   * @return Marginal price after an exact trade in with size `amountIn`
-   */
-  marginalPriceAfterSwapRiskyIn(amountIn: number) {
-    return Pool.getMarginalPriceSwapRiskyIn(
+  get swapArgs() {
+    const args = [
+      this.risky.decimals,
+      this.stable.decimals,
       this.reserveRisky.float,
-      this.strike.float,
-      this.sigma.float,
-      this.tau.years,
-      this.gamma.float,
-      amountIn
-    )
-  }
-
-  /**
-   * @notice See https://arxiv.org/pdf/2012.08040.pdf
-   * @param amountIn Amount of risky token to add to risky reserve
-   * @return Marginal price after an exact trade in of the RISKY asset with size `amountIn`
-   */
-  public static getMarginalPriceSwapRiskyIn(
-    reserve0Floating: number,
-    strikeFloating: number,
-    sigmaFloating: number,
-    tauYears: number,
-    gammaFloating: number,
-    amountIn: number
-  ) {
-    return getMarginalPriceSwapRiskyInApproximation(
-      amountIn,
-      reserve0Floating,
-      strikeFloating,
-      sigmaFloating,
-      tauYears,
-      1 - gammaFloating
-    )
-  }
-
-  /**
-   * @return Marginal price after an exact trade in of the STABLE asset with size `amountIn`
-   */
-  marginalPriceAfterSwapStableIn(amountIn: number) {
-    return Pool.getMarginalPriceSwapStableIn(
-      this.invariant.float,
       this.reserveStable.float,
+      this.liquidity.float,
       this.strike.float,
       this.sigma.float,
-      this.tau.years,
       this.gamma.float,
-      amountIn
-    )
+      this.tau.years
+    ] as const
+    return args
   }
 
   /**
-   * @notice See https://arxiv.org/pdf/2012.08040.pdf
-   * @param amountIn Amount of stable token to add to stable reserve
-   * @return Marginal price after an exact trade in with size `amountIn`
+   * @return Amount input for a swap after an exact trade out of `tokenOut` with size `amountOut`
    */
-  public static getMarginalPriceSwapStableIn(
-    invariantFloating: number,
-    reserve1Floating: number,
-    strikeFloating: number,
-    sigmaFloating: number,
-    tauYears: number,
-    gammaFloating: number,
-    amountIn: number
-  ) {
-    return getMarginalPriceSwapStableInApproximation(
-      amountIn,
-      invariantFloating,
-      reserve1Floating,
-      strikeFloating,
-      sigmaFloating,
-      tauYears,
-      1 - gammaFloating
-    )
+  amountIn(tokenOut: Token, amountOut: number): ExactOutResult {
+    const args = [amountOut, ...this.swapArgs] as const
+    if (this.risky.equals(tokenOut)) {
+      return Swaps.exactRiskyOutput(...args)
+    } else if (this.stable.equals(tokenOut)) {
+      return Swaps.exactStableOutput(...args)
+    } else {
+      throw new Error(`Token is not in pair: ${tokenOut.address}`)
+    }
   }
 
   /**
-   * @notice  Equal to the Delta (option greeks) exposure of one liquidity
-   * @returns Amount of optimal risky reserves per liquidity given a reference price of the risky
+   * @return Amount output from swap after an exact trade in of `tokenIn` with size `amountIn`
    */
-  public static getRiskyReservesGivenReferencePrice(
-    strikeFloating: number,
-    sigmaFloating: number,
-    tauYears: number,
-    referencePriceOfRisky: number
-  ): number {
-    return 1 - callDelta(strikeFloating, sigmaFloating, tauYears, referencePriceOfRisky)
+  amountOut(tokenIn: Token, amountIn: number): ExactInResult {
+    const args = [amountIn, ...this.swapArgs] as const
+    if (this.risky.equals(tokenIn)) {
+      return Swaps.exactRiskyInput(...args)
+    } else if (this.stable.equals(tokenIn)) {
+      return Swaps.exactStableInput(...args)
+    } else {
+      throw new Error(`Token is not in pair: ${tokenIn.address}`)
+    }
+  }
+
+  /**
+   * @return Marginal price after an exact trade in of `token` with size `amountIn`
+   */
+  derivativeOut(token: Token, amountIn: number) {
+    if (this.risky.equals(token)) {
+      return Swaps.getMarginalPriceSwapRiskyIn(
+        this.reserveRisky.float,
+        this.strike.float,
+        this.sigma.float,
+        this.tau.years,
+        this.gamma.float,
+        amountIn
+      )
+    } else if (this.stable.equals(token)) {
+      return Swaps.getMarginalPriceSwapStableIn(
+        this.invariant.float,
+        this.reserveStable.float,
+        this.strike.float,
+        this.sigma.float,
+        this.tau.years,
+        this.gamma.float,
+        amountIn
+      )
+    } else {
+      throw new Error(`Token is not in pair: ${token.address}`)
+    }
   }
 }
