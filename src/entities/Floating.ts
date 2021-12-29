@@ -27,6 +27,11 @@ export class Floating {
     return new Floating(value, decimals)
   }
 
+  private constructor(value: number, decimals: number) {
+    this._raw = value
+    this.decimals = decimals
+  }
+
   get isZero(): boolean {
     return toBN(this.scaled).isZero()
   }
@@ -82,48 +87,56 @@ export class Floating {
     return this.normalized.toFixed(decimals)
   }
 
-  private constructor(value: number, decimals: number) {
-    this._raw = value
-    this.decimals = decimals
-  }
-
   /**
    * @notice Scales up, adds scaled values, downscales back
    */
-  add(adder: number): Floating {
-    const x = this.upscaleInteger(adder) + this.scaled
+  add(adder: number | Floating): Floating {
+    const scaled = adder instanceof Floating ? adder.scaled : this.upscaleInteger(adder)
+    const x = scaled + this.scaled
     return new Floating(this.downscaleInteger(x), this.decimals)
   }
 
   /**
    * @dev Scales up, subtracts scaled values, downscales back
    */
-  sub(subtractor: number): Floating {
-    const x = this.scaled - this.upscaleInteger(subtractor)
+  sub(subtractor: number | Floating): Floating {
+    const scaled = subtractor instanceof Floating ? subtractor.scaled : this.upscaleInteger(subtractor)
+    const x = this.scaled - scaled
     return new Floating(this.downscaleInteger(x), this.decimals)
+  }
+
+  /**
+   * @notice Multiplies scaled multiplier and this value, downscales back
+   */
+  mul(multiplier: number | Floating): Floating {
+    const scaled = multiplier instanceof Floating ? multiplier.scaled : this.upscaleInteger(multiplier)
+    const numerator = Math.floor(this.scaled * scaled)
+    const denominator = this.scaleFactor
+    return new Floating(this.downscaleInteger(numerator / denominator), this.decimals)
   }
 
   /**
    * @notice Multiplies scaled multiplier and this value, divides by scaled divider, downscales back
    */
-  mulDiv(multiplier: number, divider: number): Floating {
-    const numerator = Math.floor(this.scaled * this.upscaleInteger(multiplier))
-    const denominator = this.upscaleInteger(divider)
+  mulDiv(multiplier: number | Floating, divider: number | Floating): Floating {
+    const scaled = multiplier instanceof Floating ? multiplier.scaled : this.upscaleInteger(multiplier)
+    const numerator = Math.floor(this.scaled * scaled)
+    const denominator = divider instanceof Floating ? divider.scaled : this.upscaleInteger(divider)
     return new Floating(this.downscaleInteger(numerator / denominator), this.decimals)
   }
 
   /**
    * @notice Divides this scaled by scaled divider
    */
-  div(divider: number): Floating {
+  div(divider: number | Floating): Floating {
     const numerator = this.scaled
-    const denominator = this.upscaleInteger(divider)
+    const denominator = divider instanceof Floating ? divider.scaled : this.upscaleInteger(divider)
     return new Floating(this.downscaleInteger(numerator / denominator), this.decimals)
   }
 
-  divCeil(divider: number): Floating {
+  divCeil(divider: number | Floating): Floating {
     const numerator = this.scaled
-    const denominator = this.upscaleInteger(divider)
-    return new Floating(this.downscaleInteger(numerator + (divider - 1) / denominator), this.decimals)
+    const denominator = divider instanceof Floating ? divider.scaled : this.upscaleInteger(divider)
+    return new Floating(this.downscaleInteger(numerator + (+divider?.toString() - 1) / denominator), this.decimals)
   }
 }

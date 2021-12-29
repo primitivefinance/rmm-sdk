@@ -2,20 +2,34 @@ import {
   getInvariantApproximation,
   getMarginalPriceSwapRiskyInApproximation,
   getMarginalPriceSwapStableInApproximation,
+  getRiskyGivenStable,
   getRiskyGivenStableApproximation,
   getSpotPriceApproximation,
   getStableGivenRiskyApproximation
 } from '@primitivefi/rmm-math'
-import { normalize } from 'src'
-import { parseWei, Wei } from 'web3-units'
+import { getAddress } from 'ethers/lib/utils'
+import { parseWei, Time, Wei } from 'web3-units'
 import { Engine } from './engine'
+import { Floating } from './Floating'
 import { Pool } from './pool'
 
-interface OutputResult {
+type Coin = string
+
+interface ExactInResult extends SwapResult {
   /**
    * @notice Amount of tokens output from a swap
    */
   output: number
+}
+
+interface ExactOutResult extends SwapResult {
+  /**
+   * @notice Amount of tokens input to a swap
+   */
+  input: number
+}
+
+interface SwapResult {
   /**
    * @notice Post-swap invariant of the pool
    */
@@ -27,6 +41,72 @@ interface OutputResult {
 }
 
 export class Swaps {
+  coin0: Coin
+  coin1: Coin
+
+  decimals0: number
+  decimals1: number
+
+  res0: number
+  res1: number
+  liq: number
+
+  strike: number
+  sigma: number
+  maturity: number
+  gamma: number
+  lastTimestamp: number
+
+  invariant: number
+
+  static fromPool(pool: Pool): Swaps {
+    return new Swaps(
+      pool.risky.address,
+      pool.stable.address,
+      pool.reserveRisky.float,
+      pool.reserveStable.float,
+      pool.liquidity.float,
+      pool.strike.float,
+      pool.sigma.float,
+      pool.maturity.raw,
+      pool.gamma.float,
+      pool.invariant.float,
+      pool.lastTimestamp.raw,
+      pool.risky.decimals,
+      pool.stable.decimals
+    )
+  }
+
+  constructor(
+    coin0: string,
+    coin1: string,
+    res0: number,
+    res1: number,
+    liq: number,
+    strike: number,
+    sigma: number,
+    maturity: number,
+    gamma: number,
+    invariant: number,
+    lastTimestamp: number = Time.now,
+    decimals0 = 18,
+    decimals1 = 18
+  ) {
+    this.coin0 = getAddress(coin0)
+    this.coin1 = getAddress(coin1)
+    this.decimals0 = decimals0
+    this.decimals1 = decimals1
+    this.res0 = res0
+    this.res1 = res1
+    this.liq = liq
+    this.strike = strike
+    this.sigma = sigma
+    this.maturity = maturity
+    this.gamma = gamma
+    this.invariant = invariant
+    this.lastTimestamp = lastTimestamp
+  }
+
   /**
    * @returns Price of Risky denominated in Stable
    */
@@ -137,7 +217,10 @@ export class Swaps {
     )
   }
 
-  public static exactRiskyIn(
+  /**
+   * @notice Given an exact amount of risky tokens in, approximate the output amount of stable tokens
+   */
+  public static exactRiskyInput(
     amountIn: number,
     decimalsRisky: number,
     decimalsStable: number,
@@ -148,140 +231,238 @@ export class Swaps {
     sigmaFloating: number,
     gammaFloating: number,
     tauYears: number
-  ): OutputResult {
+  ): ExactInResult {
     if (amountIn < 0) throw new Error(`Amount in cannot be negative: ${amountIn}`)
 
-    const K = normalize(strikeFloating, decimalsStable)
+    const K = strikeFloating
     const gamma = gammaFloating
     const sigma = sigmaFloating
     const tau = tauYears
 
-    const x = normalize(reserveRiskyFloating, decimalsRisky)
-    const y = normalize(reserveStableFloating, decimalsStable)
-    const l = normalize(reserveLiquidityFloating, 18)
+    const x = Floating.from(reserveRiskyFloating, decimalsRisky)
+    const y = Floating.from(reserveStableFloating, decimalsStable)
+    const l = Floating.from(reserveLiquidityFloating, 18)
 
     // Invariant `k` must always be calculated given the curve with `tau`, else the swap happens on a mismatched curve
     const k = getInvariantApproximation(
-      normalize(x / l, decimalsRisky), // truncates to appropriate decimals
-      normalize(y / l, decimalsStable),
+      x.div(l).normalized, // truncates to appropriate decimals
+      y.div(l).normalized,
       K,
       sigma,
       tau,
       0
     )
 
-    const x1 = Swaps.getStableGivenRisky((x + amountIn * gamma) / l, K, sigma, tau, k)
-    if (!x1) throw new Error(`Next stable reserves are undefined: ${x1}`)
+    const x1 = x.add(amountIn * gamma).div(l)
 
-    const output = y - x1 * l // liquidity normalized
-    const res0 = x + amountIn
-    const res1 = y - output
-    if (x1 < 0) throw new Error(`Reserves cannot be negative: ${x1}`)
+    const yAdjusted = Swaps.getStableGivenRisky(x1.normalized, K, sigma, tau, k)
+    if (!yAdjusted) throw new Error(`Next stable reserves are undefined: ${yAdjusted}`)
 
-    const invariant = getInvariantApproximation(res0 / l, res1 / l, K, sigma, tau, 0)
+    const y1 = Floating.from(yAdjusted, decimalsStable).mul(l) // liquidity normalized
+
+    const output = y.sub(y1.normalized)
+    if (output.normalized < 0) throw new Error(`Reserves cannot be negative: ${output.normalized}`)
+
+    const res0 = x.add(amountIn).div(l)
+    const res1 = y.sub(output).div(l)
+
+    const invariant = getInvariantApproximation(res0.normalized, res1.normalized, K, sigma, tau, 0)
     if (invariant < k) throw new Error(`Invariant decreased from: ${k} to ${invariant}`)
 
-    const priceIn = output / amountIn
+    const priceIn = output.div(amountIn)
 
     return {
-      output: output,
+      output: output.normalized,
       invariant: invariant,
-      priceIn: priceIn
+      priceIn: priceIn.normalized
     }
   }
 
-  public static exactRiskyInput(
-    amountIn: Wei,
-    strikeFloating: number,
-    sigmaBasisPts: number,
-    feeBasisPts: number,
-    tauYears: number,
-    reserveRisky: Wei,
-    reserveStable: Wei,
-    liquidity: Wei,
-    invariantFloating?: number
-  ): { amountOut: Wei; invariant?: number; price?: number } | undefined {
-    if (amountIn.raw.isNegative()) return undefined
-
-    const amountInWithFee = amountIn.mul(1e4 - feeBasisPts).div(1e4)
-    if (amountInWithFee.raw.isNegative()) return undefined
-
-    const reserveInput = reserveRisky
-      .add(amountInWithFee)
-      .mul(Engine.PRECISION)
-      .div(liquidity)
-
-    const reserveOutputFloating =
-      Pool.getStableGivenRisky(
-        strikeFloating,
-        sigmaBasisPts,
-        tauYears,
-        reserveInput.float,
-        invariantFloating ?? undefined
-      ) ?? 0
-
-    const reserveOutput = parseWei(reserveOutputFloating, reserveStable.decimals)
-      .mul(liquidity)
-      .div(Engine.PRECISION)
-
-    if (reserveOutput.raw.isNegative()) return undefined
-
-    const amountOut = reserveStable.sub(reserveOutput)
-
-    const risky = reserveRisky.add(amountIn).float / liquidity.float
-    const stable = reserveStable.sub(amountOut).float / liquidity.float
-    const invariant: any = getInvariantApproximation(risky, stable, strikeFloating, sigmaBasisPts, tauYears)
-    const price = amountOut.float / amountIn.float
-
-    return { amountOut, invariant, price }
-  }
-
+  /**
+   * @notice Given an exact amount of stable tokens in, approximate the output amount of risky tokens
+   */
   public static exactStableInput(
-    amountIn: Wei,
+    amountIn: number,
+    decimalsRisky: number,
+    decimalsStable: number,
+    reserveRiskyFloating: number,
+    reserveStableFloating: number,
+    reserveLiquidityFloating: number,
     strikeFloating: number,
-    sigmaBasisPts: number,
-    feeBasisPts: number,
-    tauYears: number,
-    reserveRisky: Wei,
-    reserveStable: Wei,
-    liquidity: Wei,
-    invariantFloating?: number
-  ): { amountOut: Wei; invariant?: number; price?: number } | undefined {
-    if (amountIn.raw.isNegative()) return undefined
+    sigmaFloating: number,
+    gammaFloating: number,
+    tauYears: number
+  ): ExactInResult {
+    if (amountIn < 0) throw new Error(`Amount in cannot be negative: ${amountIn}`)
 
-    const amountInWithFee = amountIn.mul(1e4 - feeBasisPts).div(1e4)
-    if (amountInWithFee.raw.isNegative()) return undefined
+    const K = strikeFloating
+    const gamma = gammaFloating
+    const sigma = sigmaFloating
+    const tau = tauYears
 
-    const reserveInput = reserveStable
-      .add(amountInWithFee)
-      .mul(Engine.PRECISION)
-      .div(liquidity)
+    const x = Floating.from(reserveRiskyFloating, decimalsRisky)
+    const y = Floating.from(reserveStableFloating, decimalsStable)
+    const l = Floating.from(reserveLiquidityFloating, 18)
 
-    const reserveOutputFloating =
-      Pool.getRiskyGivenStable(
-        strikeFloating,
-        sigmaBasisPts,
-        tauYears,
-        reserveInput.float,
-        invariantFloating ?? undefined
-      ) ?? 0
+    // Invariant `k` must always be calculated given the curve with `tau`, else the swap happens on a mismatched curve
+    const k = getInvariantApproximation(
+      x.div(l).normalized, // truncates to appropriate decimals
+      y.div(l).normalized,
+      K,
+      sigma,
+      tau,
+      0
+    )
 
-    const reserveOutput = parseWei(reserveOutputFloating, reserveRisky.decimals)
-      .mul(liquidity)
-      .div(Engine.PRECISION)
+    const y1 = y.add(amountIn * gamma).div(l)
 
-    if (reserveOutput.raw.isNegative()) return undefined
+    // note: for some reason, the regular non approximated fn outputs less
+    const xAdjusted = getRiskyGivenStable(y1.normalized, K, sigma, tau, k)
+    if (xAdjusted < 0) throw new Error(`Reserves cannot be negative: ${xAdjusted}`)
 
-    const amountOut = reserveRisky.sub(reserveOutput)
+    const x1 = Floating.from(xAdjusted, decimalsRisky).mul(l)
 
-    const risky = reserveRisky.sub(amountOut).float / liquidity.float
-    const stable = reserveStable.add(amountIn).float / liquidity.float
-    const invariant: any = getInvariantApproximation(risky, stable, strikeFloating, sigmaBasisPts, tauYears)
-    const price = amountIn.float / amountOut.float
+    const output = x.sub(x1)
+    if (output.normalized < 0) throw new Error(`Amount out cannot be negative: ${output.normalized}`)
 
-    return { amountOut, invariant, price }
+    const res0 = x.sub(output).div(l)
+    const res1 = y.add(amountIn).div(l)
+
+    const invariant = getInvariantApproximation(res0.normalized, res1.normalized, K, sigma, tau, 0)
+    if (invariant < k) throw new Error(`Invariant decreased by: ${k - invariant}`)
+
+    let priceIn: Floating
+    if (amountIn === 0) priceIn = Floating.INFINITY
+    else priceIn = Floating.from(amountIn, decimalsStable).div(output)
+
+    return {
+      output: output.normalized,
+      invariant: invariant,
+      priceIn: priceIn.normalized
+    }
   }
 
-  public static exactRiskyOutput() {}
-  public static exactStableOutput() {}
+  /**
+   * @notice Given an exact amount of risky tokens out, approximate the input amount of stable tokens
+   */
+  public static exactRiskyOutput(
+    amountOut: number,
+    decimalsRisky: number,
+    decimalsStable: number,
+    reserveRiskyFloating: number,
+    reserveStableFloating: number,
+    reserveLiquidityFloating: number,
+    strikeFloating: number,
+    sigmaFloating: number,
+    gammaFloating: number,
+    tauYears: number
+  ): ExactOutResult {
+    if (amountOut < 0) throw new Error(`Amount out cannot be negative: ${amountOut}`)
+
+    const K = strikeFloating
+    const gamma = gammaFloating
+    const sigma = sigmaFloating
+    const tau = tauYears
+
+    const x = Floating.from(reserveRiskyFloating, decimalsRisky)
+    const y = Floating.from(reserveStableFloating, decimalsStable)
+    const l = Floating.from(reserveLiquidityFloating, 18)
+
+    // Invariant `k` must always be calculated given the curve with `tau`, else the swap happens on a mismatched curve
+    const k = getInvariantApproximation(
+      x.div(l).normalized, // truncates to appropriate decimals
+      y.div(l).normalized,
+      K,
+      sigma,
+      tau,
+      0
+    )
+
+    const x1 = x.sub(amountOut).div(l)
+
+    const yAdjusted = Swaps.getStableGivenRisky(K, sigma, tau, x1.normalized)
+    if (!yAdjusted) throw new Error(`Adjusted stable reserve cannot be undefined: ${yAdjusted}`)
+
+    const y1 = Floating.from(yAdjusted, decimalsStable).mul(l)
+
+    const input = y1.sub(y)
+    const inputWithFee = input.div(gamma)
+
+    const res0 = x1
+    const res1 = y.add(input).div(l)
+
+    const invariant = getInvariantApproximation(res0.normalized, res1.normalized, K, sigma, tau, 0)
+    if (invariant < k) throw new Error(`Invariant decreased by: ${k - invariant}`)
+
+    let priceIn: Floating
+    if (inputWithFee.normalized === 0) priceIn = Floating.INFINITY
+    else priceIn = inputWithFee.div(amountOut)
+
+    return {
+      input: inputWithFee.normalized,
+      invariant: invariant,
+      priceIn: priceIn.normalized
+    }
+  }
+
+  /**
+   * @notice Given an exact amount of stable tokens out, approximate the input amount of risky tokens
+   */
+  public static exactStableOutput(
+    amountOut: number,
+    decimalsRisky: number,
+    decimalsStable: number,
+    reserveRiskyFloating: number,
+    reserveStableFloating: number,
+    reserveLiquidityFloating: number,
+    strikeFloating: number,
+    sigmaFloating: number,
+    gammaFloating: number,
+    tauYears: number
+  ): ExactOutResult {
+    if (amountOut < 0) throw new Error(`Amount in cannot be negative: ${amountOut}`)
+
+    const K = strikeFloating
+    const gamma = gammaFloating
+    const sigma = sigmaFloating
+    const tau = tauYears
+
+    const x = Floating.from(reserveRiskyFloating, decimalsRisky)
+    const y = Floating.from(reserveStableFloating, decimalsStable)
+    const l = Floating.from(reserveLiquidityFloating, 18)
+
+    // Invariant `k` must always be calculated given the curve with `tau`, else the swap happens on a mismatched curve
+    const k = getInvariantApproximation(
+      x.div(l).normalized, // truncates to appropriate decimals
+      y.div(l).normalized,
+      K,
+      sigma,
+      tau,
+      0
+    )
+
+    const y1 = y.sub(amountOut).div(l)
+
+    const xAdjusted = getRiskyGivenStable(y1.normalized, K, sigma, tau, k)
+    if (xAdjusted < 0) throw new Error(`Adjusted risky reserves cannot be negative: ${xAdjusted}`)
+
+    const x1 = Floating.from(xAdjusted, decimalsRisky).mul(l)
+
+    const input = x1.sub(x)
+    const inputWithFee = input.div(gamma)
+
+    const res0 = x.add(input).div(l)
+    const res1 = y1
+
+    const invariant = getInvariantApproximation(res0.normalized, res1.normalized, K, sigma, tau, 0)
+    if (invariant < k) throw new Error(`Invariant decreased by: ${k - invariant}`)
+
+    const priceIn = Floating.from(amountOut, decimalsStable).div(inputWithFee)
+
+    return {
+      input: inputWithFee.normalized,
+      invariant: invariant,
+      priceIn: priceIn.normalized
+    }
+  }
 }
