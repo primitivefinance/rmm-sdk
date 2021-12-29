@@ -1,7 +1,7 @@
 import { BigNumber } from 'ethers'
 import { Interface } from '@ethersproject/abi'
 import { Token } from '@uniswap/sdk-core'
-import ManagerArtifact from '@primitivefinance/rmm-manager/artifacts/contracts/PrimitiveManager.sol/PrimitiveManager.json'
+import ManagerArtifact from '@primitivefi/rmm-manager/artifacts/contracts/PrimitiveManager.sol/PrimitiveManager.json'
 
 export interface StandardPermitArguments {
   v: 0 | 1 | 27 | 28

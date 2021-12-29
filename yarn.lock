@@ -1522,24 +1522,24 @@
   resolved "https://registry.yarnpkg.com/@openzeppelin/contracts/-/contracts-4.4.0.tgz#4a1df71f736c31230bbbd634dfb006a756b51e6b"
   integrity sha512-dlKiZmDvJnGRLHojrDoFZJmsQVeltVeoiRN7RK+cf2FmkhASDEblE0RiaYdxPNsUZa6mRG8393b9bfyp+V5IAw==
 
-"@primitivefinance/rmm-core@^1.13.2", "@primitivefinance/rmm-core@^1.13.3":
-  version "1.13.3"
-  resolved "https://npm.pkg.github.com/download/@primitivefinance/rmm-core/1.13.3/ace2d8701506a80af7ad8cf4a112cadee2a45a6c65a0e29c0803d0996b0a4dcb#d751f96e6a3b512aac2f0566807a80a73456f5ae"
-  integrity sha512-0eEOcwOD59UYDVOf3zWnWTJ1gVnW7mQdH3IhOQCkEYGTM+E4Qtyum3WqP3IEXU5U0zbMsWQZwA/k5x8OxPDgEA==
+"@primitivefi/rmm-core@^2.0.0-beta.1":
+  version "2.0.0-beta.1"
+  resolved "https://registry.yarnpkg.com/@primitivefi/rmm-core/-/rmm-core-2.0.0-beta.1.tgz#de5fb7214dfe15bd59fa6f82fcd27e2372024ee1"
+  integrity sha512-uZ2znraiDMefzIYBFozs3JMkL6pBloM1fINIc9SwZ4gAPcgT9zM1kwpX2nVdQvPbjBkPaa4XJMavs2wfRpwo1g==
 
-"@primitivefinance/rmm-manager@^1.0.0-beta.0":
-  version "1.0.0-beta.0"
-  resolved "https://npm.pkg.github.com/download/@primitivefinance/rmm-manager/1.0.0-beta.0/26d24abfe8d3ef6387ea052318064b10130d5f43e84c741b6d5ec881aab17dc4#b72ed63aaa56a4952259d07c4141b4d959d6bc58"
-  integrity sha512-XYV4veNkQwJ6+N/tePVAvuMzbKGwr8Zm0HJ7TU0SSwB9VXWL4rrpK2UkKiHdpqBVFTE9skQQ0D/qCNq+u5zkBA==
+"@primitivefi/rmm-manager@^2.0.0-beta.2":
+  version "2.0.0-beta.2"
+  resolved "https://registry.yarnpkg.com/@primitivefi/rmm-manager/-/rmm-manager-2.0.0-beta.2.tgz#45a493256b2b0629bd1d9136de749c7887b4b628"
+  integrity sha512-Yz5bPX351fWGRG+hzH3WQd+2aFR3IBPuaS8dPuJr5JDFzgrlMyoOpbkWb4IStBDHiC+RTJlha1Hp88C3SGiUaQ==
   dependencies:
     "@openzeppelin/contracts" "^4.1.0"
-    "@primitivefinance/rmm-core" "^1.13.2"
+    "@primitivefi/rmm-core" "^2.0.0-beta.1"
     base64-sol "^1.1.0"
 
-"@primitivefinance/rmm-math@^1.5.1":
-  version "1.5.1"
-  resolved "https://npm.pkg.github.com/download/@primitivefinance/rmm-math/1.5.1/105f69efc37bed1ee36381b830a4037aa363540841fc693d90465b585010f254#50a3e87c76a119f15654ed3dee95ca2ccbf06a7e"
-  integrity sha512-kvG5XFYzxRp9+Xk4kKxMrOqKkvlwJm9hGhPMqwUjbeR6uU7OwzskQiZA71maIIHdxyhUPTQ+LrmqbcNv/N4dqw==
+"@primitivefi/rmm-math@^2.0.0-beta.2":
+  version "2.0.0-beta.2"
+  resolved "https://registry.yarnpkg.com/@primitivefi/rmm-math/-/rmm-math-2.0.0-beta.2.tgz#97fed84c645c0cd0e8a00c47936ba413d532057a"
+  integrity sha512-88bEYPHCHD3f2y1KvyoVr67ydTZli7NnORT+SAhKsXD8n2UnmfrowNNvHWfDpnx84B0UXscEJZGGYiyxa7UYQg==
   dependencies:
     gaussian "^1.2.0"
     numeric "^1.2.6"

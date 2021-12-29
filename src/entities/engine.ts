@@ -2,7 +2,7 @@ import { utils, constants } from 'ethers'
 import { Token } from '@uniswap/sdk-core'
 import { parseWei, Wei } from 'web3-units'
 import { Interface } from '@ethersproject/abi'
-import EngineArtifact from '@primitivefinance/rmm-core/artifacts/contracts/PrimitiveEngine.sol/PrimitiveEngine.json'
+import EngineArtifact from '@primitivefi/rmm-core/artifacts/contracts/PrimitiveEngine.sol/PrimitiveEngine.json'
 
 /**
  * @notice Represents the PrimitiveEngine.sol smart contract

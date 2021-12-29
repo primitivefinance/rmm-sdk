@@ -12,7 +12,7 @@ import {
   nonNegative,
   quantilePrime,
   std_n_pdf
-} from '@primitivefinance/rmm-math'
+} from '@primitivefi/rmm-math'
 import { PoolInterface } from './interfaces'
 import { Calibration } from './calibration'
 import { weiToWei } from '../utils'

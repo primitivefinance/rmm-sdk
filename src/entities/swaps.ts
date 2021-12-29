@@ -1,4 +1,4 @@
-import { getInvariantApproximation } from '@primitivefinance/rmm-math'
+import { getInvariantApproximation } from '@primitivefi/rmm-math'
 import { parseWei, Wei } from 'web3-units'
 import { Engine } from './engine'
 import { Pool } from './pool'
