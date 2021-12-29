@@ -212,7 +212,7 @@ export class Swaps {
     const res1 = y.sub(output).div(l)
 
     const invariant = getInvariantApproximation(res0.normalized, res1.normalized, K, sigma, tau, 0)
-    if (invariant < k) throw new Error(`Invariant decreased from: ${k} to ${invariant}`)
+    if (invariant < k) throw new Error(`Invariant decreased by: ${k - invariant}`)
 
     const priceIn = output.div(amountIn).normalized.toString()
 
@@ -328,7 +328,7 @@ export class Swaps {
 
     const x1 = x.sub(amountOut).div(l)
 
-    const yAdjusted = Swaps.getStableGivenRisky(K, sigma, tau, x1.normalized)
+    const yAdjusted = Swaps.getStableGivenRisky(K, sigma, tau, x1.normalized) // fix: doesn't use approx (which works?)
     if (!yAdjusted) throw new Error(`Adjusted stable reserve cannot be undefined: ${yAdjusted}`)
 
     const y1 = Floating.from(yAdjusted, decimalsStable).mul(l)

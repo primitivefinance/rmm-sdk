@@ -1,13 +1,13 @@
 import invariant from 'tiny-invariant'
 import { Token } from '@uniswap/sdk-core'
-import { formatUnits } from 'ethers/lib/utils'
-import { FixedPointX64, parseFixedPointX64, parseWei, Time, Wei } from 'web3-units'
+import { FixedPointX64, parseFixedPointX64, parseWei, Percentage, Time, Wei } from 'web3-units'
 import { callDelta, callPremium } from '@primitivefi/rmm-math'
 
 import { Calibration } from './calibration'
 import { PoolInterface } from './interfaces'
 import { Swaps, ExactInResult, ExactOutResult } from './swaps'
 import { weiToWei } from '../utils'
+import { BigNumber } from 'ethers'
 
 export enum PoolSides {
   RISKY = 'RISKY',
@@ -87,19 +87,20 @@ export class Pool extends Calibration {
     const { strike, sigma, maturity, lastTimestamp } = calibration
 
     const latestTimestamp = lastTimestamp ? new Time(Number(lastTimestamp)) : new Time(Time.now)
-    const strikePrice = parseFloat(formatUnits(strike, stable.decimals))
+    const strikePrice = weiToWei(strike, +stable.decimals).float
     const tau = new Time(Number(maturity)).sub(latestTimestamp)
+    const sigmaFloating = new Percentage(BigNumber.from(sigma)).float
 
     const oppositeDelta = Swaps.getRiskyReservesGivenReferencePrice(
       strikePrice,
-      Number(sigma),
+      sigmaFloating,
       tau.years,
       referencePrice
     )
-    const balance = Swaps.getStableGivenRisky(oppositeDelta, strikePrice, Number(sigma), tau.years, invariant) ?? 0
+    const balance = Swaps.getStableGivenRisky(oppositeDelta, strikePrice, sigmaFloating, tau.years, invariant) ?? 0
 
-    const reserveRisky = weiToWei(oppositeDelta.toString(), Number(risky.decimals)).toString()
-    const reserveStable = weiToWei(balance.toString(), Number(stable.decimals)).toString()
+    const reserveRisky = parseWei(oppositeDelta.toString(), Number(risky.decimals)).toString()
+    const reserveStable = parseWei(balance.toString(), Number(stable.decimals)).toString()
     return new Pool(
       chainId,
       factory,
@@ -318,7 +319,7 @@ export class Pool extends Calibration {
       this.strike.float,
       this.sigma.float,
       this.gamma.float,
-      this.tau.years
+      this.tau.add(120).years
     ] as const
     return args
   }
@@ -354,8 +355,8 @@ export class Pool extends Calibration {
   /**
    * @return Marginal price after an exact trade in of `token` with size `amountIn`
    */
-  derivativeOut(token: Token, amountIn: number) {
-    if (this.risky.equals(token)) {
+  derivativeOut(tokenIn: Token, amountIn: number) {
+    if (this.risky.equals(tokenIn)) {
       return Swaps.getMarginalPriceSwapRiskyIn(
         this.reserveRisky.float,
         this.strike.float,
@@ -364,7 +365,7 @@ export class Pool extends Calibration {
         this.gamma.float,
         amountIn
       )
-    } else if (this.stable.equals(token)) {
+    } else if (this.stable.equals(tokenIn)) {
       return Swaps.getMarginalPriceSwapStableIn(
         this.invariant.float,
         this.reserveStable.float,
@@ -375,7 +376,7 @@ export class Pool extends Calibration {
         amountIn
       )
     } else {
-      throw new Error(`Token is not in pair: ${token.address}`)
+      throw new Error(`Token is not in pair: ${tokenIn.address}`)
     }
   }
 }

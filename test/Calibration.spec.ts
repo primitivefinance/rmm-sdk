@@ -13,7 +13,15 @@ describe('Calibration', function() {
     token0 = new Token(1, AddressZero, 18)
     token1 = new Token(1, AddressZero, 18)
     ;[strike, sigma, maturity, gamma] = [parseWei(10).toString(), '1000', Time.YearInSeconds.toString(), '9985']
-    cal = parseCalibration(AddressZero, token0, token1, { strike, sigma, maturity, gamma })
+    cal = parseCalibration(AddressZero, token0, token1, { strike, sigma, maturity, gamma }, 2)
+  })
+
+  it('#poolId', async function() {
+    const temp0 = parseCalibration(AddressZero, token0, token1, { strike, sigma, maturity, gamma }, 2)
+    expect(temp0.poolId).toBe(cal.poolId)
+    expect(temp0.chainId).toBe(cal.chainId)
+    const temp1 = parseCalibration(AddressZero, token0, token1, { strike, sigma, maturity, gamma })
+    expect(temp1.chainId).toBe(1)
   })
 
   it('#poolId', async function() {

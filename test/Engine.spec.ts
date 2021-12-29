@@ -32,6 +32,14 @@ describe('Engine entity', function() {
     expect(engine.MIN_LIQUIDITY).toBe(expected)
   })
 
+  it('#MIN_LIQUIDITY', async function() {
+    const temp0 = new Token(1, AddressZero, 6)
+    const temp1 = new Token(1, AddressZero, 18)
+    const temp = new Engine(AddressZero, temp0, temp1) // stable decimals > risky decimals, so use risky
+    const expected = temp0.decimals / Engine.MIN_LIQUIDITY_FACTOR
+    expect(temp.MIN_LIQUIDITY).toBe(expected)
+  })
+
   it('#computeEngineAddress', async function() {
     const expected = Engine.computeEngineAddress(AddressZero, token0.address, token1.address, Engine.BYTECODE)
     expect(engine.address).toBe(expected)
