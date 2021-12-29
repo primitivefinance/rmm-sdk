@@ -1,8 +1,14 @@
 import { utils, constants } from 'ethers'
-import { Token } from '@uniswap/sdk-core'
-import { parseWei, Wei } from 'web3-units'
+import { getAddress, isAddress } from 'ethers/lib/utils'
 import { Interface } from '@ethersproject/abi'
+import { Token } from '@uniswap/sdk-core'
 import EngineArtifact from '@primitivefi/rmm-core/artifacts/contracts/PrimitiveEngine.sol/PrimitiveEngine.json'
+import { parseWei, Wei } from 'web3-units'
+import invariant from 'tiny-invariant'
+
+export function getTokenPairSaltHash(token0: string, token1: string): string {
+  return utils.solidityKeccak256(['bytes'], [utils.defaultAbiCoder.encode(['address', 'address'], [token0, token1])])
+}
 
 /**
  * @notice Represents the PrimitiveEngine.sol smart contract
@@ -20,10 +26,6 @@ export class Engine extends Token {
    * @notice Engine constant value which all values are scaled to for any math
    */
   public static readonly PRECISION: Wei = parseWei('1', 18)
-  /**
-   * @notice Engine constant used to apply fee of 0.15% to swaps
-   */
-  public static readonly GAMMA: number = 9985
   /**
    * @notice Engine constant  for the seconds after a pool expires in which swaps are still possible
    */
@@ -50,12 +52,13 @@ export class Engine extends Token {
   public readonly scaleFactorStable: Wei
 
   /**
-   * @notice Creates a typescript instance of the PrimitveEngine contract
+   * @notice Creates a typescript instance of the PrimitiveEngine contract
    * @param factory Deployer of the Engine
    * @param risky Risky token
    * @param stable Stable token
    */
   constructor(factory: string, risky: Token, stable: Token) {
+    invariant(risky.chainId === stable.chainId, `Token chainId mismatch: ${risky.chainId} != ${stable.chainId}`)
     super(
       risky.chainId,
       Engine.computeEngineAddress(factory, risky.address, stable.address, EngineArtifact.bytecode),
@@ -63,7 +66,8 @@ export class Engine extends Token {
       'RMM-01',
       'Primitive RMM-01 LP Token'
     )
-    this.factory = factory
+
+    this.factory = getAddress(factory)
     this.risky = risky
     this.stable = stable
     this.scaleFactorRisky = risky.decimals === 18 ? new Wei(constants.One) : parseWei(1, 18 - risky.decimals)
@@ -93,10 +97,10 @@ export class Engine extends Token {
    * @returns engine address
    */
   static computeEngineAddress(factory: string, risky: string, stable: string, contractBytecode: string): string {
-    const salt = utils.solidityKeccak256(
-      ['bytes'],
-      [utils.defaultAbiCoder.encode(['address', 'address'], [risky, stable])]
-    )
+    invariant(isAddress(factory), `Factory is not a valid address: ${factory}`)
+    invariant(isAddress(risky), `Risky token is not a valid address: ${risky}`)
+    invariant(isAddress(stable), `Stable token is not a valid address: ${stable}`)
+    const salt = getTokenPairSaltHash(risky, stable)
     return utils.getCreate2Address(factory, salt, utils.keccak256(contractBytecode))
   }
 }
