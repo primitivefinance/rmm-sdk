@@ -1,9 +1,10 @@
 import { AddressZero } from '@ethersproject/constants'
 import { parsePercentage, parseWei, Percentage, Time, toBN } from 'web3-units'
 
-import { usePool } from './shared/fixture'
 import { Pool } from '../src/entities/pool'
 import { SwapManager } from '../src/swapManager'
+
+import { usePool } from './shared/fixture'
 import { AddressOne } from './shared/constants'
 
 function decode(frag: string, data: any) {

@@ -10,6 +10,7 @@ import { Pool, PoolSides } from './entities/pool'
 import { Engine } from './entities/engine'
 import { PermitOptions, SelfPermit } from './selfPermit'
 import { MethodParameters, validateAndParseAddress, checkDecimals } from './utils'
+import { Swaps } from './entities'
 
 export interface NativeOptions {
   useNative?: NativeCurrency
@@ -52,6 +53,22 @@ export interface RemoveOptions extends LiquidityOptions, RecipientOptions, Nativ
   slippageTolerance: Percentage
 }
 
+export interface SafeTransferOptions {
+  sender: string
+  recipient: string
+  amount: Wei
+  id: string
+  data?: string
+}
+
+export interface BatchTransferOptions {
+  sender: string
+  recipient: string
+  ids: string[]
+  amounts: Wei[]
+  data?: string
+}
+
 export abstract class PeripheryManager extends SelfPermit {
   public static INTERFACE: Interface = new Interface(ManagerArtifact.abi)
   public static BYTECODE: string = ManagerArtifact.bytecode
@@ -66,7 +83,7 @@ export abstract class PeripheryManager extends SelfPermit {
     checkDecimals(liquidity, pool)
     invariant(typeof pool.referencePriceOfRisky !== 'undefined', `Attempting to create a pool without reference price`)
     const riskyPerLp = parseWei(
-      Pool.getRiskyReservesGivenReferencePrice(
+      Swaps.getRiskyReservesGivenReferencePrice(
         pool.strike.float,
         pool.sigma.float,
         pool.tau.years,
@@ -322,6 +339,41 @@ export abstract class PeripheryManager extends SelfPermit {
     return {
       calldata:
         calldatas.length === 1 ? calldatas[0] : PeripheryManager.INTERFACE.encodeFunctionData('multicall', [calldatas]),
+      value: toBN(0).toHexString()
+    }
+  }
+
+  public static safeTransferFromParameters(options: SafeTransferOptions): MethodParameters {
+    const sender = validateAndParseAddress(options.sender)
+    const recipient = validateAndParseAddress(options.recipient)
+
+    const id = options.id.substring(0, 2) === '0x' ? BigNumber.from(options.id).toString() : options.id
+
+    const calldata = PeripheryManager.INTERFACE.encodeFunctionData(
+      'safeTransferFrom(address,address,uint256,uint256,bytes)',
+      [sender, recipient, id, options.amount.raw.toHexString(), options.data ?? '0x']
+    )
+
+    return {
+      calldata,
+      value: toBN(0).toHexString()
+    }
+  }
+
+  public static batchTransferFromParameters(options: BatchTransferOptions): MethodParameters {
+    const sender = validateAndParseAddress(options.sender)
+    const recipient = validateAndParseAddress(options.recipient)
+
+    const ids = options.ids.map(id => (id.substring(0, 2) === '0x' ? BigNumber.from(id).toString() : id))
+    const amounts = options.amounts.map(v => v.raw.toHexString())
+
+    const calldata = PeripheryManager.INTERFACE.encodeFunctionData(
+      'safeBatchTransferFrom(address,address,uint256[],uint256[],bytes)',
+      [sender, recipient, ids, amounts, options.data ?? '0x']
+    )
+
+    return {
+      calldata,
       value: toBN(0).toHexString()
     }
   }

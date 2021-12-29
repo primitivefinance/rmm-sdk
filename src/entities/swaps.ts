@@ -32,7 +32,7 @@ export interface SwapResult {
   /**
    * @notice Price of the asset paid from the swap
    */
-  priceIn: number
+  priceIn: string
 }
 
 /**
@@ -214,12 +214,12 @@ export class Swaps {
     const invariant = getInvariantApproximation(res0.normalized, res1.normalized, K, sigma, tau, 0)
     if (invariant < k) throw new Error(`Invariant decreased from: ${k} to ${invariant}`)
 
-    const priceIn = output.div(amountIn)
+    const priceIn = output.div(amountIn).normalized.toString()
 
     return {
       output: output.normalized,
       invariant: invariant,
-      priceIn: priceIn.normalized
+      priceIn: priceIn
     }
   }
 
@@ -276,14 +276,17 @@ export class Swaps {
     const invariant = getInvariantApproximation(res0.normalized, res1.normalized, K, sigma, tau, 0)
     if (invariant < k) throw new Error(`Invariant decreased by: ${k - invariant}`)
 
-    let priceIn: Floating
-    if (amountIn === 0) priceIn = Floating.INFINITY
-    else priceIn = Floating.from(amountIn, decimalsStable).div(output)
+    let priceIn: string
+    if (amountIn === 0) priceIn = Floating.INFINITY.toString()
+    else
+      priceIn = Floating.from(amountIn, decimalsStable)
+        .div(output)
+        .normalized.toString()
 
     return {
       output: output.normalized,
       invariant: invariant,
-      priceIn: priceIn.normalized
+      priceIn: priceIn
     }
   }
 
@@ -339,14 +342,14 @@ export class Swaps {
     const invariant = getInvariantApproximation(res0.normalized, res1.normalized, K, sigma, tau, 0)
     if (invariant < k) throw new Error(`Invariant decreased by: ${k - invariant}`)
 
-    let priceIn: Floating
-    if (inputWithFee.normalized === 0) priceIn = Floating.INFINITY
-    else priceIn = inputWithFee.div(amountOut)
+    let priceIn: string
+    if (inputWithFee.normalized === 0) priceIn = Floating.INFINITY.toString()
+    else priceIn = inputWithFee.div(amountOut).normalized.toString()
 
     return {
       input: inputWithFee.normalized,
       invariant: invariant,
-      priceIn: priceIn.normalized
+      priceIn: priceIn
     }
   }
 
@@ -402,12 +405,14 @@ export class Swaps {
     const invariant = getInvariantApproximation(res0.normalized, res1.normalized, K, sigma, tau, 0)
     if (invariant < k) throw new Error(`Invariant decreased by: ${k - invariant}`)
 
-    const priceIn = Floating.from(amountOut, decimalsStable).div(inputWithFee)
+    const priceIn = Floating.from(amountOut, decimalsStable)
+      .div(inputWithFee)
+      .normalized.toString()
 
     return {
       input: inputWithFee.normalized,
       invariant: invariant,
-      priceIn: priceIn.normalized
+      priceIn: priceIn
     }
   }
 }

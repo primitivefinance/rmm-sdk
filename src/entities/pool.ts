@@ -1,9 +1,9 @@
 import invariant from 'tiny-invariant'
-import { formatFixed } from '@ethersproject/bignumber'
 import { Token } from '@uniswap/sdk-core'
+import { formatUnits } from 'ethers/lib/utils'
 import { FixedPointX64, parseFixedPointX64, parseWei, Time, Wei } from 'web3-units'
-
 import { callDelta, callPremium } from '@primitivefi/rmm-math'
+
 import { Calibration } from './calibration'
 import { PoolInterface } from './interfaces'
 import { Swaps, ExactInResult, ExactOutResult } from './swaps'
@@ -87,7 +87,7 @@ export class Pool extends Calibration {
     const { strike, sigma, maturity, lastTimestamp } = calibration
 
     const latestTimestamp = lastTimestamp ? new Time(Number(lastTimestamp)) : new Time(Time.now)
-    const strikePrice = parseFloat(formatFixed(strike, stable.decimals))
+    const strikePrice = parseFloat(formatUnits(strike, stable.decimals))
     const tau = new Time(Number(maturity)).sub(latestTimestamp)
 
     const oppositeDelta = Swaps.getRiskyReservesGivenReferencePrice(

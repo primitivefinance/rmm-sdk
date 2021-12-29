@@ -1,6 +1,8 @@
-import { MaxUint256 } from '@ethersproject/constants'
+import { BigNumber } from 'ethers'
 import { toBN } from 'web3-units'
 import { normalize } from '../utils'
+
+const MAX_UINT_256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
 
 /**
  * @notice Floating point Decimal numbers are used to calculate values for RMM pools.
@@ -15,7 +17,7 @@ import { normalize } from '../utils'
  * This class is aware of this and will truncate after any math operation.
  */
 export class Floating {
-  static readonly INFINITY = Floating.from(MaxUint256.toNumber())
+  static readonly INFINITY = BigNumber.from(MAX_UINT_256)
   static readonly ZERO = Floating.from(0)
   static readonly HALF = Floating.from(0.5)
   static readonly ONE = Floating.from(1)
@@ -37,7 +39,7 @@ export class Floating {
   }
 
   get isInfinity(): boolean {
-    return toBN(this.scaled).eq(Floating.INFINITY.scaled)
+    return toBN(this.scaled).gte(Floating.INFINITY)
   }
 
   get raw(): number {

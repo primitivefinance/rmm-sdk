@@ -1,9 +1,11 @@
 import { Token } from '@uniswap/sdk-core'
 import { parseWei, Time } from 'web3-units'
 
+import { Swaps } from '../src/entities/swaps'
 import { Pool, PoolSides } from '../src/entities/pool'
-import { AddressOne, EMPTY_CALIBRATION } from './shared'
+
 import { usePool } from './shared/fixture'
+import { AddressOne, EMPTY_CALIBRATION } from './shared'
 
 describe('Test pool', function() {
   let pool: Pool
@@ -20,8 +22,8 @@ describe('Test pool', function() {
     const { strike, sigma, maturity, gamma } = EMPTY_CALIBRATION
     const lastTimestamp = new Time(1)
     const tau = maturity.sub(lastTimestamp).years
-    const risky = Pool.getRiskyReservesGivenReferencePrice(strike.float, sigma.float, tau, spot.float)
-    const stable = Pool.getStableGivenRisky(strike.float, sigma.float, tau, risky)
+    const risky = Swaps.getRiskyReservesGivenReferencePrice(strike.float, sigma.float, tau, spot.float)
+    const stable = Swaps.getStableGivenRisky(strike.float, sigma.float, tau, risky)
     const reserve = {
       reserveRisky: '1.345867008995041e+21',
       reserveStable: stable ? parseWei(stable, token1.decimals).toString() : '0',

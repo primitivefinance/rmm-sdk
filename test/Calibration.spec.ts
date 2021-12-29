@@ -1,10 +1,10 @@
 import { Token } from '@uniswap/sdk-core'
 import { AddressZero } from '@ethersproject/constants'
 import { parseWei, Percentage, Time } from 'web3-units'
+import { formatUnits } from '@ethersproject/units'
 
 import { Engine } from '../src/entities/engine'
 import { Calibration, parseCalibration } from '../src/entities/calibration'
-import { formatUnits } from '@ethersproject/units'
 
 describe('Calibration', function() {
   let cal: Calibration, token0: Token, token1: Token, strike: string, sigma: string, maturity: string, gamma: string
