@@ -8,6 +8,14 @@ export function checkDecimals(amount: Wei, token: Token) {
 }
 
 /**
+ * @notice Truncates `wad` to appropriate decimals then converts to a floating point number
+ */
+export function normalize(wad: number, decimals: number): number {
+  const x = Math.trunc(wad * 10 ** decimals) / 10 ** decimals
+  return x
+}
+
+/**
  * @notice A smart contract returns a wei value as a string,
  * this converts that string value by using the parseWei function, which multiplies
  * it by 10^decimals. Therefore, to get the actual string as a wei we have to divided it back.

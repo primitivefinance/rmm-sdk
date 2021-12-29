@@ -6,12 +6,11 @@ import { FixedPointX64, parseFixedPointX64, parseWei, Time, Wei } from 'web3-uni
 import {
   callDelta,
   callPremium,
+  getMarginalPriceSwapRiskyInApproximation,
+  getMarginalPriceSwapStableInApproximation,
   getRiskyGivenStableApproximation,
-  getStableGivenRiskyApproximation,
-  inverse_std_n_cdf,
-  nonNegative,
-  quantilePrime,
-  std_n_pdf
+  getSpotPriceApproximation,
+  getStableGivenRiskyApproximation
 } from '@primitivefi/rmm-math'
 import { PoolInterface } from './interfaces'
 import { Calibration } from './calibration'
@@ -48,95 +47,104 @@ export class Pool extends Calibration {
   }
 
   /**
-   * @notice Constructs a Pool entity from on-chain data
+   * @notice Constructs a Pool entity from actual reserve data, e.g. on-chain state
    * @param address Engine address which had the pool created
    * @param pool Returned data from on-chain, reconstructed to match PoolInterface or returned from the `house.uri(id)` call
    * @param risky Decimal places of the risky token
    * @param stable Decimal places of the stable token
    * @returns Pool entity
    */
-  public static from(pool: PoolInterface, referencePrice?: number, chainId?: number): Pool {
+  public static from(pool: PoolInterface, referencePrice?: number, chainId: number = 1): Pool {
     const { factory, risky, stable, calibration, reserve, invariant } = pool.properties
 
     return new Pool(
+      chainId,
       factory,
       { ...risky },
       { ...stable },
       { ...calibration },
       { ...reserve },
       invariant,
-      chainId ?? undefined,
       referencePrice ?? undefined
     )
   }
 
-  constructor(
+  /**
+   * @notice Constructs a Pool entity using a reference price, which is used to compute the reserves of the pool
+   * @dev    Defaults to an invariant of 0, since the reserves are computed using an invariant of 0
+   */
+  public static fromReferencePrice(
+    referencePrice: number,
     factory: string,
     risky: { address: string; decimals: string | number; name?: string; symbol?: string },
     stable: { address: string; decimals: string | number; name?: string; symbol?: string },
     calibration: { strike: string; sigma: string; maturity: string; gamma: string; lastTimestamp?: string },
-    overrideReserves?: {
-      reserveRisky?: string
-      reserveStable?: string
-      liquidity?: string
+    chainId = 1,
+    liquidity = parseWei(1, 18).toString(),
+    invariant = 0
+  ): Pool {
+    const { strike, sigma, maturity, lastTimestamp } = calibration
+
+    const latestTimestamp = lastTimestamp ? new Time(Number(lastTimestamp)) : new Time(Time.now)
+    const strikePrice = parseFloat(formatFixed(strike, stable.decimals))
+    const tau = new Time(Number(maturity)).sub(latestTimestamp)
+
+    const oppositeDelta = Pool.getRiskyReservesGivenReferencePrice(
+      strikePrice,
+      Number(sigma),
+      tau.years,
+      referencePrice
+    )
+    const balance = getStableGivenRiskyApproximation(oppositeDelta, strikePrice, Number(sigma), tau.years, invariant)
+
+    const reserveRisky = weiToWei(oppositeDelta.toString(), Number(risky.decimals)).toString()
+    const reserveStable = weiToWei(balance.toString(), Number(stable.decimals)).toString()
+    return new Pool(
+      chainId,
+      factory,
+      risky,
+      stable,
+      calibration,
+      { reserveRisky, reserveStable, liquidity },
+      invariant.toString()
+    )
+  }
+
+  /**
+   * @dev If reserves are not overridden, a `referencePriceOfRisky` must be defined.
+   * Reserves are computed using this value and stored instead.
+   */
+  constructor(
+    chainId: number,
+    factory: string,
+    risky: { address: string; decimals: string | number; name?: string; symbol?: string },
+    stable: { address: string; decimals: string | number; name?: string; symbol?: string },
+    calibration: { strike: string; sigma: string; maturity: string; gamma: string; lastTimestamp?: string },
+    reserves: {
+      reserveRisky: string
+      reserveStable: string
+      liquidity: string
     },
-    overrideInvariant?: string,
-    chainId?: number,
+    invariant?: string,
     referencePriceOfRisky?: number
   ) {
-    const token0 = new Token(chainId ?? 1, risky.address, +risky.decimals, risky?.symbol, risky?.name)
-    const token1 = new Token(chainId ?? 1, stable.address, +stable.decimals, stable?.symbol, stable?.name)
+    const token0 = new Token(chainId, risky.address, +risky.decimals, risky?.symbol, risky?.name)
+    const token1 = new Token(chainId, stable.address, +stable.decimals, stable?.symbol, stable?.name)
 
     let { strike, sigma, maturity, gamma, lastTimestamp } = calibration
     super(factory, token0, token1, strike, sigma, maturity, gamma)
 
     this.lastTimestamp = lastTimestamp ? new Time(Number(lastTimestamp)) : new Time(Time.now)
 
+    this.reserveRisky = weiToWei(reserves.reserveRisky, Number(risky.decimals))
+    this.reserveStable = weiToWei(reserves.reserveStable, Number(stable.decimals))
+    this.liquidity = weiToWei(reserves.liquidity, 18)
+
+    this.invariant = invariant
+      ? FixedPointX64.from(invariant, Number(stable.decimals))
+      : parseFixedPointX64(0, Number(stable.decimals))
+
     this._referencePriceOfRisky = referencePriceOfRisky ? parseWei(referencePriceOfRisky, token1.decimals) : undefined
-
-    const maxPrice = parseFloat(formatFixed(strike, stable.decimals))
-    const tau = new Time(Number(maturity)).sub(lastTimestamp ?? new Time(Time.now))
-
-    let reserveRisky: Wei // store in memory to reference if needed to compute stable side of pool
-    if (overrideReserves?.reserveRisky) {
-      reserveRisky = weiToWei(overrideReserves.reserveRisky, Number(risky.decimals))
-    } else {
-      if (!referencePriceOfRisky) {
-        const e = `Thrown on Pool constructor, if not overriding risky reserve, must enter a reference price`
-        throw e
-      }
-      const oppositeDelta = Pool.getRiskyReservesGivenReferencePrice(
-        maxPrice,
-        Number(sigma),
-        tau.years,
-        referencePriceOfRisky
-      )
-      const formatted = oppositeDelta.toFixed(Number(risky.decimals))
-      reserveRisky = parseWei(formatted, Number(risky.decimals))
-    }
-    this.reserveRisky = reserveRisky
-
-    if (overrideReserves?.reserveStable) {
-      const { reserveStable } = overrideReserves
-      this.reserveStable = weiToWei(reserveStable, Number(stable.decimals))
-    } else {
-      const balance = getStableGivenRiskyApproximation(reserveRisky.float, maxPrice, Number(sigma), tau.years)
-      const formatted = balance.toFixed(Number(stable.decimals))
-      this.reserveStable = parseWei(formatted, Number(stable.decimals))
-    }
-
-    if (overrideReserves?.liquidity) {
-      const { liquidity } = overrideReserves
-      this.liquidity = weiToWei(liquidity, 18)
-    } else {
-      this.liquidity = parseWei(1, 18)
-    }
-
-    if (overrideInvariant) {
-      this.invariant = FixedPointX64.from(overrideInvariant, Number(stable.decimals))
-    } else {
-      this.invariant = parseFixedPointX64(0, Number(stable.decimals))
-    }
   }
 
   // ===== Curve Info =====
@@ -169,7 +177,7 @@ export class Pool extends Calibration {
    */
   get delta(): number | undefined {
     const priceOfRisky = this.referencePriceOfRisky ?? this.reportedPriceOfRisky
-    return priceOfRisky ? callDelta(this.strike.float, this.sigma.bps, this.tau.years, priceOfRisky.float) : undefined
+    return priceOfRisky ? callDelta(this.strike.float, this.sigma.float, this.tau.years, priceOfRisky.float) : undefined
   }
 
   /**
@@ -177,7 +185,9 @@ export class Pool extends Calibration {
    */
   get premium(): number | undefined {
     const priceOfRisky = this.referencePriceOfRisky ?? this.reportedPriceOfRisky
-    return priceOfRisky ? callPremium(this.strike.float, this.sigma.bps, this.tau.years, priceOfRisky.float) : undefined
+    return priceOfRisky
+      ? callPremium(this.strike.float, this.sigma.float, this.tau.years, priceOfRisky.float)
+      : undefined
   }
 
   /**
@@ -354,10 +364,7 @@ export class Pool extends Calibration {
     sigmaFloating: number,
     tauYears: number
   ): number {
-    return (
-      getStableGivenRiskyApproximation(balance0Floating, strikeFloating, sigmaFloating, tauYears) *
-      quantilePrime(1 - balance0Floating)
-    )
+    return getSpotPriceApproximation(balance0Floating, strikeFloating, sigmaFloating, tauYears)
   }
 
   /**
@@ -387,14 +394,14 @@ export class Pool extends Calibration {
     gammaFloating: number,
     amountIn: number
   ) {
-    if (!nonNegative(amountIn)) return 0
-    const step0 = 1 - reserve0Floating - gammaFloating * amountIn
-    const step1 = sigmaFloating * Math.sqrt(tauYears)
-    const step2 = quantilePrime(step0)
-    const step3 = gammaFloating * strikeFloating
-    const step4 = inverse_std_n_cdf(step0)
-    const step5 = std_n_pdf(step4 - step1)
-    return step3 * step5 * step2
+    return getMarginalPriceSwapRiskyInApproximation(
+      amountIn,
+      reserve0Floating,
+      strikeFloating,
+      sigmaFloating,
+      tauYears,
+      1 - gammaFloating
+    )
   }
 
   /**
@@ -426,15 +433,15 @@ export class Pool extends Calibration {
     gammaFloating: number,
     amountIn: number
   ) {
-    if (!nonNegative(amountIn)) return 0
-    const step0 = (reserve1Floating + gammaFloating * amountIn - invariantFloating) / strikeFloating
-    const step1 = sigmaFloating * Math.sqrt(tauYears)
-    const step3 = inverse_std_n_cdf(step0)
-    const step4 = std_n_pdf(step3 + step1)
-    const step5 = step0 * (1 / strikeFloating)
-    const step6 = quantilePrime(step5)
-    const step7 = gammaFloating * step4 * step6
-    return 1 / step7
+    return getMarginalPriceSwapStableInApproximation(
+      amountIn,
+      invariantFloating,
+      reserve1Floating,
+      strikeFloating,
+      sigmaFloating,
+      tauYears,
+      1 - gammaFloating
+    )
   }
 
   /**
