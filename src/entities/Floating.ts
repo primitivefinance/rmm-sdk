@@ -133,12 +133,12 @@ export class Floating {
   div(divider: number | Floating): Floating {
     const numerator = this.scaled
     const denominator = divider instanceof Floating ? divider.scaled : this.upscaleInteger(divider)
-    return new Floating(this.downscaleInteger(numerator / denominator), this.decimals)
+    return new Floating(numerator / denominator, this.decimals)
   }
 
   divCeil(divider: number | Floating): Floating {
     const numerator = this.scaled
     const denominator = divider instanceof Floating ? divider.scaled : this.upscaleInteger(divider)
-    return new Floating(this.downscaleInteger(numerator + (+divider?.toString() - 1) / denominator), this.decimals)
+    return new Floating(numerator + (+divider?.toString() - 1) / denominator, this.decimals)
   }
 }
