@@ -10,52 +10,58 @@ import {
 } from '@primitivefi/rmm-math'
 import { Floating } from './Floating'
 
+/** Post-swap invariant and implied price after a swap. */
+export interface SwapResult {
+  /** Post-swap invariant of the pool. */
+  invariant: number
+
+  /** Price of the asset paid from the swap. */
+  priceIn: string
+}
+
 export interface ExactInResult extends SwapResult {
-  /**
-   * @notice Amount of tokens output from a swap
-   */
+  /** Amount of tokens output from a swap. */
   output: number
 }
 
 export interface ExactOutResult extends SwapResult {
-  /**
-   * @notice Amount of tokens input to a swap
-   */
+  /** Amount of tokens input to a swap. */
   input: number
 }
 
-export interface SwapResult {
-  /**
-   * @notice Post-swap invariant of the pool
-   */
-  invariant: number
-  /**
-   * @notice Price of the asset paid from the swap
-   */
-  priceIn: string
-}
-
-/**
- * @notice Static functions to compute swap in/out amounts and marginal prices
- */
+/** Static functions to compute swap in/out amounts and marginal prices. */
 export class Swaps {
   /**
-   * @returns Price of Risky denominated in Stable
+   * Gets price of risky token denominated in stable token.
+   *
+   * @param reserveRiskyFloating Amount of risky tokens in reserve as a floating point decimal number.
+   * @param strikeFloating Strike price as a floating point number in decimal format.
+   * @param sigmaFloating Implied volatility as a floating point number in decimal format.
+   * @param tauYears Time until expiry in years.
    */
   public static getReportedPriceOfRisky(
-    balance0Floating: number,
+    reserveRiskyFloating: number,
     strikeFloating: number,
     sigmaFloating: number,
     tauYears: number
   ): number {
-    return getSpotPriceApproximation(balance0Floating, strikeFloating, sigmaFloating, tauYears)
+    return getSpotPriceApproximation(reserveRiskyFloating, strikeFloating, sigmaFloating, tauYears)
   }
 
-  // ===== Computing Reserves =====
+  // --- Computing Reserves ---
 
   /**
-   * @notice  Equal to the Delta (option greeks) exposure of one liquidity
-   * @returns Amount of optimal risky reserves per liquidity given a reference price of the risky
+   * Gets estimated risky token reserves given a reference price of the risky asset, for 1 unit of liquidity.
+   *
+   * @remarks
+   * Equal to the Delta (option greeks) exposure of one liquidity unit.
+   *
+   * @param strikeFloating Strike price as a floating point number in decimal format.
+   * @param sigmaFloating Implied volatility as a floating point number in decimal format.
+   * @param tauYears Time until expiry in years.
+   * @param referencePriceOfRisky Price of the risky token denominated in the stable token.
+   *
+   * @beta
    */
   public static getRiskyReservesGivenReferencePrice(
     strikeFloating: number,
@@ -67,8 +73,15 @@ export class Swaps {
   }
 
   /**
-   * @param reserveStable Amount of stable tokens in reserve
-   * @return reserveRisky Expected amount of risky token reserves
+   * Gets risky reserves given stable reserves, for 1 unit of liquidity.
+   *
+   * @param strikeFloating Strike price as a floating point number in decimal format.
+   * @param sigmaFloating Implied volatility as a floating point number in decimal format.
+   * @param tauYears Time until expiry in years.
+   * @param reserveStableFloating Amount of risky tokens in reserve as a floating point decimal number.
+   * @param invariantFloating Computed invariant of curve as a floating point decimal number.
+   *
+   * @beta
    */
   public static getRiskyGivenStable(
     strikeFloating: number,
@@ -90,8 +103,15 @@ export class Swaps {
   }
 
   /**
-   * @param reserveRisky Amount of risky tokens in reserve
-   * @return reserveStable Expected amount of stable token reserves
+   * Gets estimated stable token reserves given risky token reserves, for 1 unit of liquidity.
+   *
+   * @param strikeFloating Strike price as a floating point number in decimal format.
+   * @param sigmaFloating Implied volatility as a floating point number in decimal format.
+   * @param tauYears Time until expiry in years.
+   * @param reserveRiskyFloating Amount of risky tokens in reserve as a floating point decimal number.
+   * @param invariantFloating Computed invariant of curve as a floating point decimal number.
+   *
+   * @beta
    */
   public static getStableGivenRisky(
     strikeFloating: number,
@@ -112,15 +132,24 @@ export class Swaps {
     return stable
   }
 
-  // ===== Computing Change in Marginal Price =====
+  // --- Computing Change in Marginal Price ---
 
   /**
-   * @notice See https://arxiv.org/pdf/2012.08040.pdf
-   * @param amountIn Amount of risky token to add to risky reserve
-   * @return Marginal price after an exact trade in of the RISKY asset with size `amountIn`
+   * Gets marginal price after an exact trade in of the risky asset with size `amountIn`.
+   *
+   * {@link https://arxiv.org/pdf/2012.08040.pdf}
+   *
+   * @param reserveRiskyFloating Amount of risky tokens in reserve as a floating point decimal number.
+   * @param strikeFloating Strike price as a floating point number in decimal format.
+   * @param sigmaFloating Implied volatility as a floating point number in decimal format.
+   * @param tauYears Time until expiry in years.
+   * @param gammaFloating Equal to 10_000 - fee, in basis points as a floating point number in decimal format.
+   * @param amountIn Amount of risky token to add to risky reserve.
+   *
+   * @beta
    */
   public static getMarginalPriceSwapRiskyIn(
-    reserve0Floating: number,
+    reserveRiskyFloating: number,
     strikeFloating: number,
     sigmaFloating: number,
     tauYears: number,
@@ -129,7 +158,7 @@ export class Swaps {
   ) {
     return getMarginalPriceSwapRiskyInApproximation(
       amountIn,
-      reserve0Floating,
+      reserveRiskyFloating,
       strikeFloating,
       sigmaFloating,
       tauYears,
@@ -138,13 +167,22 @@ export class Swaps {
   }
 
   /**
-   * @notice See https://arxiv.org/pdf/2012.08040.pdf
-   * @param amountIn Amount of stable token to add to stable reserve
-   * @return Marginal price after an exact trade in with size `amountIn`
+   * Gets marginal price after an exact trade in of the stable asset with size `amountIn`.
+   *
+   * {@link https://arxiv.org/pdf/2012.08040.pdf}
+   *
+   * @param reserveStableFloating Amount of stable tokens in reserve as a floating point decimal number.
+   * @param strikeFloating Strike price as a floating point number in decimal format.
+   * @param sigmaFloating Implied volatility as a floating point number in decimal format.
+   * @param tauYears Time until expiry in years.
+   * @param gammaFloating Equal to 10_000 - fee, in basis points as a floating point number in decimal format.
+   * @param amountIn Amount of stable token to add to stable reserve.
+   *
+   * @beta
    */
   public static getMarginalPriceSwapStableIn(
     invariantFloating: number,
-    reserve1Floating: number,
+    reserveStableFloating: number,
     strikeFloating: number,
     sigmaFloating: number,
     tauYears: number,
@@ -154,7 +192,7 @@ export class Swaps {
     return getMarginalPriceSwapStableInApproximation(
       amountIn,
       invariantFloating,
-      reserve1Floating,
+      reserveStableFloating,
       strikeFloating,
       sigmaFloating,
       tauYears,
@@ -163,7 +201,22 @@ export class Swaps {
   }
 
   /**
-   * @notice Given an exact amount of risky tokens in, approximate the output amount of stable tokens
+   * Gets output amount of stable tokens given an exact amount of risky tokens in.
+   *
+   * {@link https://github.com/primitivefinance/rmms-py}
+   *
+   * @param amountIn Amount of risky token to add to risky reserve.
+   * @param decimalsRisky Decimal places of the risky token.
+   * @param decimalsStable Decimal places of the stable token.
+   * @param reserveRiskyFloating Amount of risky tokens in reserve as a floating point decimal number.
+   * @param reserveStableFloating Amount of stable tokens in reserve as a floating point decimal number.
+   * @param reserveLiquidityFloating Total supply of liquidity as a floating point decimal number.
+   * @param strikeFloating Strike price as a floating point number in decimal format.
+   * @param sigmaFloating Implied volatility as a floating point number in decimal format.
+   * @param gammaFloating Equal to 10_000 - fee, in basis points as a floating point number in decimal format.
+   * @param tauYears Time until expiry in years.
+   *
+   * @beta
    */
   public static exactRiskyInput(
     amountIn: number,
@@ -224,7 +277,22 @@ export class Swaps {
   }
 
   /**
-   * @notice Given an exact amount of stable tokens in, approximate the output amount of risky tokens
+   * Gets output amount of risky tokens given an exact amount of stable tokens in.
+   *
+   * {@link https://github.com/primitivefinance/rmms-py}
+   *
+   * @param amountIn Amount of stable tokens to add to stable reserve.
+   * @param decimalsRisky Decimal places of the risky token.
+   * @param decimalsStable Decimal places of the stable token.
+   * @param reserveRiskyFloating Amount of risky tokens in reserve as a floating point decimal number.
+   * @param reserveStableFloating Amount of stable tokens in reserve as a floating point decimal number.
+   * @param reserveLiquidityFloating Total supply of liquidity as a floating point decimal number.
+   * @param strikeFloating Strike price as a floating point number in decimal format.
+   * @param sigmaFloating Implied volatility as a floating point number in decimal format.
+   * @param gammaFloating Equal to 10_000 - fee, in basis points as a floating point number in decimal format.
+   * @param tauYears Time until expiry in years.
+   *
+   * @beta
    */
   public static exactStableInput(
     amountIn: number,
@@ -291,7 +359,22 @@ export class Swaps {
   }
 
   /**
-   * @notice Given an exact amount of risky tokens out, approximate the input amount of stable tokens
+   * Gets input amount of stable tokens given an exact amount of risky tokens out.
+   *
+   * {@link https://github.com/primitivefinance/rmms-py}
+   *
+   * @param amountOut Amount of risky tokens to remove from risky reserve.
+   * @param decimalsRisky Decimal places of the risky token.
+   * @param decimalsStable Decimal places of the stable token.
+   * @param reserveRiskyFloating Amount of risky tokens in reserve as a floating point decimal number.
+   * @param reserveStableFloating Amount of stable tokens in reserve as a floating point decimal number.
+   * @param reserveLiquidityFloating Total supply of liquidity as a floating point decimal number.
+   * @param strikeFloating Strike price as a floating point number in decimal format.
+   * @param sigmaFloating Implied volatility as a floating point number in decimal format.
+   * @param gammaFloating Equal to 10_000 - fee, in basis points as a floating point number in decimal format.
+   * @param tauYears Time until expiry in years.
+   *
+   * @beta
    */
   public static exactRiskyOutput(
     amountOut: number,
@@ -354,7 +437,22 @@ export class Swaps {
   }
 
   /**
-   * @notice Given an exact amount of stable tokens out, approximate the input amount of risky tokens
+   * Gets input amount of risky tokens given an exact amount of stable tokens out.
+   *
+   * {@link https://github.com/primitivefinance/rmms-py}
+   *
+   * @param amountOut Amount of stable tokens to remove from stable reserve.
+   * @param decimalsRisky Decimal places of the risky token.
+   * @param decimalsStable Decimal places of the stable token.
+   * @param reserveRiskyFloating Amount of risky tokens in reserve as a floating point decimal number.
+   * @param reserveStableFloating Amount of stable tokens in reserve as a floating point decimal number.
+   * @param reserveLiquidityFloating Total supply of liquidity as a floating point decimal number.
+   * @param strikeFloating Strike price as a floating point number in decimal format.
+   * @param sigmaFloating Implied volatility as a floating point number in decimal format.
+   * @param gammaFloating Equal to 10_000 - fee, in basis points as a floating point number in decimal format.
+   * @param tauYears Time until expiry in years.
+   *
+   * @beta
    */
   public static exactStableOutput(
     amountOut: number,

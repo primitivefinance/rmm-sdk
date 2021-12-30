@@ -9,6 +9,11 @@ import { Swaps, ExactInResult, ExactOutResult } from './swaps'
 import { weiToWei } from '../utils'
 import { BigNumber } from 'ethers'
 
+/**
+ * Enum for each side of the pool, inclusive of liquidity token.
+ *
+ * @beta
+ */
 export enum PoolSides {
   RISKY = 'RISKY',
   STABLE = 'STABLE',
@@ -16,13 +21,136 @@ export enum PoolSides {
 }
 
 /**
- * @notice RMM-01 Pool Entity
- * @dev    Has slots for reserves, invariant, and lastTimestamp state
+ * Abstraction of a Primitive RMM Pool
+ *
+ * @remarks
+ * State includes reserves and calibration, just as a pool in PrimitiveEngine.sol does.
+ *
+ * @beta
+ */
+export interface IPool {
+  /** Trading function invariant of the Pool, formatted as Q64.64 */
+  readonly invariant: FixedPointX64
+
+  /** Risky token reserves of {@link IEngine.risky}. */
+  readonly reserveRisky: Wei
+
+  /** Stable token reserves of {@link IEngine.stable}. */
+  readonly reserveStable: Wei
+
+  /** Total liquidity of Pool, including the min liquidity {@link IEngine.MIN_LIQUIDITY}. */
+  readonly liquidity: Wei
+
+  /**
+   * Timestamp of last curve update.
+   *
+   * @remarks
+   * This is the most important parameter when interacting with this pool's curve.
+   * The `tau`, time until expiry`, is calculated by the difference of maturity and lastTimestamp,
+   * which affects the theoretical reserves of the curve.
+   *
+   * For example, if swapping, the current timestamp must be used, requiring this lastTimestamp to be updated to it.
+   * Else, the swap would be computing an invariant on a stale curve, which will most likely make the swap fail.
+   */
+  lastTimestamp: Time
+
+  /** Difference between `maturity` timestamp and `lastTimestamp`. */
+  tau: number
+
+  /** Difference between `maturity` timestamp and the current timestamp returned by Date.now(). */
+  remaining: Time
+
+  /** True if Date.now() in seconds is greater than `maturity` timestamp. */
+  expired: boolean
+
+  /** True if `strike` is below `referencePriceOfRisky`. */
+  inTheMoney: boolean
+
+  /** Theoretical call option premium, computed using the pool's calibration data. */
+  premium: number
+
+  /**
+   * Computes other side(s) of pool and/or liquidity amount, given a known size of one side of the pool.
+   *
+   * @throws
+   * Throws if `liquidity` is zero.
+   *
+   * @param amount Size of {@link PoolSides}
+   * @param sideOfPool Risky reserve, stable reserve, or liquidity of pool; {@link PoolSides}.
+   *
+   * @beta
+   */
+  liquidityQuote(amount: Wei, sideOfPool: PoolSides): { delRisky: Wei; delStable: Wei; delLiquidity: Wei }
+
+  /**
+   * Gets the current value of the pool denominated in units of `priceOfRisky`.
+   *
+   * @remarks
+   * Denominating prices in a dollar-pegged stable coin will be easiest to calculate other values with.
+   *
+   * @param priceOfRisky Multiplier for the price of the risky asset.
+   * @param priceOfStable Multiplier for the price of the stable asset, defaults to 1 given the `priceOfRisky` is denominated in that asset.
+   *
+   * @returns value per liquidity and values of each side of the pool, denominated in `prices` units.
+   *
+   * @beta
+   */
+  getCurrentLiquidityValue(priceOfRisky: number, priceOfStable: number): { valuePerLiquidity: Wei; values: Wei[] }
+
+  /**
+   * Gets the reported price CFMM for the {@link IEngine.risky} token, denominated in the {@link IEngine.stable} token.
+   *
+   * @remarks
+   * This implied spot price is a decent health check to see if a pool is earning enough trading fees.
+   * It should be close to the real reference price of the risky asset.
+   */
+  reportedPriceOfRisky: Wei
+
+  /** Gets stored reference price of {@link IEngine.risky}, denominated in {@link IEngine.stable}. */
+  referencePriceOfRisky: Wei
+
+  /**
+   * Gets amountIn of opposite token, given output amount of the other token.
+   *
+   * @remarks
+   * Computing values in this direction is sometimes in-precise, given the approximations used.
+   * Use with caution.
+   *
+   * @alpha
+   */
+  amountIn(tokenOut: Token, amountOut: number): ExactOutResult
+
+  /**
+   * Gets amountOut of opposite token, given input amount of the other token.
+   *
+   * @alpha
+   */
+  amountOut(tokenIn: Token, amountIn: number): ExactInResult
+
+  /**
+   * Gets the marginal price of `tokenIn` after a given amount in has been added to the respective reserve.
+   *
+   * @alpha
+   */
+  derivativeOut(tokenIn: Token, amountIn: number): number
+}
+
+/**
+ * Pool base class implements {@link IPool}.
+ *
+ * @remarks
+ * Abstraction of Primitive RMM-01 pools.
+ *
+ * @beta
  */
 export class Pool extends Calibration {
+  /** {@inheritdoc IPool.invariant} */
   public readonly invariant: FixedPointX64
+  /** {@inheritdoc IPool.reserveRisky} */
   public readonly reserveRisky: Wei
+  /** {@inheritdoc IPool.reserveStable} */
   public readonly reserveStable: Wei
+  /** {@inheritdoc IPool.liquidity} */
   public readonly liquidity: Wei
 
   private _lastTimestamp: Time
@@ -32,6 +160,7 @@ export class Pool extends Calibration {
     this._lastTimestamp = x
   }
 
+  /** {@inheritdoc IPool.lastTimestamp} */
   get lastTimestamp(): Time {
     return this._lastTimestamp
   }
@@ -40,20 +169,22 @@ export class Pool extends Calibration {
     this._referencePriceOfRisky = x
   }
 
-  /**
-   * @notice Reference market spot price of the Risky asset denominated in the Stable asset
-   */
+  /** {@inheritdoc IPool.referencePriceOfRisky} */
   get referencePriceOfRisky(): Wei | undefined {
     return this._referencePriceOfRisky
   }
 
   /**
-   * @notice Constructs a Pool entity from actual reserve data, e.g. on-chain state
-   * @param address Engine address which had the pool created
-   * @param pool Returned data from on-chain, reconstructed to match PoolInterface or returned from the `house.uri(id)` call
-   * @param risky Decimal places of the risky token
-   * @param stable Decimal places of the stable token
-   * @returns Pool entity
+   * Constructs a Pool entity from actual reserve data, e.g. on-chain state.
+   *
+   * @param address Engine address which had the pool created.
+   * @param pool Returned data from on-chain, reconstructed to match PoolInterface or returned from the `PrimitiveManager.uri(id)` call.
+   * @param risky Decimal places of the risky token.
+   * @param stable Decimal places of the stable token.
+   *
+   * @returns Pool entity.
+   *
+   * @beta
    */
   public static from(pool: PoolInterface, referencePrice?: number, chainId: number = 1): Pool {
     const { factory, risky, stable, calibration, reserve, invariant } = pool.properties
@@ -71,8 +202,12 @@ export class Pool extends Calibration {
   }
 
   /**
-   * @notice Constructs a Pool entity using a reference price, which is used to compute the reserves of the pool
-   * @dev    Defaults to an invariant of 0, since the reserves are computed using an invariant of 0
+   * Constructs a Pool entity using a reference price, which is used to compute the reserves of the pool.
+   *
+   * @remarks
+   * Defaults to an invariant of 0, since the reserves are computed using an invariant of 0.
+   *
+   * @beta
    */
   public static fromReferencePrice(
     referencePrice: number,
@@ -113,8 +248,11 @@ export class Pool extends Calibration {
   }
 
   /**
-   * @dev If reserves are not overridden, a `referencePriceOfRisky` must be defined.
+   * @remarks
+   * If reserves are not overridden, a `referencePriceOfRisky` must be defined.
    * Reserves are computed using this value and stored instead.
+   *
+   * @beta
    */
   constructor(
     chainId: number,
@@ -149,42 +287,32 @@ export class Pool extends Calibration {
     this._referencePriceOfRisky = referencePriceOfRisky ? parseWei(referencePriceOfRisky, token1.decimals) : undefined
   }
 
-  // ===== Curve Info =====
+  // --- Curve Info ---
 
-  /**
-   * @returns Time until pool expires in seconds
-   */
+  /** {@inheritdoc IPool.tau} */
   get tau(): Time {
     return this.maturity.sub(this.lastTimestamp)
   }
 
-  /**
-   * @returns Total remaining time of a pool in seconds
-   */
+  /** {@inheritdoc IPool.remaining} */
   get remaining(): Time {
     const expiring = this.maturity
     if (Time.now >= expiring.raw) return new Time(0)
     return expiring.sub(this.lastTimestamp)
   }
 
-  /**
-   * @returns Expired if time until expiry is lte 0
-   */
+  /** {@inheritdoc IPool.expired} */
   get expired(): boolean {
     return this.remaining.raw <= 0
   }
 
-  /**
-   * @returns Change in Black-Scholes implied premium premium wrt change in underlying spot price
-   */
+  /** {@inheritdoc IPool.delta} */
   get delta(): number | undefined {
     const priceOfRisky = this.referencePriceOfRisky ?? this.reportedPriceOfRisky
     return priceOfRisky ? callDelta(this.strike.float, this.sigma.float, this.tau.years, priceOfRisky.float) : undefined
   }
 
-  /**
-   * @returns Black-Scholes implied premium
-   */
+  /** {@inheritdoc IPool.premium} */
   get premium(): number | undefined {
     const priceOfRisky = this.referencePriceOfRisky ?? this.reportedPriceOfRisky
     return priceOfRisky
@@ -192,21 +320,21 @@ export class Pool extends Calibration {
       : undefined
   }
 
-  /**
-   * @returns Price of Risky asset, whether reference or reported, is greater than or equal to strike
-   */
+  /** {@inheritdoc IPool.inTheMoney} */
   get inTheMoney(): boolean | undefined {
     const priceOfRisky = this.referencePriceOfRisky ?? this.reportedPriceOfRisky
     return priceOfRisky ? priceOfRisky.float >= this.strike.float : undefined
   }
 
-  // ===== Liquidity Token Info =====
+  // --- Liquidity Token Info ---
 
   /**
-   * @notice Calculates the other side of the pool using the known amount of a side of the pool
-   * @param amount Amount of token
-   * @param sideOfPool Token side of the pool that is used to calculate the other side
-   * @returns risky token amount, stable token amount, and liquidity amount
+   * {@inheritdoc IPool.liquidityQuote}
+   *
+   * @throws
+   * Throws if {@link IPool.liquidity} is zero.
+   * Throws if `amount.decimals` does not match respective {@link PoolSides}.
+   * Throws if resulting amounts do not have matching decimal places of {@link IEngine} tokens.
    */
   liquidityQuote(amount: Wei, sideOfPool: PoolSides): { delRisky: Wei; delStable: Wei; delLiquidity: Wei } {
     const { reserveRisky, reserveStable, liquidity } = this
@@ -268,11 +396,10 @@ export class Pool extends Calibration {
   }
 
   /**
-   * @notice Calculates the current value of the pool in units of `priceOfRisky`
-   * @dev Denominating prices in a dollar-pegged stable coin will be easiest to calculate other values with
-   * @param priceOfRisky Multiplier for the price of the risky asset
-   * @param priceOfStable Multiplier for the price of the stable asset, defaults to 1 given the priceOfRisky is denominated in that asset
-   * @returns value per liquidity and values of each side of the pool, denominated in `prices` units
+   * {@inheritdoc IPool.getCurrentLiquidityValue}
+   *
+   * @throws
+   * Throws if {@link IPool.liquidity} is zero.
    */
   getCurrentLiquidityValue(priceOfRisky: number, priceOfStable = 1): { valuePerLiquidity: Wei; values: Wei[] } {
     const reserve0 = this.reserveRisky
@@ -296,11 +423,9 @@ export class Pool extends Calibration {
     return { valuePerLiquidity, values }
   }
 
-  // ===== Swap Routing Info =====
+  // --- Swap Routing Info ---
 
-  /**
-   * @returns Spot price of this pool, in units of Token1 per Token0
-   */
+  /** {@inheritdoc IPool.reportedPriceOfRisky} */
   get reportedPriceOfRisky(): Wei | undefined {
     const risky = this.reserveRisky.float / this.liquidity.float
     const tau = this.tau.years
@@ -309,6 +434,7 @@ export class Pool extends Calibration {
     return parseWei(spot, this.stable.decimals)
   }
 
+  /** {@internal} */
   get swapArgs() {
     const args = [
       this.risky.decimals,
@@ -325,7 +451,10 @@ export class Pool extends Calibration {
   }
 
   /**
-   * @return Amount input for a swap after an exact trade out of `tokenOut` with size `amountOut`
+   * {@inheritdoc IPool.amountIn}
+   *
+   * @throws
+   * Throws if `tokenOut` is not a token of this {@link IEngine}.
    */
   amountIn(tokenOut: Token, amountOut: number): ExactOutResult {
     const args = [amountOut, ...this.swapArgs] as const
@@ -339,7 +468,10 @@ export class Pool extends Calibration {
   }
 
   /**
-   * @return Amount output from swap after an exact trade in of `tokenIn` with size `amountIn`
+   * {@inheritdoc IPool.amountOut}
+   *
+   * @throws
+   * Throws if `tokenIn` is not a token of this {@link IEngine}.
    */
   amountOut(tokenIn: Token, amountIn: number): ExactInResult {
     const args = [amountIn, ...this.swapArgs] as const
@@ -353,7 +485,10 @@ export class Pool extends Calibration {
   }
 
   /**
-   * @return Marginal price after an exact trade in of `token` with size `amountIn`
+   * {@inheritdoc IPool.derivativeOut}
+   *
+   * @throws
+   * Throws if `tokenIn` is not a token of this {@link IEngine}.
    */
   derivativeOut(tokenIn: Token, amountIn: number) {
     if (this.risky.equals(tokenIn)) {
