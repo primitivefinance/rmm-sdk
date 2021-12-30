@@ -5,6 +5,7 @@ import { formatUnits } from '@ethersproject/units'
 
 import { Engine } from '../src/entities/engine'
 import { Calibration, parseCalibration } from '../src/entities/calibration'
+import { computeEngineAddress } from 'src/utils/computeEngineAddress'
 
 describe('Calibration', function() {
   let cal: Calibration, token0: Token, token1: Token, strike: string, sigma: string, maturity: string, gamma: string
@@ -26,7 +27,7 @@ describe('Calibration', function() {
 
   it('#poolId', async function() {
     const expected = Calibration.computePoolId(
-      Engine.computeEngineAddress(AddressZero, token0.address, token1.address, Engine.BYTECODE),
+      computeEngineAddress(AddressZero, token0.address, token1.address, Engine.BYTECODE),
       strike,
       sigma,
       maturity,

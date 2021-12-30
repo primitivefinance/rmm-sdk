@@ -2,6 +2,7 @@ import { Token } from '@uniswap/sdk-core'
 import { AddressZero } from '@ethersproject/constants'
 
 import { Engine } from '../src/entities/engine'
+import { computeEngineAddress } from 'src/utils/computeEngineAddress'
 
 describe('Engine entity', function() {
   let engine: Engine, token0: Token, token1: Token, token2: Token
@@ -41,7 +42,7 @@ describe('Engine entity', function() {
   })
 
   it('#computeEngineAddress', async function() {
-    const expected = Engine.computeEngineAddress(AddressZero, token0.address, token1.address, Engine.BYTECODE)
+    const expected = computeEngineAddress(AddressZero, token0.address, token1.address, Engine.BYTECODE)
     expect(engine.address).toBe(expected)
   })
 })
