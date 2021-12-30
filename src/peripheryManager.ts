@@ -1,51 +1,63 @@
-import { BigNumber } from 'ethers'
-import invariant from 'tiny-invariant'
 import { Interface } from '@ethersproject/abi'
+import { BigNumber } from '@ethersproject/bignumber'
+import { AddressZero } from '@ethersproject/constants'
+import invariant from 'tiny-invariant'
 import { parseWei, Percentage, toBN, Wei } from 'web3-units'
 import { NativeCurrency } from '@uniswap/sdk-core'
-import { AddressZero } from '@ethersproject/constants'
 import ManagerArtifact from '@primitivefi/rmm-manager/artifacts/contracts/PrimitiveManager.sol/PrimitiveManager.json'
 
-import { Pool, PoolSides } from './entities/pool'
-import { Engine } from './entities/engine'
-import { PermitOptions, SelfPermit } from './selfPermit'
+import { Engine } from 'src/entities/engine'
+import { Pool, PoolSides } from 'src/entities/pool'
+import { Swaps } from 'src/entities/swaps'
 import { MethodParameters, validateAndParseAddress, validateDecimals } from 'src/utils'
-import { Swaps } from './entities'
 
+import { PermitOptions, SelfPermit } from 'src/selfPermit'
+
+/** Flag to use a native currency in a transaction.  */
 export interface NativeOptions {
   useNative?: NativeCurrency
 }
 
+/** Recipient address of any tokens which are output from transactions. */
 export interface RecipientOptions {
   recipient: string
 }
 
+/** Timestamp which will revert the transaction if not yet mined. */
 export interface Deadline {
   deadline?: BigNumber
 }
 
+/** Permit details on either risky or stable tokens. */
 export interface PermitTokens {
+  /** If defined, risky token can be permitted, saving the user an approve tx. */
   permitRisky?: PermitOptions
+
+  /** If defined, stable token can be permitted, saving the user an approve tx. */
   permitStable?: PermitOptions
 }
 
+/** Token amounts to use for depositing or withdrawing into a margin account.  */
 export interface MarginOptions extends PermitTokens, RecipientOptions, NativeOptions {
   amountRisky: Wei
   amountStable: Wei
 }
 
+/** Token amounts to use for allocating liquidity. */
 export interface LiquidityOptions {
   delRisky: Wei
   delStable: Wei
   delLiquidity: Wei
 }
 
+/** Provide liquidity argument details. */
 export interface AllocateOptions extends PermitTokens, LiquidityOptions, RecipientOptions, NativeOptions, Deadline {
   fromMargin: boolean
   slippageTolerance: Percentage
   createPool?: boolean
 }
 
+/** Remove liquidity argument details. */
 export interface RemoveOptions extends LiquidityOptions, RecipientOptions, NativeOptions, Deadline {
   expectedRisky: Wei
   expectedStable: Wei
@@ -53,6 +65,7 @@ export interface RemoveOptions extends LiquidityOptions, RecipientOptions, Nativ
   slippageTolerance: Percentage
 }
 
+/** Transfer ERC-1155 liquidity token argument details. */
 export interface SafeTransferOptions {
   sender: string
   recipient: string
@@ -61,6 +74,7 @@ export interface SafeTransferOptions {
   data?: string
 }
 
+/** Batch Transfer ERC-1155 liquidity token argument details. */
 export interface BatchTransferOptions {
   sender: string
   recipient: string
@@ -69,6 +83,11 @@ export interface BatchTransferOptions {
   data?: string
 }
 
+/**
+ * Abstract class with static methods to build Manager function calldatas.
+ *
+ * @beta
+ */
 export abstract class PeripheryManager extends SelfPermit {
   public static INTERFACE: Interface = new Interface(ManagerArtifact.abi)
   public static BYTECODE: string = ManagerArtifact.bytecode
@@ -78,7 +97,18 @@ export abstract class PeripheryManager extends SelfPermit {
     super()
   }
 
-  // create pool
+  /**
+   * Gets encoded function data with function selector 'create' and create pool args
+   *
+   * @param pool {@link IPool} Virtualized pool with computed reserves to compute create args from.
+   * @param liquidity Amount of liquidity to initially supply.
+   *
+   * @throws
+   * Throws if liquidity amount decimals and pool decimals are not equal.
+   * Throws if pool has an undefined {@link IPool.referencePriceOfRisky}.
+   *
+   * @beta
+   */
   public static encodeCreate(pool: Pool, liquidity: Wei): string {
     validateDecimals(liquidity, pool)
     invariant(typeof pool.referencePriceOfRisky !== 'undefined', `Attempting to create a pool without reference price`)
@@ -104,6 +134,11 @@ export abstract class PeripheryManager extends SelfPermit {
     ])
   }
 
+  /**
+   * Gets calldata and value to send with a `create` transaction to Primitive Manager.
+   *
+   * @beta
+   */
   public static createCallParameters(pool: Pool, liquidity: Wei, options?: PermitTokens) {
     let calldatas: string[] = []
 
@@ -126,7 +161,20 @@ export abstract class PeripheryManager extends SelfPermit {
     }
   }
 
-  // deposit margin
+  /**
+   * Gets calldata and value to send to deposit into a margin account of Primitive Manager.
+   *
+   * @param engine {@link IEngine} Tokens of the Engine to deposit into margin accounts for.
+   * @param options Deposit argument details.
+   *
+   * @throws
+   * Throws if both deposit amounts are zero.
+   * Throws if a deposit amount decimals does not match respective token decimals.
+   * Throws if {@link RecipientOptions.recipient} is the Zero address or is an invalid address.
+   * Throws if depositing a currency and the token has an undefined `wrapped` attribute.
+   *
+   * @beta
+   */
   public static depositCallParameters(engine: Engine, options: MarginOptions): MethodParameters {
     invariant(options.amountRisky.gt(0) || options.amountStable.gt(0), 'ZeroError()')
     validateDecimals(options.amountRisky, engine.risky)
@@ -182,7 +230,20 @@ export abstract class PeripheryManager extends SelfPermit {
     }
   }
 
-  // withdraw margin
+  /**
+   * Gets encoded function data with function selector 'withdraw' and withdraw arguments.
+   *
+   * @param engine {@link IEngine} Tokens of the Engine to deposit into margin accounts for.
+   * @param options Margin argument details with token amounts to withdraw..
+   *
+   * @throws
+   * Throws if both withdraw amounts are zero.
+   * Throws if a withdraw amount decimals does not match respective token decimals.
+   * Throws if {@link RecipientOptions.recipient} is the Zero address or is an invalid address.
+   * Throws if withdrawing a currency and the token has an undefined `wrapped` attribute.
+   *
+   * @beta
+   */
   public static encodeWithdraw(engine: Engine, options: MarginOptions): string[] {
     invariant(options.amountRisky.gt(0) || options.amountStable.gt(0), 'ZeroError()')
     validateDecimals(options.amountRisky, engine.risky)
@@ -227,6 +288,11 @@ export abstract class PeripheryManager extends SelfPermit {
     return calldatas
   }
 
+  /**
+   * Gets calldata and value to send for a withdraw transaction from the Primitive Manager.
+   *
+   * @beta
+   */
   public static withdrawCallParameters(engine: Engine, options: MarginOptions): MethodParameters {
     let calldatas: string[] = PeripheryManager.encodeWithdraw(engine, options)
 
@@ -237,7 +303,20 @@ export abstract class PeripheryManager extends SelfPermit {
     }
   }
 
-  // allocate liquidity
+  /**
+   * Gets calldata and value to send to allocate liquidity into a pool through Primitive Manager.
+   *
+   * @param pool {@link IPool} Uses the pool's poolId and tokens in allocate arguments.
+   * @param options {@link AllocateOptions} Allocate argument details.
+   *
+   * @throws
+   * Throws if any {@link LiquidityOptions} amounts are zero.
+   * Throws if any {@link LiquidityOptions} amount decimals does not match respective token decimals.
+   * Throws if depositing a currency and the token has an undefined `wrapped` attribute.
+   * Throws if attempting to create a pool from a margin balance.
+   *
+   * @beta
+   */
   public static allocateCallParameters(pool: Pool, options: AllocateOptions): MethodParameters {
     invariant(options.delRisky.gt(0), 'ZeroError()')
     invariant(options.delStable.gt(0), 'ZeroError()')
@@ -300,7 +379,18 @@ export abstract class PeripheryManager extends SelfPermit {
     }
   }
 
-  // remove liquidity
+  /**
+   * Gets calldata and value to send to remove liquidity from a Pool through Primitive Manager.
+   *
+   * @param pool {@link IPool} Uses poolId and tokens of Pool entity for remove arguments.
+   * @param options {@link RemoveOptions} Remove argument details.
+   *
+   * @throws
+   * Throws if {@link LiquidityOptions.delLiquidity} is zero.
+   * Throws if {@link LiquidityOptions} amount decimals does not match respective token decimals.
+   *
+   * @beta
+   */
   public static removeCallParameters(pool: Pool, options: RemoveOptions): MethodParameters {
     invariant(options.delLiquidity.gt(0), 'ZeroError()')
     validateDecimals(options.delLiquidity, pool)
@@ -343,6 +433,16 @@ export abstract class PeripheryManager extends SelfPermit {
     }
   }
 
+  /**
+   * Gets calldata for a transaction to transfer ERC-1155 tokens of Primitive Manager.
+   *
+   * @param options {@link SafeTransferOptions} Safe transfer argument details.
+   *
+   * @throws
+   * Throws if {@link SafeTransferOptions} sender or recipient is an invalid address.
+   *
+   * @beta
+   */
   public static safeTransferFromParameters(options: SafeTransferOptions): MethodParameters {
     const sender = validateAndParseAddress(options.sender)
     const recipient = validateAndParseAddress(options.recipient)
@@ -360,6 +460,16 @@ export abstract class PeripheryManager extends SelfPermit {
     }
   }
 
+  /**
+   * Gets calldata for a transaction to batch transfer multiple ERC-1155 tokens of Primitive Manager.
+   *
+   * @param options {@link BatchTransferOptions} Safe batch transfer argument details.
+   *
+   * @throws
+   * Throws if {@link BatchTransferOptions} sender or recipient is an invalid address.
+   *
+   * @beta
+   */
   public static batchTransferFromParameters(options: BatchTransferOptions): MethodParameters {
     const sender = validateAndParseAddress(options.sender)
     const recipient = validateAndParseAddress(options.recipient)
