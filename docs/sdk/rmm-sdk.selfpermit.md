@@ -4,6 +4,8 @@
 
 ## SelfPermit class
 
+Abstract class with static methods to encode permit related function calldata.
+
 <b>Signature:</b>
 
 ```typescript
@@ -26,5 +28,5 @@ export declare abstract class SelfPermit
 
 |  Method | Modifiers | Description |
 |  --- | --- | --- |
-|  [encodePermit(token, options)](./rmm-sdk.selfpermit.encodepermit.md) | <code>static</code> |  |
+|  [encodePermit(token, options)](./rmm-sdk.selfpermit.encodepermit.md) | <code>static</code> | Get encoded function data with function selector depending on permit type. |
 

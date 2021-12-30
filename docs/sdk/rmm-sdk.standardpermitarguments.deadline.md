@@ -4,6 +4,8 @@
 
 ## StandardPermitArguments.deadline property
 
+Timestamp to void permit signature.
+
 <b>Signature:</b>
 
 ```typescript

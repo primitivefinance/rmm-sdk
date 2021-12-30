@@ -4,7 +4,7 @@
 
 ## SwapResult.priceIn property
 
- Price of the asset paid from the swap
+Price of the asset paid from the swap.
 
 <b>Signature:</b>
 

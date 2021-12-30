@@ -4,7 +4,10 @@
 
 ## Calibration.MAX\_SIGMA property
 
- Maximum sigma value inclusive, equal to 10\_000\_000 basis points, or 1\_000.00%
+> This API is provided as a preview for developers and may change based on feedback that we receive. Do not use this API in a production environment.
+> 
+
+Maximum sigma value inclusive, equal to 10\_000\_000 basis points, or 1\_000.00%.
 
 <b>Signature:</b>
 

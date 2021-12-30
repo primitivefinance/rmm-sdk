@@ -4,6 +4,8 @@
 
 ## PermitTokens.permitRisky property
 
+If defined, risky token can be permitted, saving the user an approve tx.
+
 <b>Signature:</b>
 
 ```typescript

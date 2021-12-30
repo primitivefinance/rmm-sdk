@@ -4,6 +4,8 @@
 
 ## MarginOptions interface
 
+Token amounts to use for depositing or withdrawing into a margin account.
+
 <b>Signature:</b>
 
 ```typescript

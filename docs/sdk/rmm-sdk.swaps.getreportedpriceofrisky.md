@@ -4,24 +4,24 @@
 
 ## Swaps.getReportedPriceOfRisky() method
 
+Gets price of risky token denominated in stable token.
+
 <b>Signature:</b>
 
 ```typescript
-static getReportedPriceOfRisky(balance0Floating: number, strikeFloating: number, sigmaFloating: number, tauYears: number): number;
+static getReportedPriceOfRisky(reserveRiskyFloating: number, strikeFloating: number, sigmaFloating: number, tauYears: number): number;
 ```
 
 ## Parameters
 
 |  Parameter | Type | Description |
 |  --- | --- | --- |
-|  balance0Floating | number |  |
-|  strikeFloating | number |  |
-|  sigmaFloating | number |  |
-|  tauYears | number |  |
+|  reserveRiskyFloating | number | Amount of risky tokens in reserve as a floating point decimal number. |
+|  strikeFloating | number | Strike price as a floating point number in decimal format. |
+|  sigmaFloating | number | Implied volatility as a floating point number in decimal format. |
+|  tauYears | number | Time until expiry in years. |
 
 <b>Returns:</b>
 
 number
-
-Price of Risky denominated in Stable
 

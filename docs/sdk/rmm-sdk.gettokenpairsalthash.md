@@ -4,6 +4,11 @@
 
 ## getTokenPairSaltHash() function
 
+> This API is provided as a preview for developers and may change based on feedback that we receive. Do not use this API in a production environment.
+> 
+
+Get hash of the token pair addresses is used as the salt in PrimitiveFactory create2 calls.
+
 <b>Signature:</b>
 
 ```typescript
@@ -14,10 +19,16 @@ export declare function getTokenPairSaltHash(token0: string, token1: string): st
 
 |  Parameter | Type | Description |
 |  --- | --- | --- |
-|  token0 | string |  |
-|  token1 | string |  |
+|  token0 | string | Address of risky token. |
+|  token1 | string | Address of stable token. |
 
 <b>Returns:</b>
 
 string
+
+solidity keccak256 hash of both `token0` and `token` addresses.
+
+## Remarks
+
+These tokens are not sorted. Their position as token0 or token1 matters for PrimitiveEngine contracts.
 

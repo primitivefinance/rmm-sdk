@@ -4,7 +4,10 @@
 
 ## Pool.derivativeOut() method
 
- Marginal price after an exact trade in of `token` with size `amountIn`
+> This API is provided as a preview for developers and may change based on feedback that we receive. Do not use this API in a production environment.
+> 
+
+Gets the marginal price of `tokenIn` after a given amount in has been added to the respective reserve.
 
 <b>Signature:</b>
 
@@ -22,4 +25,8 @@ derivativeOut(tokenIn: Token, amountIn: number): number;
 <b>Returns:</b>
 
 number
+
+## Exceptions
+
+Throws if `tokenIn` is not a token of this [IEngine](./rmm-sdk.iengine.md)<!-- -->.
 

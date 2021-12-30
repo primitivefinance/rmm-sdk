@@ -4,6 +4,8 @@
 
 ## AllocateOptions interface
 
+Provide liquidity argument details.
+
 <b>Signature:</b>
 
 ```typescript

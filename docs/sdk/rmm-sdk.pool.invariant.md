@@ -4,6 +4,11 @@
 
 ## Pool.invariant property
 
+> This API is provided as a preview for developers and may change based on feedback that we receive. Do not use this API in a production environment.
+> 
+
+Trading function invariant of the Pool, formatted as Q64.64
+
 <b>Signature:</b>
 
 ```typescript

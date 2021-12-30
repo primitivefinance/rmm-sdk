@@ -4,6 +4,11 @@
 
 ## PeripheryManager.depositCallParameters() method
 
+> This API is provided as a preview for developers and may change based on feedback that we receive. Do not use this API in a production environment.
+> 
+
+Gets calldata and value to send to deposit into a margin account of Primitive Manager.
+
 <b>Signature:</b>
 
 ```typescript
@@ -14,10 +19,14 @@ static depositCallParameters(engine: Engine, options: MarginOptions): MethodPara
 
 |  Parameter | Type | Description |
 |  --- | --- | --- |
-|  engine | [Engine](./rmm-sdk.engine.md) |  |
-|  options | [MarginOptions](./rmm-sdk.marginoptions.md) |  |
+|  engine | [Engine](./rmm-sdk.engine.md) | [IEngine](./rmm-sdk.iengine.md) Tokens of the Engine to deposit into margin accounts for. |
+|  options | [MarginOptions](./rmm-sdk.marginoptions.md) | Deposit argument details. |
 
 <b>Returns:</b>
 
 [MethodParameters](./rmm-sdk.methodparameters.md)
+
+## Exceptions
+
+Throws if both deposit amounts are zero. Throws if a deposit amount decimals does not match respective token decimals. Throws if [RecipientOptions.recipient](./rmm-sdk.recipientoptions.recipient.md) is the Zero address or is an invalid address. Throws if depositing a currency and the token has an undefined `wrapped` attribute.
 

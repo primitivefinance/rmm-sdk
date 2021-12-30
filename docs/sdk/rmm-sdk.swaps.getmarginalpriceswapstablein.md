@@ -4,12 +4,17 @@
 
 ## Swaps.getMarginalPriceSwapStableIn() method
 
- See https://arxiv.org/pdf/2012.08040.pdf
+> This API is provided as a preview for developers and may change based on feedback that we receive. Do not use this API in a production environment.
+> 
+
+Gets marginal price after an exact trade in of the stable asset with size `amountIn`<!-- -->.
+
+[https://arxiv.org/pdf/2012.08040.pdf](https://arxiv.org/pdf/2012.08040.pdf)
 
 <b>Signature:</b>
 
 ```typescript
-static getMarginalPriceSwapStableIn(invariantFloating: number, reserve1Floating: number, strikeFloating: number, sigmaFloating: number, tauYears: number, gammaFloating: number, amountIn: number): number;
+static getMarginalPriceSwapStableIn(invariantFloating: number, reserveStableFloating: number, strikeFloating: number, sigmaFloating: number, tauYears: number, gammaFloating: number, amountIn: number): number;
 ```
 
 ## Parameters
@@ -17,12 +22,12 @@ static getMarginalPriceSwapStableIn(invariantFloating: number, reserve1Floating:
 |  Parameter | Type | Description |
 |  --- | --- | --- |
 |  invariantFloating | number |  |
-|  reserve1Floating | number |  |
-|  strikeFloating | number |  |
-|  sigmaFloating | number |  |
-|  tauYears | number |  |
-|  gammaFloating | number |  |
-|  amountIn | number | Amount of stable token to add to stable reserve  Marginal price after an exact trade in with size <code>amountIn</code> |
+|  reserveStableFloating | number | Amount of stable tokens in reserve as a floating point decimal number. |
+|  strikeFloating | number | Strike price as a floating point number in decimal format. |
+|  sigmaFloating | number | Implied volatility as a floating point number in decimal format. |
+|  tauYears | number | Time until expiry in years. |
+|  gammaFloating | number | Equal to 10\_000 - fee, in basis points as a floating point number in decimal format. |
+|  amountIn | number | Amount of stable token to add to stable reserve. |
 
 <b>Returns:</b>
 

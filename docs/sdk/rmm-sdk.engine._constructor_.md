@@ -4,7 +4,10 @@
 
 ## Engine.(constructor)
 
- Creates a typescript instance of the PrimitiveEngine contract
+> This API is provided as a preview for developers and may change based on feedback that we receive. Do not use this API in a production environment.
+> 
+
+Creates a typescript instance of the PrimitiveEngine contract.
 
 <b>Signature:</b>
 
@@ -16,7 +19,7 @@ constructor(factory: string, risky: Token, stable: Token);
 
 |  Parameter | Type | Description |
 |  --- | --- | --- |
-|  factory | string | Deployer of the Engine |
-|  risky | Token | Risky token |
-|  stable | Token | Stable token |
+|  factory | string | Deployer of the Engine. |
+|  risky | Token | Risky token. |
+|  stable | Token | Stable token. |
 

@@ -4,6 +4,11 @@
 
 ## Pool.lastTimestamp property
 
+> This API is provided as a preview for developers and may change based on feedback that we receive. Do not use this API in a production environment.
+> 
+
+Timestamp of last curve update.
+
 <b>Signature:</b>
 
 ```typescript
@@ -11,3 +16,10 @@ get lastTimestamp(): Time;
 
 set lastTimestamp(x: Time);
 ```
+
+## Remarks
+
+This is the most important parameter when interacting with this pool's curve. The `tau`<!-- -->, time until expiry<!-- -->\`<!-- -->, is calculated by the difference of maturity and lastTimestamp, which affects the theoretical reserves of the curve.
+
+For example, if swapping, the current timestamp must be used, requiring this lastTimestamp to be updated to it. Else, the swap would be computing an invariant on a stale curve, which will most likely make the swap fail.
+

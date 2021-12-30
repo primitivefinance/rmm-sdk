@@ -4,6 +4,8 @@
 
 ## AllowedPermitArguments.nonce property
 
+Nonce of this permit.
+
 <b>Signature:</b>
 
 ```typescript

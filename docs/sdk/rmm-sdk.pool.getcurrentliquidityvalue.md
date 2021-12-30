@@ -4,7 +4,10 @@
 
 ## Pool.getCurrentLiquidityValue() method
 
- Calculates the current value of the pool in units of `priceOfRisky`  Denominating prices in a dollar-pegged stable coin will be easiest to calculate other values with
+> This API is provided as a preview for developers and may change based on feedback that we receive. Do not use this API in a production environment.
+> 
+
+Gets the current value of the pool denominated in units of `priceOfRisky`<!-- -->.
 
 <b>Signature:</b>
 
@@ -19,12 +22,20 @@ getCurrentLiquidityValue(priceOfRisky: number, priceOfStable?: number): {
 
 |  Parameter | Type | Description |
 |  --- | --- | --- |
-|  priceOfRisky | number | Multiplier for the price of the risky asset |
-|  priceOfStable | number | Multiplier for the price of the stable asset, defaults to 1 given the priceOfRisky is denominated in that asset |
+|  priceOfRisky | number | Multiplier for the price of the risky asset. |
+|  priceOfStable | number | Multiplier for the price of the stable asset, defaults to 1 given the <code>priceOfRisky</code> is denominated in that asset. |
 
 <b>Returns:</b>
 
 { valuePerLiquidity: Wei; values: Wei\[\]; }
 
-value per liquidity and values of each side of the pool, denominated in `prices` units
+value per liquidity and values of each side of the pool, denominated in `prices` units.
+
+## Exceptions
+
+Throws if [IPool.liquidity](./rmm-sdk.ipool.liquidity.md) is zero.
+
+## Remarks
+
+Denominating prices in a dollar-pegged stable coin will be easiest to calculate other values with.
 

@@ -4,6 +4,8 @@
 
 ## SwapOptions.toMargin property
 
+True if output token amount is kept within the contract. The [DefaultOptions.recipient](./rmm-sdk.defaultoptions.recipient.md) margin account is credited.
+
 <b>Signature:</b>
 
 ```typescript

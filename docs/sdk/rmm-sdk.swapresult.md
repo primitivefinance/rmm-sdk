@@ -4,6 +4,8 @@
 
 ## SwapResult interface
 
+Post-swap invariant and implied price after a swap.
+
 <b>Signature:</b>
 
 ```typescript
@@ -14,6 +16,6 @@ export interface SwapResult
 
 |  Property | Type | Description |
 |  --- | --- | --- |
-|  [invariant](./rmm-sdk.swapresult.invariant.md) | number |  Post-swap invariant of the pool |
-|  [priceIn](./rmm-sdk.swapresult.pricein.md) | string |  Price of the asset paid from the swap |
+|  [invariant](./rmm-sdk.swapresult.invariant.md) | number | Post-swap invariant of the pool. |
+|  [priceIn](./rmm-sdk.swapresult.pricein.md) | string | Price of the asset paid from the swap. |
 

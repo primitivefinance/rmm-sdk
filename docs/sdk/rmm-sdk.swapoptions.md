@@ -4,6 +4,8 @@
 
 ## SwapOptions interface
 
+Swap arguments.
+
 <b>Signature:</b>
 
 ```typescript
@@ -15,10 +17,10 @@ export interface SwapOptions extends DefaultOptions, NativeOptions
 
 |  Property | Type | Description |
 |  --- | --- | --- |
-|  [deltaIn](./rmm-sdk.swapoptions.deltain.md) | Wei |  |
-|  [deltaOut](./rmm-sdk.swapoptions.deltaout.md) | Wei |  |
-|  [fromMargin](./rmm-sdk.swapoptions.frommargin.md) | boolean |  |
-|  [riskyForStable](./rmm-sdk.swapoptions.riskyforstable.md) | boolean |  |
-|  [toMargin](./rmm-sdk.swapoptions.tomargin.md) | boolean |  |
-|  [toRecipient?](./rmm-sdk.swapoptions.torecipient.md) | boolean | <i>(Optional)</i> |
+|  [deltaIn](./rmm-sdk.swapoptions.deltain.md) | Wei | Amount of tokens to swap in. |
+|  [deltaOut](./rmm-sdk.swapoptions.deltaout.md) | Wei | Amount of tokens requested out, sent to [DefaultOptions.recipient](./rmm-sdk.defaultoptions.recipient.md)<!-- -->. |
+|  [fromMargin](./rmm-sdk.swapoptions.frommargin.md) | boolean | True if input token amount is debited from <code>msg.sender</code> margin account. |
+|  [riskyForStable](./rmm-sdk.swapoptions.riskyforstable.md) | boolean | True if swapping risky tokens to stable tokens. |
+|  [toMargin](./rmm-sdk.swapoptions.tomargin.md) | boolean | True if output token amount is kept within the contract. The [DefaultOptions.recipient](./rmm-sdk.defaultoptions.recipient.md) margin account is credited. |
+|  [toRecipient?](./rmm-sdk.swapoptions.torecipient.md) | boolean | <i>(Optional)</i> True if output token amount is sent to [DefaultOptions.recipient](./rmm-sdk.defaultoptions.recipient.md)<!-- -->. |
 

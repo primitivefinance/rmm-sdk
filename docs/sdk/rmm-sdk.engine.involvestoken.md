@@ -4,6 +4,11 @@
 
 ## Engine.involvesToken() method
 
+> This API is provided as a preview for developers and may change based on feedback that we receive. Do not use this API in a production environment.
+> 
+
+Checks to see if `token` is a token of this Engine.
+
 <b>Signature:</b>
 
 ```typescript
@@ -14,9 +19,11 @@ involvesToken(token: Token): boolean;
 
 |  Parameter | Type | Description |
 |  --- | --- | --- |
-|  token | Token |  |
+|  token | Token | Token to check involvement of. |
 
 <b>Returns:</b>
 
 boolean
+
+true if one of Engine's tokens is `token`<!-- -->.
 

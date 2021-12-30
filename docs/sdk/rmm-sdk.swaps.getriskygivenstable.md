@@ -4,6 +4,11 @@
 
 ## Swaps.getRiskyGivenStable() method
 
+> This API is provided as a preview for developers and may change based on feedback that we receive. Do not use this API in a production environment.
+> 
+
+Gets risky reserves given stable reserves, for 1 unit of liquidity.
+
 <b>Signature:</b>
 
 ```typescript
@@ -14,11 +19,11 @@ static getRiskyGivenStable(strikeFloating: number, sigmaFloating: number, tauYea
 
 |  Parameter | Type | Description |
 |  --- | --- | --- |
-|  strikeFloating | number |  |
-|  sigmaFloating | number |  |
-|  tauYears | number |  |
-|  reserveStableFloating | number |  |
-|  invariantFloating | number |  |
+|  strikeFloating | number | Strike price as a floating point number in decimal format. |
+|  sigmaFloating | number | Implied volatility as a floating point number in decimal format. |
+|  tauYears | number | Time until expiry in years. |
+|  reserveStableFloating | number | Amount of risky tokens in reserve as a floating point decimal number. |
+|  invariantFloating | number | Computed invariant of curve as a floating point decimal number. |
 
 <b>Returns:</b>
 

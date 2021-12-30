@@ -4,6 +4,8 @@
 
 ## SwapOptions.deltaIn property
 
+Amount of tokens to swap in.
+
 <b>Signature:</b>
 
 ```typescript

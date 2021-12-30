@@ -4,7 +4,10 @@
 
 ## Pool.(constructor)
 
- If reserves are not overridden, a `referencePriceOfRisky` must be defined. Reserves are computed using this value and stored instead.
+> This API is provided as a preview for developers and may change based on feedback that we receive. Do not use this API in a production environment.
+> 
+
+Constructs a new instance of the `Pool` class
 
 <b>Signature:</b>
 
@@ -44,4 +47,8 @@ constructor(chainId: number, factory: string, risky: {
 |  reserves | { reserveRisky: string; reserveStable: string; liquidity: string; } |  |
 |  invariant | string |  |
 |  referencePriceOfRisky | number |  |
+
+## Remarks
+
+If reserves are not overridden, a `referencePriceOfRisky` must be defined. Reserves are computed using this value and stored instead.
 

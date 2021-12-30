@@ -4,7 +4,10 @@
 
 ## weiToWei() function
 
- A smart contract returns a wei value as a string, this converts that string value by using the parseWei function, which multiplies it by 10^decimals. Therefore, to get the actual string as a wei we have to divided it back.
+> This API is provided as a preview for developers and may change based on feedback that we receive. Do not use this API in a production environment.
+> 
+
+Gets a Wei class from a wei string value.
 
 <b>Signature:</b>
 
@@ -23,5 +26,11 @@ export declare function weiToWei(wei: string, decimals?: number): Wei;
 
 Wei
 
-`wei` but as a Wei instance
+`wei` but as a Wei instance.
+
+## Remarks
+
+This converts the wei value by using the parseWei function, which multiplies it by 10^decimals. Therefore, to get the actual string as a Wei class we have to divided it down by the same scalar.
+
+ wei Raw wei value as a string to convert into a Wei class.  decimals Decimal places of wei value, since its an integer in the EVM.
 

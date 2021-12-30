@@ -4,6 +4,8 @@
 
 ## BatchTransferOptions interface
 
+Batch Transfer ERC-1155 liquidity token argument details.
+
 <b>Signature:</b>
 
 ```typescript

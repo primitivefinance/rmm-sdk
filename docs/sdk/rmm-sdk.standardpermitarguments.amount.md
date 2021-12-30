@@ -4,6 +4,8 @@
 
 ## StandardPermitArguments.amount property
 
+Value of approval to make in permit call.
+
 <b>Signature:</b>
 
 ```typescript

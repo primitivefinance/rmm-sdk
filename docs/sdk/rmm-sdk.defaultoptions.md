@@ -4,6 +4,8 @@
 
 ## DefaultOptions interface
 
+Default arguments in swaps.
+
 <b>Signature:</b>
 
 ```typescript
@@ -14,8 +16,8 @@ export interface DefaultOptions
 
 |  Property | Type | Description |
 |  --- | --- | --- |
-|  [deadline](./rmm-sdk.defaultoptions.deadline.md) | BigNumber |  |
-|  [inputTokenPermit?](./rmm-sdk.defaultoptions.inputtokenpermit.md) | [PermitOptions](./rmm-sdk.permitoptions.md) | <i>(Optional)</i> |
-|  [recipient](./rmm-sdk.defaultoptions.recipient.md) | string |  |
-|  [slippageTolerance](./rmm-sdk.defaultoptions.slippagetolerance.md) | Percentage |  |
+|  [deadline](./rmm-sdk.defaultoptions.deadline.md) | BigNumber | Timestamp which will revert a swap if tx has not been mined by then. |
+|  [inputTokenPermit?](./rmm-sdk.defaultoptions.inputtokenpermit.md) | [PermitOptions](./rmm-sdk.permitoptions.md) | <i>(Optional)</i> Permit details if input token is being permitted rather than approved. |
+|  [recipient](./rmm-sdk.defaultoptions.recipient.md) | string | Receiving address of output amount. |
+|  [slippageTolerance](./rmm-sdk.defaultoptions.slippagetolerance.md) | Percentage | Maximum slippage of a swap as a Percentage class . |
 

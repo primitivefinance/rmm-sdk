@@ -4,7 +4,7 @@
 
 ## ExactInResult.output property
 
- Amount of tokens output from a swap
+Amount of tokens output from a swap.
 
 <b>Signature:</b>
 

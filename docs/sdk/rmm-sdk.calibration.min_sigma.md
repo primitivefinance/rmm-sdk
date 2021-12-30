@@ -4,7 +4,10 @@
 
 ## Calibration.MIN\_SIGMA property
 
- Minimum sigma value inclusive, equal to 1 basis point, or 0.01%
+> This API is provided as a preview for developers and may change based on feedback that we receive. Do not use this API in a production environment.
+> 
+
+Minimum sigma value inclusive, equal to 1 basis point, or 0.01%.
 
 <b>Signature:</b>
 

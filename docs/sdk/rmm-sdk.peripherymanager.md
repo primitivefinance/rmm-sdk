@@ -4,6 +4,11 @@
 
 ## PeripheryManager class
 
+> This API is provided as a preview for developers and may change based on feedback that we receive. Do not use this API in a production environment.
+> 
+
+Abstract class with static methods to build Manager function calldatas.
+
 <b>Signature:</b>
 
 ```typescript
@@ -15,21 +20,21 @@ export declare abstract class PeripheryManager extends SelfPermit
 
 |  Property | Modifiers | Type | Description |
 |  --- | --- | --- | --- |
-|  [ABI](./rmm-sdk.peripherymanager.abi.md) | <code>static</code> | any |  |
-|  [BYTECODE](./rmm-sdk.peripherymanager.bytecode.md) | <code>static</code> | string |  |
-|  [INTERFACE](./rmm-sdk.peripherymanager.interface.md) | <code>static</code> | Interface |  |
+|  [ABI](./rmm-sdk.peripherymanager.abi.md) | <code>static</code> | any | <b><i>(BETA)</i></b> |
+|  [BYTECODE](./rmm-sdk.peripherymanager.bytecode.md) | <code>static</code> | string | <b><i>(BETA)</i></b> |
+|  [INTERFACE](./rmm-sdk.peripherymanager.interface.md) | <code>static</code> | Interface | <b><i>(BETA)</i></b> |
 
 ## Methods
 
 |  Method | Modifiers | Description |
 |  --- | --- | --- |
-|  [allocateCallParameters(pool, options)](./rmm-sdk.peripherymanager.allocatecallparameters.md) | <code>static</code> |  |
-|  [batchTransferFromParameters(options)](./rmm-sdk.peripherymanager.batchtransferfromparameters.md) | <code>static</code> |  |
-|  [createCallParameters(pool, liquidity, options)](./rmm-sdk.peripherymanager.createcallparameters.md) | <code>static</code> |  |
-|  [depositCallParameters(engine, options)](./rmm-sdk.peripherymanager.depositcallparameters.md) | <code>static</code> |  |
-|  [encodeCreate(pool, liquidity)](./rmm-sdk.peripherymanager.encodecreate.md) | <code>static</code> |  |
-|  [encodeWithdraw(engine, options)](./rmm-sdk.peripherymanager.encodewithdraw.md) | <code>static</code> |  |
-|  [removeCallParameters(pool, options)](./rmm-sdk.peripherymanager.removecallparameters.md) | <code>static</code> |  |
-|  [safeTransferFromParameters(options)](./rmm-sdk.peripherymanager.safetransferfromparameters.md) | <code>static</code> |  |
-|  [withdrawCallParameters(engine, options)](./rmm-sdk.peripherymanager.withdrawcallparameters.md) | <code>static</code> |  |
+|  [allocateCallParameters(pool, options)](./rmm-sdk.peripherymanager.allocatecallparameters.md) | <code>static</code> | <b><i>(BETA)</i></b> Gets calldata and value to send to allocate liquidity into a pool through Primitive Manager. |
+|  [batchTransferFromParameters(options)](./rmm-sdk.peripherymanager.batchtransferfromparameters.md) | <code>static</code> | <b><i>(BETA)</i></b> Gets calldata for a transaction to batch transfer multiple ERC-1155 tokens of Primitive Manager. |
+|  [createCallParameters(pool, liquidity, options)](./rmm-sdk.peripherymanager.createcallparameters.md) | <code>static</code> | <b><i>(BETA)</i></b> Gets calldata and value to send with a <code>create</code> transaction to Primitive Manager. |
+|  [depositCallParameters(engine, options)](./rmm-sdk.peripherymanager.depositcallparameters.md) | <code>static</code> | <b><i>(BETA)</i></b> Gets calldata and value to send to deposit into a margin account of Primitive Manager. |
+|  [encodeCreate(pool, liquidity)](./rmm-sdk.peripherymanager.encodecreate.md) | <code>static</code> | <b><i>(BETA)</i></b> Gets encoded function data with function selector 'create' and create pool args |
+|  [encodeWithdraw(engine, options)](./rmm-sdk.peripherymanager.encodewithdraw.md) | <code>static</code> | <b><i>(BETA)</i></b> Gets encoded function data with function selector 'withdraw' and withdraw arguments. |
+|  [removeCallParameters(pool, options)](./rmm-sdk.peripherymanager.removecallparameters.md) | <code>static</code> | <b><i>(BETA)</i></b> Gets calldata and value to send to remove liquidity from a Pool through Primitive Manager. |
+|  [safeTransferFromParameters(options)](./rmm-sdk.peripherymanager.safetransferfromparameters.md) | <code>static</code> | <b><i>(BETA)</i></b> Gets calldata for a transaction to transfer ERC-1155 tokens of Primitive Manager. |
+|  [withdrawCallParameters(engine, options)](./rmm-sdk.peripherymanager.withdrawcallparameters.md) | <code>static</code> | <b><i>(BETA)</i></b> Gets calldata and value to send for a withdraw transaction from the Primitive Manager. |
 

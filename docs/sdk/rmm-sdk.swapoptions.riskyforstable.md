@@ -4,6 +4,8 @@
 
 ## SwapOptions.riskyForStable property
 
+True if swapping risky tokens to stable tokens.
+
 <b>Signature:</b>
 
 ```typescript

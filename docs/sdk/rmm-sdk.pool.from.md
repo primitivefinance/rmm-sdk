@@ -4,7 +4,10 @@
 
 ## Pool.from() method
 
- Constructs a Pool entity from actual reserve data, e.g. on-chain state
+> This API is provided as a preview for developers and may change based on feedback that we receive. Do not use this API in a production environment.
+> 
+
+Constructs a Pool entity from actual reserve data, e.g. on-chain state.
 
 <b>Signature:</b>
 
@@ -16,7 +19,7 @@ static from(pool: PoolInterface, referencePrice?: number, chainId?: number): Poo
 
 |  Parameter | Type | Description |
 |  --- | --- | --- |
-|  pool | [PoolInterface](./rmm-sdk.poolinterface.md) | Returned data from on-chain, reconstructed to match PoolInterface or returned from the <code>house.uri(id)</code> call |
+|  pool | [PoolInterface](./rmm-sdk.poolinterface.md) | Returned data from on-chain, reconstructed to match PoolInterface or returned from the <code>PrimitiveManager.uri(id)</code> call. |
 |  referencePrice | number |  |
 |  chainId | number |  |
 
@@ -24,5 +27,5 @@ static from(pool: PoolInterface, referencePrice?: number, chainId?: number): Poo
 
 [Pool](./rmm-sdk.pool.md)
 
-Pool entity
+Pool entity.
 

@@ -4,7 +4,7 @@
 
 ## SwapResult.invariant property
 
- Post-swap invariant of the pool
+Post-swap invariant of the pool.
 
 <b>Signature:</b>
 

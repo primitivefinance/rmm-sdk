@@ -4,6 +4,11 @@
 
 ## PeripheryManager.allocateCallParameters() method
 
+> This API is provided as a preview for developers and may change based on feedback that we receive. Do not use this API in a production environment.
+> 
+
+Gets calldata and value to send to allocate liquidity into a pool through Primitive Manager.
+
 <b>Signature:</b>
 
 ```typescript
@@ -14,10 +19,14 @@ static allocateCallParameters(pool: Pool, options: AllocateOptions): MethodParam
 
 |  Parameter | Type | Description |
 |  --- | --- | --- |
-|  pool | [Pool](./rmm-sdk.pool.md) |  |
-|  options | [AllocateOptions](./rmm-sdk.allocateoptions.md) |  |
+|  pool | [Pool](./rmm-sdk.pool.md) | [IPool](./rmm-sdk.ipool.md) Uses the pool's poolId and tokens in allocate arguments. |
+|  options | [AllocateOptions](./rmm-sdk.allocateoptions.md) | [AllocateOptions](./rmm-sdk.allocateoptions.md) Allocate argument details. |
 
 <b>Returns:</b>
 
 [MethodParameters](./rmm-sdk.methodparameters.md)
+
+## Exceptions
+
+Throws if any [LiquidityOptions](./rmm-sdk.liquidityoptions.md) amounts are zero. Throws if any [LiquidityOptions](./rmm-sdk.liquidityoptions.md) amount decimals does not match respective token decimals. Throws if depositing a currency and the token has an undefined `wrapped` attribute. Throws if attempting to create a pool from a margin balance.
 

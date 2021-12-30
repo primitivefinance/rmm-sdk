@@ -4,42 +4,46 @@
 
 ## Engine class
 
- Represents the PrimitiveEngine.sol smart contract
+> This API is provided as a preview for developers and may change based on feedback that we receive. Do not use this API in a production environment.
+> 
+
+Engine base class implementation of [IEngine](./rmm-sdk.iengine.md)
 
 <b>Signature:</b>
 
 ```typescript
-export declare class Engine extends Token 
+export declare class Engine extends Token implements IEngine 
 ```
 <b>Extends:</b> Token
+
+<b>Implements:</b> [IEngine](./rmm-sdk.iengine.md)
 
 ## Constructors
 
 |  Constructor | Modifiers | Description |
 |  --- | --- | --- |
-|  [(constructor)(factory, risky, stable)](./rmm-sdk.engine._constructor_.md) |  |  Creates a typescript instance of the PrimitiveEngine contract |
+|  [(constructor)(factory, risky, stable)](./rmm-sdk.engine._constructor_.md) |  | <b><i>(BETA)</i></b> Creates a typescript instance of the PrimitiveEngine contract. |
 
 ## Properties
 
 |  Property | Modifiers | Type | Description |
 |  --- | --- | --- | --- |
-|  [ABI](./rmm-sdk.engine.abi.md) | <code>static</code> | any |  |
-|  [BUFFER](./rmm-sdk.engine.buffer.md) | <code>static</code> | number |  Engine constant for the seconds after a pool expires in which swaps are still possible |
-|  [BYTECODE](./rmm-sdk.engine.bytecode.md) | <code>static</code> | string |  |
-|  [factory](./rmm-sdk.engine.factory.md) |  | string |  Deployer of this Engine |
-|  [INTERFACE](./rmm-sdk.engine.interface.md) | <code>static</code> | Interface |  |
-|  [MIN\_LIQUIDITY\_FACTOR](./rmm-sdk.engine.min_liquidity_factor.md) | <code>static</code> | (not declared) |  Used to calculate minimum liquidity based on lowest decimals of risky/stable |
-|  [MIN\_LIQUIDITY](./rmm-sdk.engine.min_liquidity.md) |  | number |  Minimum amount of liquidity to supply on calling <code>create()</code> |
-|  [PRECISION](./rmm-sdk.engine.precision.md) | <code>static</code> | Wei |  Engine constant value which all values are scaled to for any math |
-|  [risky](./rmm-sdk.engine.risky.md) |  | Token |  Risky asset |
-|  [scaleFactorRisky](./rmm-sdk.engine.scalefactorrisky.md) |  | Wei |  Multiplier to scale risky token amounts to the base <code>PRECISION</code> |
-|  [scaleFactorStable](./rmm-sdk.engine.scalefactorstable.md) |  | Wei |  Multiplier to scale stable token amounts to the base <code>PRECISION</code> |
-|  [stable](./rmm-sdk.engine.stable.md) |  | Token |  Stable asset |
+|  [ABI](./rmm-sdk.engine.abi.md) | <code>static</code> | any | <b><i>(BETA)</i></b> PrimitiveEngine abi. |
+|  [BUFFER](./rmm-sdk.engine.buffer.md) | <code>static</code> | number | <b><i>(BETA)</i></b> Engine constant for the seconds after a pool expires in which swaps are still possible. |
+|  [BYTECODE](./rmm-sdk.engine.bytecode.md) | <code>static</code> | string | <b><i>(BETA)</i></b> PrimitiveEngine bytecode. |
+|  [factory](./rmm-sdk.engine.factory.md) |  | string | <b><i>(BETA)</i></b> Primitive Factory address. Should be deployer of this instantiated Engine. |
+|  [INTERFACE](./rmm-sdk.engine.interface.md) | <code>static</code> | Interface | <b><i>(BETA)</i></b> PrimitiveEngine interface instantiated from abi. |
+|  [MIN\_LIQUIDITY\_FACTOR](./rmm-sdk.engine.min_liquidity_factor.md) | <code>static</code> | (not declared) | <b><i>(BETA)</i></b> Used to calculate minimum liquidity based on lowest decimals of risky/stable. |
+|  [MIN\_LIQUIDITY](./rmm-sdk.engine.min_liquidity.md) |  | number | <b><i>(BETA)</i></b> Minimum amount of liquidity of every pool. |
+|  [PRECISION](./rmm-sdk.engine.precision.md) | <code>static</code> | Wei | <b><i>(BETA)</i></b> Engine constant value which all values are scaled to for any math. |
+|  [risky](./rmm-sdk.engine.risky.md) |  | Token | <b><i>(BETA)</i></b> Risky token class entity. |
+|  [scaleFactorRisky](./rmm-sdk.engine.scalefactorrisky.md) |  | Wei | <b><i>(BETA)</i></b> Multiplier to scale risky token amounts to the base <code>PRECISION</code>. |
+|  [scaleFactorStable](./rmm-sdk.engine.scalefactorstable.md) |  | Wei | <b><i>(BETA)</i></b> Multiplier to scale stable token amounts to the base <code>PRECISION</code>. |
+|  [stable](./rmm-sdk.engine.stable.md) |  | Token | <b><i>(BETA)</i></b> Stable token class entity. |
 
 ## Methods
 
 |  Method | Modifiers | Description |
 |  --- | --- | --- |
-|  [computeEngineAddress(factory, risky, stable, contractBytecode)](./rmm-sdk.engine.computeengineaddress.md) | <code>static</code> |  Statically computes an Engine address |
-|  [involvesToken(token)](./rmm-sdk.engine.involvestoken.md) |  |  |
+|  [involvesToken(token)](./rmm-sdk.engine.involvestoken.md) |  | <b><i>(BETA)</i></b> Checks to see if <code>token</code> is a token of this Engine. |
 

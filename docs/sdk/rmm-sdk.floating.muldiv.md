@@ -4,7 +4,10 @@
 
 ## Floating.mulDiv() method
 
- Multiplies scaled multiplier and this value, divides by scaled divider, downscales back
+> This API is provided as a preview for developers and may change based on feedback that we receive. Do not use this API in a production environment.
+> 
+
+Multiplies scaled multiplier and this value, divides by scaled divider, downscales back.
 
 <b>Signature:</b>
 

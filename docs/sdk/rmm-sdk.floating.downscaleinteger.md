@@ -4,7 +4,10 @@
 
 ## Floating.downscaleInteger() method
 
- Divides `value` by this scale factor and truncates it to this decimals
+> This API is provided as a preview for developers and may change based on feedback that we receive. Do not use this API in a production environment.
+> 
+
+Divides `value` by this scale factor and truncates it to this decimals.
 
 <b>Signature:</b>
 

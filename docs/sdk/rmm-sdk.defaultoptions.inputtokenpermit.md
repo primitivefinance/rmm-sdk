@@ -4,6 +4,8 @@
 
 ## DefaultOptions.inputTokenPermit property
 
+Permit details if input token is being permitted rather than approved.
+
 <b>Signature:</b>
 
 ```typescript

@@ -23,8 +23,8 @@
     "start": "tsdx watch",
     "test": "tsdx test",
     "lint": "eslint",
-    "prepare:api": "api-extractor run --local",
     "docs": "run-s docs:*",
+    "docs:prepare": "api-extractor run --local",
     "docs:collect-sdk-apis": "node scripts/collect-sdk-api.js",
     "docs:api-documenter": "api-documenter generate -i temp/sdk-api -o docs/sdk"
   },

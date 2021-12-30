@@ -4,6 +4,11 @@
 
 ## SwapManager.swapCallParameters() method
 
+> This API is provided as a preview for developers and may change based on feedback that we receive. Do not use this API in a production environment.
+> 
+
+Gets calldata and value to send for this swap.
+
 <b>Signature:</b>
 
 ```typescript
@@ -14,10 +19,18 @@ static swapCallParameters(pool: Pool, options: SwapOptions): MethodParameters;
 
 |  Parameter | Type | Description |
 |  --- | --- | --- |
-|  pool | [Pool](./rmm-sdk.pool.md) |  |
-|  options | [SwapOptions](./rmm-sdk.swapoptions.md) |  |
+|  pool | [Pool](./rmm-sdk.pool.md) | Pool entity class being swapped within. |
+|  options | [SwapOptions](./rmm-sdk.swapoptions.md) | Swap argument details. |
 
 <b>Returns:</b>
 
 [MethodParameters](./rmm-sdk.methodparameters.md)
+
+## Exceptions
+
+Throws if [DefaultOptions.recipient](./rmm-sdk.defaultoptions.recipient.md) is an invalid address or the zero address. Throws if [DefaultOptions.inputTokenPermit](./rmm-sdk.defaultoptions.inputtokenpermit.md) is defined and input token is not a token (e.g. Ether). Throws if decimals on input or output swap amounts is not the same as the pool's respective token decimals.
+
+## Remarks
+
+If desired output is Ether, swap call is stacked with an unwrapAndWithdraw call, encoded in a multicall.
 

@@ -4,6 +4,8 @@
 
 ## NativeOptions interface
 
+Flag to use a native currency in a transaction.
+
 <b>Signature:</b>
 
 ```typescript

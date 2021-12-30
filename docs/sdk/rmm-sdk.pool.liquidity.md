@@ -4,6 +4,11 @@
 
 ## Pool.liquidity property
 
+> This API is provided as a preview for developers and may change based on feedback that we receive. Do not use this API in a production environment.
+> 
+
+Total liquidity of Pool, including the min liquidity [IEngine.MIN\_LIQUIDITY](./rmm-sdk.iengine.min_liquidity.md)<!-- -->.
+
 <b>Signature:</b>
 
 ```typescript

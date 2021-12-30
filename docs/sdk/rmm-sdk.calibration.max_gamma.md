@@ -4,7 +4,10 @@
 
 ## Calibration.MAX\_GAMMA property
 
- Maximum gamma value inclusive, equal to 9999 basis points, or 99.99%
+> This API is provided as a preview for developers and may change based on feedback that we receive. Do not use this API in a production environment.
+> 
+
+Maximum gamma value inclusive, equal to 9999 basis points, or 99.99%.
 
 <b>Signature:</b>
 

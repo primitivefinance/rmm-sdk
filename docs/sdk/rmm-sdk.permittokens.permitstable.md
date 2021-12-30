@@ -4,6 +4,8 @@
 
 ## PermitTokens.permitStable property
 
+If defined, stable token can be permitted, saving the user an approve tx.
+
 <b>Signature:</b>
 
 ```typescript

@@ -4,6 +4,8 @@
 
 ## isValidStrike() function
 
+Checks `strike` is within the valid smart contract range.
+
 <b>Signature:</b>
 
 ```typescript
@@ -14,9 +16,11 @@ export declare function isValidStrike(strike: string): boolean;
 
 |  Parameter | Type | Description |
 |  --- | --- | --- |
-|  strike | string |  |
+|  strike | string | Strike price in wei with decimal places equal the Engine's stable token decimals. |
 
 <b>Returns:</b>
 
 boolean
+
+true if within bounds of valid strikes.
 

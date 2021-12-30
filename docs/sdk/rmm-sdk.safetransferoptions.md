@@ -4,6 +4,8 @@
 
 ## SafeTransferOptions interface
 
+Transfer ERC-1155 liquidity token argument details.
+
 <b>Signature:</b>
 
 ```typescript

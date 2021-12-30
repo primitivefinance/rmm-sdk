@@ -4,7 +4,10 @@
 
 ## Floating.sub() method
 
- Scales up, subtracts scaled values, downscales back
+> This API is provided as a preview for developers and may change based on feedback that we receive. Do not use this API in a production environment.
+> 
+
+Scales up, subtracts scaled values, downscales back.
 
 <b>Signature:</b>
 

@@ -4,7 +4,10 @@
 
 ## parseCalibration() function
 
- Constructs a Calibration entity from on-chain data
+> This API is provided as a preview for developers and may change based on feedback that we receive. Do not use this API in a production environment.
+> 
+
+Constructs a Calibration entity from on-chain data.
 
 <b>Signature:</b>
 
@@ -32,13 +35,19 @@ export declare function parseCalibration(factory: string, risky: {
 
 |  Parameter | Type | Description |
 |  --- | --- | --- |
-|  factory | string | Address of the factory contract, used to compute Engine |
-|  risky | { address: string; decimals: string \| number; name?: string; symbol?: string; } | ERC-20 token metadata and address of risky asset |
-|  stable | { address: string; decimals: string \| number; name?: string; symbol?: string; } | ERC-20 token metadata and address of stable asset |
-|  cal | { strike: string; sigma: string; maturity: string; gamma: string; lastTimestamp?: string; } | On-chain data of calibration, converted to strings |
-|  chainId | number | An optional chainId for the Token entity, defaults to 1 |
+|  factory | string | Address of the factory contract, used to compute Engine. |
+|  risky | { address: string; decimals: string \| number; name?: string; symbol?: string; } | ERC-20 token metadata and address of risky asset. |
+|  stable | { address: string; decimals: string \| number; name?: string; symbol?: string; } | ERC-20 token metadata and address of stable asset. |
+|  cal | { strike: string; sigma: string; maturity: string; gamma: string; lastTimestamp?: string; } | On-chain data of calibration, converted to strings. |
+|  chainId | number | An optional chainId for the Token entity, defaults to 1. |
 
 <b>Returns:</b>
 
 [Calibration](./rmm-sdk.calibration.md)
+
+calibration entity of the parameters.
+
+## Remarks
+
+Designed to work easily with `PrimitiveManager.uri(poolId)`<!-- -->.
 

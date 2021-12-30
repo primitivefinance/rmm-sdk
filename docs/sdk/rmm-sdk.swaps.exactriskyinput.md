@@ -4,7 +4,12 @@
 
 ## Swaps.exactRiskyInput() method
 
- Given an exact amount of risky tokens in, approximate the output amount of stable tokens
+> This API is provided as a preview for developers and may change based on feedback that we receive. Do not use this API in a production environment.
+> 
+
+Gets output amount of stable tokens given an exact amount of risky tokens in.
+
+[https://github.com/primitivefinance/rmms-py](https://github.com/primitivefinance/rmms-py)
 
 <b>Signature:</b>
 
@@ -16,16 +21,16 @@ static exactRiskyInput(amountIn: number, decimalsRisky: number, decimalsStable: 
 
 |  Parameter | Type | Description |
 |  --- | --- | --- |
-|  amountIn | number |  |
-|  decimalsRisky | number |  |
-|  decimalsStable | number |  |
-|  reserveRiskyFloating | number |  |
-|  reserveStableFloating | number |  |
-|  reserveLiquidityFloating | number |  |
-|  strikeFloating | number |  |
-|  sigmaFloating | number |  |
-|  gammaFloating | number |  |
-|  tauYears | number |  |
+|  amountIn | number | Amount of risky token to add to risky reserve. |
+|  decimalsRisky | number | Decimal places of the risky token. |
+|  decimalsStable | number | Decimal places of the stable token. |
+|  reserveRiskyFloating | number | Amount of risky tokens in reserve as a floating point decimal number. |
+|  reserveStableFloating | number | Amount of stable tokens in reserve as a floating point decimal number. |
+|  reserveLiquidityFloating | number | Total supply of liquidity as a floating point decimal number. |
+|  strikeFloating | number | Strike price as a floating point number in decimal format. |
+|  sigmaFloating | number | Implied volatility as a floating point number in decimal format. |
+|  gammaFloating | number | Equal to 10\_000 - fee, in basis points as a floating point number in decimal format. |
+|  tauYears | number | Time until expiry in years. |
 
 <b>Returns:</b>
 

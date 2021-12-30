@@ -4,7 +4,10 @@
 
 ## validateAndParseAddress() function
 
-Validates an address and returns the parsed (checksummed) version of that address
+> This API is provided as a preview for developers and may change based on feedback that we receive. Do not use this API in a production environment.
+> 
+
+Validates an address and returns the parsed (checksummed) version of that address.
 
 <b>Signature:</b>
 
@@ -16,9 +19,13 @@ export declare function validateAndParseAddress(address: string): string;
 
 |  Parameter | Type | Description |
 |  --- | --- | --- |
-|  address | string | the unchecksummed hex address |
+|  address | string | the unchecksummed hex address. |
 
 <b>Returns:</b>
 
 string
+
+## Exceptions
+
+Throws if `address` is an invalid hex address.
 

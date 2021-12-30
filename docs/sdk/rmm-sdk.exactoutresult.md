@@ -15,5 +15,5 @@ export interface ExactOutResult extends SwapResult
 
 |  Property | Type | Description |
 |  --- | --- | --- |
-|  [input](./rmm-sdk.exactoutresult.input.md) | number |  Amount of tokens input to a swap |
+|  [input](./rmm-sdk.exactoutresult.input.md) | number | Amount of tokens input to a swap. |
 

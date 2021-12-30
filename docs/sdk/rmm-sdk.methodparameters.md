@@ -16,6 +16,6 @@ export interface MethodParameters
 
 |  Property | Type | Description |
 |  --- | --- | --- |
-|  [calldata](./rmm-sdk.methodparameters.calldata.md) | string | The hex encoded calldata to perform the given operation |
+|  [calldata](./rmm-sdk.methodparameters.calldata.md) | string | The hex encoded calldata to perform the given operation. |
 |  [value](./rmm-sdk.methodparameters.value.md) | string | The amount of ether (wei) to send in hex. |
 

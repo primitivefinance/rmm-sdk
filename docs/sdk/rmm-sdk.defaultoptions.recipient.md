@@ -4,6 +4,8 @@
 
 ## DefaultOptions.recipient property
 
+Receiving address of output amount.
+
 <b>Signature:</b>
 
 ```typescript

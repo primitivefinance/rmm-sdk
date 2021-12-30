@@ -4,7 +4,10 @@
 
 ## Engine.scaleFactorStable property
 
- Multiplier to scale stable token amounts to the base `PRECISION`
+> This API is provided as a preview for developers and may change based on feedback that we receive. Do not use this API in a production environment.
+> 
+
+Multiplier to scale stable token amounts to the base `PRECISION`<!-- -->.
 
 <b>Signature:</b>
 

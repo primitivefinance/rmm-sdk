@@ -4,7 +4,10 @@
 
 ## Swaps.getRiskyReservesGivenReferencePrice() method
 
- Equal to the Delta (option greeks) exposure of one liquidity
+> This API is provided as a preview for developers and may change based on feedback that we receive. Do not use this API in a production environment.
+> 
+
+Gets estimated risky token reserves given a reference price of the risky asset, for 1 unit of liquidity.
 
 <b>Signature:</b>
 
@@ -16,14 +19,16 @@ static getRiskyReservesGivenReferencePrice(strikeFloating: number, sigmaFloating
 
 |  Parameter | Type | Description |
 |  --- | --- | --- |
-|  strikeFloating | number |  |
-|  sigmaFloating | number |  |
-|  tauYears | number |  |
-|  referencePriceOfRisky | number |  |
+|  strikeFloating | number | Strike price as a floating point number in decimal format. |
+|  sigmaFloating | number | Implied volatility as a floating point number in decimal format. |
+|  tauYears | number | Time until expiry in years. |
+|  referencePriceOfRisky | number | Price of the risky token denominated in the stable token. |
 
 <b>Returns:</b>
 
 number
 
-Amount of optimal risky reserves per liquidity given a reference price of the risky
+## Remarks
+
+Equal to the Delta (option greeks) exposure of one liquidity unit.
 

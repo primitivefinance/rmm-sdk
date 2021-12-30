@@ -4,7 +4,10 @@
 
 ## Calibration.strike property
 
- Strike price with the same precision as the stable asset
+> This API is provided as a preview for developers and may change based on feedback that we receive. Do not use this API in a production environment.
+> 
+
+Strike price with the same precision as the stable asset.
 
 <b>Signature:</b>
 

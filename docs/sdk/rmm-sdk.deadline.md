@@ -4,6 +4,8 @@
 
 ## Deadline interface
 
+Timestamp which will revert the transaction if not yet mined.
+
 <b>Signature:</b>
 
 ```typescript

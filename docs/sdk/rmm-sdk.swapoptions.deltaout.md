@@ -4,6 +4,8 @@
 
 ## SwapOptions.deltaOut property
 
+Amount of tokens requested out, sent to [DefaultOptions.recipient](./rmm-sdk.defaultoptions.recipient.md)<!-- -->.
+
 <b>Signature:</b>
 
 ```typescript

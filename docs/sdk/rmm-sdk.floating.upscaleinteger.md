@@ -4,7 +4,10 @@
 
 ## Floating.upscaleInteger() method
 
- Multiplies `value` by this scale factor and floors it
+> This API is provided as a preview for developers and may change based on feedback that we receive. Do not use this API in a production environment.
+> 
+
+Multiplies `value` by this scale factor and floors it.
 
 <b>Signature:</b>
 

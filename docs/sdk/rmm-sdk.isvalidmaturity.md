@@ -4,6 +4,8 @@
 
 ## isValidMaturity() function
 
+Checks `maturity` is within the valid smart contract range.
+
 <b>Signature:</b>
 
 ```typescript
@@ -14,9 +16,11 @@ export declare function isValidMaturity(maturity: string): boolean;
 
 |  Parameter | Type | Description |
 |  --- | --- | --- |
-|  maturity | string |  |
+|  maturity | string | Expiration timestamp in seconds. |
 
 <b>Returns:</b>
 
 boolean
+
+true if within bounds of valid maturities.
 

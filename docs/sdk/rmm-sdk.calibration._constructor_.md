@@ -4,12 +4,15 @@
 
 ## Calibration.(constructor)
 
+> This API is provided as a preview for developers and may change based on feedback that we receive. Do not use this API in a production environment.
+> 
+
 Constructs a new instance of the `Calibration` class
 
 <b>Signature:</b>
 
 ```typescript
-constructor(factory: string, risky: Token, stable: Token, strike: string, sigma: string, maturity: string, gamma: string);
+constructor(factory: string, risky: Token, stable: Token, strike: string | BigNumber, sigma: string | BigNumber, maturity: string | BigNumber, gamma: string | BigNumber);
 ```
 
 ## Parameters
@@ -19,8 +22,12 @@ constructor(factory: string, risky: Token, stable: Token, strike: string, sigma:
 |  factory | string | Address of the factory contract, used to compute Engine address, which is used to compute poolId |
 |  risky | Token |  |
 |  stable | Token |  |
-|  strike | string | Strike price, returned from a smart contract or calibration.strike.toString() |
-|  sigma | string | Implied volatility in basis points, returned from a smart contract or calibration.sigma.toString() |
-|  maturity | string | Timestamp of expiry, in seconds |
-|  gamma | string | Basis points multiplier less than 10\_000 to apply a fee on swaps, e.g. 1% fee = 9900 gamma |
+|  strike | string \| BigNumber | Strike price, returned from a smart contract or calibration.strike.toString() |
+|  sigma | string \| BigNumber | Implied volatility in basis points, returned from a smart contract or calibration.sigma.toString() |
+|  maturity | string \| BigNumber | Timestamp of expiry, in seconds |
+|  gamma | string \| BigNumber | Basis points multiplier less than 10\_000 to apply a fee on swaps, e.g. 1% fee = 9900 gamma |
+
+## Exceptions
+
+Throws invariant error if a calibration parameter is invalid
 

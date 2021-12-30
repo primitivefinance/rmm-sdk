@@ -4,6 +4,11 @@
 
 ## PeripheryManager.encodeCreate() method
 
+> This API is provided as a preview for developers and may change based on feedback that we receive. Do not use this API in a production environment.
+> 
+
+Gets encoded function data with function selector 'create' and create pool args
+
 <b>Signature:</b>
 
 ```typescript
@@ -14,10 +19,14 @@ static encodeCreate(pool: Pool, liquidity: Wei): string;
 
 |  Parameter | Type | Description |
 |  --- | --- | --- |
-|  pool | [Pool](./rmm-sdk.pool.md) |  |
-|  liquidity | Wei |  |
+|  pool | [Pool](./rmm-sdk.pool.md) | [IPool](./rmm-sdk.ipool.md) Virtualized pool with computed reserves to compute create args from. |
+|  liquidity | Wei | Amount of liquidity to initially supply. |
 
 <b>Returns:</b>
 
 string
+
+## Exceptions
+
+Throws if liquidity amount decimals and pool decimals are not equal. Throws if pool has an undefined [IPool.referencePriceOfRisky](./rmm-sdk.ipool.referencepriceofrisky.md)<!-- -->.
 

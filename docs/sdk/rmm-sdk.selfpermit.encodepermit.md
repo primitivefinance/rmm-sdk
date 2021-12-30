@@ -4,6 +4,8 @@
 
 ## SelfPermit.encodePermit() method
 
+Get encoded function data with function selector depending on permit type.
+
 <b>Signature:</b>
 
 ```typescript
@@ -14,8 +16,8 @@ protected static encodePermit(token: Token, options: PermitOptions): string;
 
 |  Parameter | Type | Description |
 |  --- | --- | --- |
-|  token | Token |  |
-|  options | [PermitOptions](./rmm-sdk.permitoptions.md) |  |
+|  token | Token | Token entity to permit. |
+|  options | [PermitOptions](./rmm-sdk.permitoptions.md) | Signature and permit details. |
 
 <b>Returns:</b>
 

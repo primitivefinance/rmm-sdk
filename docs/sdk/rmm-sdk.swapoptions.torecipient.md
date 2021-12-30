@@ -4,6 +4,8 @@
 
 ## SwapOptions.toRecipient property
 
+True if output token amount is sent to [DefaultOptions.recipient](./rmm-sdk.defaultoptions.recipient.md)<!-- -->.
+
 <b>Signature:</b>
 
 ```typescript

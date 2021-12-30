@@ -4,6 +4,11 @@
 
 ## PoolInterface.properties property
 
+> This API is provided as a preview for developers and may change based on feedback that we receive. Do not use this API in a production environment.
+> 
+
+All meta-data related to the Primitive Engine's pool for this token id.
+
 <b>Signature:</b>
 
 ```typescript
@@ -26,7 +31,7 @@ properties: {
             strike: string;
             sigma: string;
             maturity: string;
-            lastTimestamp?: string;
+            lastTimestamp: string;
             gamma: string;
         };
         reserve: {

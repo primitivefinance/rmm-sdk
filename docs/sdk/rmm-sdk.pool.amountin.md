@@ -4,7 +4,10 @@
 
 ## Pool.amountIn() method
 
- Amount input for a swap after an exact trade out of `tokenOut` with size `amountOut`
+> This API is provided as a preview for developers and may change based on feedback that we receive. Do not use this API in a production environment.
+> 
+
+Gets amountIn of opposite token, given output amount of the other token.
 
 <b>Signature:</b>
 
@@ -22,4 +25,12 @@ amountIn(tokenOut: Token, amountOut: number): ExactOutResult;
 <b>Returns:</b>
 
 [ExactOutResult](./rmm-sdk.exactoutresult.md)
+
+## Exceptions
+
+Throws if `tokenOut` is not a token of this [IEngine](./rmm-sdk.iengine.md)<!-- -->.
+
+## Remarks
+
+Computing values in this direction is sometimes in-precise, given the approximations used. Use with caution.
 

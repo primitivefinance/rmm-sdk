@@ -4,6 +4,8 @@
 
 ## PermitTokens interface
 
+Permit details on either risky or stable tokens.
+
 <b>Signature:</b>
 
 ```typescript
@@ -14,6 +16,6 @@ export interface PermitTokens
 
 |  Property | Type | Description |
 |  --- | --- | --- |
-|  [permitRisky?](./rmm-sdk.permittokens.permitrisky.md) | [PermitOptions](./rmm-sdk.permitoptions.md) | <i>(Optional)</i> |
-|  [permitStable?](./rmm-sdk.permittokens.permitstable.md) | [PermitOptions](./rmm-sdk.permitoptions.md) | <i>(Optional)</i> |
+|  [permitRisky?](./rmm-sdk.permittokens.permitrisky.md) | [PermitOptions](./rmm-sdk.permitoptions.md) | <i>(Optional)</i> If defined, risky token can be permitted, saving the user an approve tx. |
+|  [permitStable?](./rmm-sdk.permittokens.permitstable.md) | [PermitOptions](./rmm-sdk.permitoptions.md) | <i>(Optional)</i> If defined, stable token can be permitted, saving the user an approve tx. |
 

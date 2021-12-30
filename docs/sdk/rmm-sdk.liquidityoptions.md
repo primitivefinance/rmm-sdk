@@ -4,6 +4,8 @@
 
 ## LiquidityOptions interface
 
+Token amounts to use for allocating liquidity.
+
 <b>Signature:</b>
 
 ```typescript

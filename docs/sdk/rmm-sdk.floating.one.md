@@ -4,6 +4,11 @@
 
 ## Floating.ONE property
 
+> This API is provided as a preview for developers and may change based on feedback that we receive. Do not use this API in a production environment.
+> 
+
+Floating class with raw value of 1.0.
+
 <b>Signature:</b>
 
 ```typescript

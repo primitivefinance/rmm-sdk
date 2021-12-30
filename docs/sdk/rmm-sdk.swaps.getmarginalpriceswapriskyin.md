@@ -4,24 +4,29 @@
 
 ## Swaps.getMarginalPriceSwapRiskyIn() method
 
- See https://arxiv.org/pdf/2012.08040.pdf
+> This API is provided as a preview for developers and may change based on feedback that we receive. Do not use this API in a production environment.
+> 
+
+Gets marginal price after an exact trade in of the risky asset with size `amountIn`<!-- -->.
+
+[https://arxiv.org/pdf/2012.08040.pdf](https://arxiv.org/pdf/2012.08040.pdf)
 
 <b>Signature:</b>
 
 ```typescript
-static getMarginalPriceSwapRiskyIn(reserve0Floating: number, strikeFloating: number, sigmaFloating: number, tauYears: number, gammaFloating: number, amountIn: number): number;
+static getMarginalPriceSwapRiskyIn(reserveRiskyFloating: number, strikeFloating: number, sigmaFloating: number, tauYears: number, gammaFloating: number, amountIn: number): number;
 ```
 
 ## Parameters
 
 |  Parameter | Type | Description |
 |  --- | --- | --- |
-|  reserve0Floating | number |  |
-|  strikeFloating | number |  |
-|  sigmaFloating | number |  |
-|  tauYears | number |  |
-|  gammaFloating | number |  |
-|  amountIn | number | Amount of risky token to add to risky reserve  Marginal price after an exact trade in of the RISKY asset with size <code>amountIn</code> |
+|  reserveRiskyFloating | number | Amount of risky tokens in reserve as a floating point decimal number. |
+|  strikeFloating | number | Strike price as a floating point number in decimal format. |
+|  sigmaFloating | number | Implied volatility as a floating point number in decimal format. |
+|  tauYears | number | Time until expiry in years. |
+|  gammaFloating | number | Equal to 10\_000 - fee, in basis points as a floating point number in decimal format. |
+|  amountIn | number | Amount of risky token to add to risky reserve. |
 
 <b>Returns:</b>
 

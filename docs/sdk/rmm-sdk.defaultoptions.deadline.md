@@ -4,6 +4,8 @@
 
 ## DefaultOptions.deadline property
 
+Timestamp which will revert a swap if tx has not been mined by then.
+
 <b>Signature:</b>
 
 ```typescript

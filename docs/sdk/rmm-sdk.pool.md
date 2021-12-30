@@ -4,7 +4,10 @@
 
 ## Pool class
 
- RMM-01 Pool Entity  Has slots for reserves, invariant, and lastTimestamp state
+> This API is provided as a preview for developers and may change based on feedback that we receive. Do not use this API in a production environment.
+> 
+
+Pool base class implements [IPool](./rmm-sdk.ipool.md)<!-- -->.
 
 <b>Signature:</b>
 
@@ -13,41 +16,45 @@ export declare class Pool extends Calibration
 ```
 <b>Extends:</b> [Calibration](./rmm-sdk.calibration.md)
 
+## Remarks
+
+Abstraction of Primitive RMM-01 pools.
+
 ## Constructors
 
 |  Constructor | Modifiers | Description |
 |  --- | --- | --- |
-|  [(constructor)(chainId, factory, risky, stable, calibration, reserves, invariant, referencePriceOfRisky)](./rmm-sdk.pool._constructor_.md) |  |  If reserves are not overridden, a <code>referencePriceOfRisky</code> must be defined. Reserves are computed using this value and stored instead. |
+|  [(constructor)(chainId, factory, risky, stable, calibration, reserves, invariant, referencePriceOfRisky)](./rmm-sdk.pool._constructor_.md) |  | <b><i>(BETA)</i></b> Constructs a new instance of the <code>Pool</code> class |
 
 ## Properties
 
 |  Property | Modifiers | Type | Description |
 |  --- | --- | --- | --- |
-|  [delta](./rmm-sdk.pool.delta.md) |  | number \| undefined |  |
-|  [expired](./rmm-sdk.pool.expired.md) |  | boolean |  |
-|  [inTheMoney](./rmm-sdk.pool.inthemoney.md) |  | boolean \| undefined |  |
-|  [invariant](./rmm-sdk.pool.invariant.md) |  | FixedPointX64 |  |
-|  [lastTimestamp](./rmm-sdk.pool.lasttimestamp.md) |  | Time |  |
-|  [liquidity](./rmm-sdk.pool.liquidity.md) |  | Wei |  |
-|  [premium](./rmm-sdk.pool.premium.md) |  | number \| undefined |  |
-|  [referencePriceOfRisky](./rmm-sdk.pool.referencepriceofrisky.md) |  | Wei \| undefined |  Reference market spot price of the Risky asset denominated in the Stable asset |
-|  [remaining](./rmm-sdk.pool.remaining.md) |  | Time |  |
-|  [reportedPriceOfRisky](./rmm-sdk.pool.reportedpriceofrisky.md) |  | Wei \| undefined |  |
-|  [reserveRisky](./rmm-sdk.pool.reserverisky.md) |  | Wei |  |
-|  [reserveStable](./rmm-sdk.pool.reservestable.md) |  | Wei |  |
-|  [swapArgs](./rmm-sdk.pool.swapargs.md) |  | readonly \[number, number, number, number, number, number, number, number, number\] |  |
-|  [tau](./rmm-sdk.pool.tau.md) |  | Time |  |
+|  [delta](./rmm-sdk.pool.delta.md) |  | number \| undefined | <b><i>(BETA)</i></b> |
+|  [expired](./rmm-sdk.pool.expired.md) |  | boolean | <b><i>(BETA)</i></b> True if Date.now() in seconds is greater than <code>maturity</code> timestamp. |
+|  [inTheMoney](./rmm-sdk.pool.inthemoney.md) |  | boolean \| undefined | <b><i>(BETA)</i></b> True if <code>strike</code> is below <code>referencePriceOfRisky</code>. |
+|  [invariant](./rmm-sdk.pool.invariant.md) |  | FixedPointX64 | <b><i>(BETA)</i></b> Trading function invariant of the Pool, formatted as Q64.64 |
+|  [lastTimestamp](./rmm-sdk.pool.lasttimestamp.md) |  | Time | <b><i>(BETA)</i></b> Timestamp of last curve update. |
+|  [liquidity](./rmm-sdk.pool.liquidity.md) |  | Wei | <b><i>(BETA)</i></b> Total liquidity of Pool, including the min liquidity [IEngine.MIN\_LIQUIDITY](./rmm-sdk.iengine.min_liquidity.md)<!-- -->. |
+|  [premium](./rmm-sdk.pool.premium.md) |  | number \| undefined | <b><i>(BETA)</i></b> Theoretical call option premium, computed using the pool's calibration data. |
+|  [referencePriceOfRisky](./rmm-sdk.pool.referencepriceofrisky.md) |  | Wei \| undefined | <b><i>(BETA)</i></b> Gets stored reference price of [IEngine.risky](./rmm-sdk.iengine.risky.md)<!-- -->, denominated in [IEngine.stable](./rmm-sdk.iengine.stable.md)<!-- -->. |
+|  [remaining](./rmm-sdk.pool.remaining.md) |  | Time | <b><i>(BETA)</i></b> Difference between <code>maturity</code> timestamp and the current timestamp returned by Date.now(). |
+|  [reportedPriceOfRisky](./rmm-sdk.pool.reportedpriceofrisky.md) |  | Wei \| undefined | <b><i>(BETA)</i></b> Gets the reported price CFMM for the [IEngine.risky](./rmm-sdk.iengine.risky.md) token, denominated in the [IEngine.stable](./rmm-sdk.iengine.stable.md) token. |
+|  [reserveRisky](./rmm-sdk.pool.reserverisky.md) |  | Wei | <b><i>(BETA)</i></b> Risky token reserves of [IEngine.risky](./rmm-sdk.iengine.risky.md)<!-- -->. |
+|  [reserveStable](./rmm-sdk.pool.reservestable.md) |  | Wei | <b><i>(BETA)</i></b> Stable token reserves of [IEngine.stable](./rmm-sdk.iengine.stable.md)<!-- -->. |
+|  [swapArgs](./rmm-sdk.pool.swapargs.md) |  | readonly \[number, number, number, number, number, number, number, number, number\] | <b><i>(BETA)</i></b>  |
+|  [tau](./rmm-sdk.pool.tau.md) |  | Time | <b><i>(BETA)</i></b> Difference between <code>maturity</code> timestamp and <code>lastTimestamp</code>. |
 
 ## Methods
 
 |  Method | Modifiers | Description |
 |  --- | --- | --- |
-|  [amountIn(tokenOut, amountOut)](./rmm-sdk.pool.amountin.md) |  |  Amount input for a swap after an exact trade out of <code>tokenOut</code> with size <code>amountOut</code> |
-|  [amountOut(tokenIn, amountIn)](./rmm-sdk.pool.amountout.md) |  |  Amount output from swap after an exact trade in of <code>tokenIn</code> with size <code>amountIn</code> |
-|  [derivativeOut(tokenIn, amountIn)](./rmm-sdk.pool.derivativeout.md) |  |  Marginal price after an exact trade in of <code>token</code> with size <code>amountIn</code> |
-|  [from(pool, referencePrice, chainId)](./rmm-sdk.pool.from.md) | <code>static</code> |  Constructs a Pool entity from actual reserve data, e.g. on-chain state |
-|  [fromReferencePrice(referencePrice, factory, risky, stable, calibration, chainId, liquidity, invariant)](./rmm-sdk.pool.fromreferenceprice.md) | <code>static</code> |  Constructs a Pool entity using a reference price, which is used to compute the reserves of the pool  Defaults to an invariant of 0, since the reserves are computed using an invariant of 0 |
-|  [getCurrentLiquidityValue(priceOfRisky, priceOfStable)](./rmm-sdk.pool.getcurrentliquidityvalue.md) |  |  Calculates the current value of the pool in units of <code>priceOfRisky</code>  Denominating prices in a dollar-pegged stable coin will be easiest to calculate other values with |
-|  [getLiquidityQuote(amount, sideOfPool, reserveRisky, reserveStable, liquidity)](./rmm-sdk.pool.getliquidityquote.md) | <code>static</code> |  Calculates the other side of the pool using the known amount of a side of the pool |
-|  [liquidityQuote(amount, sideOfPool)](./rmm-sdk.pool.liquidityquote.md) |  |  Calculates the other side of the pool using the known amount of a side of the pool |
+|  [amountIn(tokenOut, amountOut)](./rmm-sdk.pool.amountin.md) |  | <b><i>(BETA)</i></b> Gets amountIn of opposite token, given output amount of the other token. |
+|  [amountOut(tokenIn, amountIn)](./rmm-sdk.pool.amountout.md) |  | <b><i>(BETA)</i></b> Gets amountOut of opposite token, given input amount of the other token. |
+|  [derivativeOut(tokenIn, amountIn)](./rmm-sdk.pool.derivativeout.md) |  | <b><i>(BETA)</i></b> Gets the marginal price of <code>tokenIn</code> after a given amount in has been added to the respective reserve. |
+|  [from(pool, referencePrice, chainId)](./rmm-sdk.pool.from.md) | <code>static</code> | <b><i>(BETA)</i></b> Constructs a Pool entity from actual reserve data, e.g. on-chain state. |
+|  [fromReferencePrice(referencePrice, factory, risky, stable, calibration, chainId, liquidity, invariant)](./rmm-sdk.pool.fromreferenceprice.md) | <code>static</code> | <b><i>(BETA)</i></b> Constructs a Pool entity using a reference price, which is used to compute the reserves of the pool. |
+|  [getCurrentLiquidityValue(priceOfRisky, priceOfStable)](./rmm-sdk.pool.getcurrentliquidityvalue.md) |  | <b><i>(BETA)</i></b> Gets the current value of the pool denominated in units of <code>priceOfRisky</code>. |
+|  [getLiquidityQuote(amount, sideOfPool, reserveRisky, reserveStable, liquidity)](./rmm-sdk.pool.getliquidityquote.md) | <code>static</code> | <b><i>(BETA)</i></b>  Calculates the other side of the pool using the known amount of a side of the pool |
+|  [liquidityQuote(amount, sideOfPool)](./rmm-sdk.pool.liquidityquote.md) |  | <b><i>(BETA)</i></b> Computes other side(s) of pool and/or liquidity amount, given a known size of one side of the pool. |
 

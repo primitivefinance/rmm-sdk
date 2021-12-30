@@ -4,6 +4,8 @@
 
 ## isValidGamma() function
 
+Checks `gamma` is within the valid smart contract range.
+
 <b>Signature:</b>
 
 ```typescript
@@ -14,9 +16,11 @@ export declare function isValidGamma(gamma: string): boolean;
 
 |  Parameter | Type | Description |
 |  --- | --- | --- |
-|  gamma | string |  |
+|  gamma | string | 10\_000 - swap fee, in basis points. |
 
 <b>Returns:</b>
 
 boolean
+
+true if within bounds of valid gammas.
 

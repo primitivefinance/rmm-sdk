@@ -4,7 +4,10 @@
 
 ## Pool.liquidityQuote() method
 
- Calculates the other side of the pool using the known amount of a side of the pool
+> This API is provided as a preview for developers and may change based on feedback that we receive. Do not use this API in a production environment.
+> 
+
+Computes other side(s) of pool and/or liquidity amount, given a known size of one side of the pool.
 
 <b>Signature:</b>
 
@@ -20,12 +23,14 @@ liquidityQuote(amount: Wei, sideOfPool: PoolSides): {
 
 |  Parameter | Type | Description |
 |  --- | --- | --- |
-|  amount | Wei | Amount of token |
-|  sideOfPool | [PoolSides](./rmm-sdk.poolsides.md) | Token side of the pool that is used to calculate the other side |
+|  amount | Wei | Size of [PoolSides](./rmm-sdk.poolsides.md) |
+|  sideOfPool | [PoolSides](./rmm-sdk.poolsides.md) | Risky reserve, stable reserve, or liquidity of pool; [PoolSides](./rmm-sdk.poolsides.md)<!-- -->. |
 
 <b>Returns:</b>
 
 { delRisky: Wei; delStable: Wei; delLiquidity: Wei; }
 
-risky token amount, stable token amount, and liquidity amount
+## Exceptions
+
+Throws if [IPool.liquidity](./rmm-sdk.ipool.liquidity.md) is zero. Throws if `amount.decimals` does not match respective [PoolSides](./rmm-sdk.poolsides.md)<!-- -->. Throws if resulting amounts do not have matching decimal places of [IEngine](./rmm-sdk.iengine.md) tokens.
 

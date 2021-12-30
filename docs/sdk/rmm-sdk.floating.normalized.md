@@ -4,7 +4,10 @@
 
 ## Floating.normalized property
 
- Truncated to this decimal places
+> This API is provided as a preview for developers and may change based on feedback that we receive. Do not use this API in a production environment.
+> 
+
+Raw value truncated to this decimal places.
 
 <b>Signature:</b>
 

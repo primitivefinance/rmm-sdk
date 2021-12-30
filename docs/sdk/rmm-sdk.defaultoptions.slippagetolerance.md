@@ -4,6 +4,8 @@
 
 ## DefaultOptions.slippageTolerance property
 
+Maximum slippage of a swap as a Percentage class .
+
 <b>Signature:</b>
 
 ```typescript

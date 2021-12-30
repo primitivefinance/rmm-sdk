@@ -4,6 +4,8 @@
 
 ## SwapOptions.fromMargin property
 
+True if input token amount is debited from `msg.sender` margin account.
+
 <b>Signature:</b>
 
 ```typescript

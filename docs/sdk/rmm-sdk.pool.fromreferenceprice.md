@@ -4,7 +4,10 @@
 
 ## Pool.fromReferencePrice() method
 
- Constructs a Pool entity using a reference price, which is used to compute the reserves of the pool  Defaults to an invariant of 0, since the reserves are computed using an invariant of 0
+> This API is provided as a preview for developers and may change based on feedback that we receive. Do not use this API in a production environment.
+> 
+
+Constructs a Pool entity using a reference price, which is used to compute the reserves of the pool.
 
 <b>Signature:</b>
 
@@ -44,4 +47,8 @@ static fromReferencePrice(referencePrice: number, factory: string, risky: {
 <b>Returns:</b>
 
 [Pool](./rmm-sdk.pool.md)
+
+## Remarks
+
+Defaults to an invariant of 0, since the reserves are computed using an invariant of 0.
 

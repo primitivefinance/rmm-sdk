@@ -4,7 +4,10 @@
 
 ## Engine.MIN\_LIQUIDITY property
 
- Minimum amount of liquidity to supply on calling `create()`
+> This API is provided as a preview for developers and may change based on feedback that we receive. Do not use this API in a production environment.
+> 
+
+Minimum amount of liquidity of every pool.
 
 <b>Signature:</b>
 

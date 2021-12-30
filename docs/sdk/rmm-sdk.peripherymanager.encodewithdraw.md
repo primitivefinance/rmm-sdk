@@ -4,6 +4,11 @@
 
 ## PeripheryManager.encodeWithdraw() method
 
+> This API is provided as a preview for developers and may change based on feedback that we receive. Do not use this API in a production environment.
+> 
+
+Gets encoded function data with function selector 'withdraw' and withdraw arguments.
+
 <b>Signature:</b>
 
 ```typescript
@@ -14,10 +19,14 @@ static encodeWithdraw(engine: Engine, options: MarginOptions): string[];
 
 |  Parameter | Type | Description |
 |  --- | --- | --- |
-|  engine | [Engine](./rmm-sdk.engine.md) |  |
-|  options | [MarginOptions](./rmm-sdk.marginoptions.md) |  |
+|  engine | [Engine](./rmm-sdk.engine.md) | [IEngine](./rmm-sdk.iengine.md) Tokens of the Engine to deposit into margin accounts for. |
+|  options | [MarginOptions](./rmm-sdk.marginoptions.md) | Margin argument details with token amounts to withdraw.. |
 
 <b>Returns:</b>
 
 string\[\]
+
+## Exceptions
+
+Throws if both withdraw amounts are zero. Throws if a withdraw amount decimals does not match respective token decimals. Throws if [RecipientOptions.recipient](./rmm-sdk.recipientoptions.recipient.md) is the Zero address or is an invalid address. Throws if withdrawing a currency and the token has an undefined `wrapped` attribute.
 

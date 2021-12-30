@@ -8,65 +8,71 @@
 
 |  Class | Description |
 |  --- | --- |
-|  [Calibration](./rmm-sdk.calibration.md) |  Calibration Struct; Class representation of each Curve's parameters  Can be stateless and used to compute poolId of arbitrary parameters |
-|  [Engine](./rmm-sdk.engine.md) |  Represents the PrimitiveEngine.sol smart contract |
-|  [Floating](./rmm-sdk.floating.md) |  Floating point Decimal numbers are used to calculate values for RMM pools.<!-- -->However, sometimes the result of these math operations can return a value that has more decimal places than the token which the amount represents the value of.<!-- -->Higher decimal values on lower decimal tokens will truncate the amount once it reaches on-chain. This is because truncation is used in computing when division is done with integers (e.g. in the EVM) and the answer must be an integer.<!-- -->This class is aware of this and will truncate after any math operation. |
-|  [PeripheryManager](./rmm-sdk.peripherymanager.md) |  |
-|  [Pool](./rmm-sdk.pool.md) |  RMM-01 Pool Entity  Has slots for reserves, invariant, and lastTimestamp state |
-|  [SelfPermit](./rmm-sdk.selfpermit.md) |  |
-|  [SwapManager](./rmm-sdk.swapmanager.md) |  |
-|  [Swaps](./rmm-sdk.swaps.md) |  Static functions to compute swap in/out amounts and marginal prices |
+|  [Calibration](./rmm-sdk.calibration.md) | <b><i>(BETA)</i></b> Calibration base class implements [ICalibration](./rmm-sdk.icalibration.md) |
+|  [Engine](./rmm-sdk.engine.md) | <b><i>(BETA)</i></b> Engine base class implementation of [IEngine](./rmm-sdk.iengine.md) |
+|  [Floating](./rmm-sdk.floating.md) | <b><i>(BETA)</i></b> Floating point Decimal numbers are used to calculate values for RMM pools. |
+|  [PeripheryManager](./rmm-sdk.peripherymanager.md) | <b><i>(BETA)</i></b> Abstract class with static methods to build Manager function calldatas. |
+|  [Pool](./rmm-sdk.pool.md) | <b><i>(BETA)</i></b> Pool base class implements [IPool](./rmm-sdk.ipool.md)<!-- -->. |
+|  [SelfPermit](./rmm-sdk.selfpermit.md) | Abstract class with static methods to encode permit related function calldata. |
+|  [SwapManager](./rmm-sdk.swapmanager.md) | <b><i>(BETA)</i></b> Abstract class which implements static methods to encode calldata for swaps. |
+|  [Swaps](./rmm-sdk.swaps.md) | Static functions to compute swap in/out amounts and marginal prices. |
 
 ## Enumerations
 
 |  Enumeration | Description |
 |  --- | --- |
-|  [PoolSides](./rmm-sdk.poolsides.md) |  |
+|  [PoolSides](./rmm-sdk.poolsides.md) | <b><i>(BETA)</i></b> Enum for each side of the pool, inclusive of liquidity token. |
 
 ## Functions
 
 |  Function | Description |
 |  --- | --- |
-|  [checkDecimals(amount, token)](./rmm-sdk.checkdecimals.md) |  |
-|  [getTokenPairSaltHash(token0, token1)](./rmm-sdk.gettokenpairsalthash.md) |  |
-|  [hashParametersForPoolId(engine, strike, sigma, maturity, gamma)](./rmm-sdk.hashparametersforpoolid.md) |  |
-|  [isValidGamma(gamma)](./rmm-sdk.isvalidgamma.md) |  |
-|  [isValidMaturity(maturity)](./rmm-sdk.isvalidmaturity.md) |  |
-|  [isValidSigma(sigma)](./rmm-sdk.isvalidsigma.md) |  |
-|  [isValidStrike(strike)](./rmm-sdk.isvalidstrike.md) |  |
-|  [normalize(wad, decimals)](./rmm-sdk.normalize.md) |  Truncates <code>wad</code> to appropriate decimals then converts to a floating point number |
-|  [parseCalibration(factory, risky, stable, cal, chainId)](./rmm-sdk.parsecalibration.md) |  Constructs a Calibration entity from on-chain data |
-|  [validateAndParseAddress(address)](./rmm-sdk.validateandparseaddress.md) | Validates an address and returns the parsed (checksummed) version of that address |
-|  [weiToWei(wei, decimals)](./rmm-sdk.weitowei.md) |  A smart contract returns a wei value as a string, this converts that string value by using the parseWei function, which multiplies it by 10^decimals. Therefore, to get the actual string as a wei we have to divided it back. |
+|  [computeEngineAddress(factory, risky, stable, contractBytecode)](./rmm-sdk.computeengineaddress.md) | <b><i>(BETA)</i></b> Statically computes an Engine address. |
+|  [computePoolId(engine, strike, sigma, maturity, gamma)](./rmm-sdk.computepoolid.md) | <b><i>(BETA)</i></b> Computes deterministic poolIds from hashing engine address and calibration parameters. |
+|  [getTokenPairSaltHash(token0, token1)](./rmm-sdk.gettokenpairsalthash.md) | <b><i>(BETA)</i></b> Get hash of the token pair addresses is used as the salt in PrimitiveFactory create2 calls. |
+|  [isValidGamma(gamma)](./rmm-sdk.isvalidgamma.md) | Checks <code>gamma</code> is within the valid smart contract range. |
+|  [isValidMaturity(maturity)](./rmm-sdk.isvalidmaturity.md) | Checks <code>maturity</code> is within the valid smart contract range. |
+|  [isValidSigma(sigma)](./rmm-sdk.isvalidsigma.md) | <b><i>(BETA)</i></b> Checks <code>sigma</code> is within the valid smart contract range. |
+|  [isValidStrike(strike)](./rmm-sdk.isvalidstrike.md) | Checks <code>strike</code> is within the valid smart contract range. |
+|  [normalize(wad, decimals)](./rmm-sdk.normalize.md) | <b><i>(BETA)</i></b> Truncates <code>wad</code> to appropriate decimals then converts to a floating point number. |
+|  [parseCalibration(factory, risky, stable, cal, chainId)](./rmm-sdk.parsecalibration.md) | <b><i>(BETA)</i></b> Constructs a Calibration entity from on-chain data. |
+|  [validateAndParseAddress(address)](./rmm-sdk.validateandparseaddress.md) | <b><i>(BETA)</i></b> Validates an address and returns the parsed (checksummed) version of that address. |
+|  [validateDecimals(amount, token)](./rmm-sdk.validatedecimals.md) | <b><i>(BETA)</i></b> Checks if <code>amount.decimals</code> is equal to <code>token.decimals</code>. |
+|  [weiToWei(wei, decimals)](./rmm-sdk.weitowei.md) | <b><i>(BETA)</i></b> Gets a Wei class from a wei string value. |
 
 ## Interfaces
 
 |  Interface | Description |
 |  --- | --- |
-|  [AllocateOptions](./rmm-sdk.allocateoptions.md) |  |
-|  [AllowedPermitArguments](./rmm-sdk.allowedpermitarguments.md) |  |
-|  [BatchTransferOptions](./rmm-sdk.batchtransferoptions.md) |  |
-|  [CalibrationInterface](./rmm-sdk.calibrationinterface.md) |  Representing the Primitive Engine calibration struct which defines a pool's curve |
-|  [Deadline](./rmm-sdk.deadline.md) |  |
-|  [DefaultOptions](./rmm-sdk.defaultoptions.md) |  |
+|  [AllocateOptions](./rmm-sdk.allocateoptions.md) | Provide liquidity argument details. |
+|  [AllowedPermitArguments](./rmm-sdk.allowedpermitarguments.md) | [https://eips.ethereum.org/EIPS/eip-2612](https://eips.ethereum.org/EIPS/eip-2612) |
+|  [BatchTransferOptions](./rmm-sdk.batchtransferoptions.md) | Batch Transfer ERC-1155 liquidity token argument details. |
+|  [CalibrationStruct](./rmm-sdk.calibrationstruct.md) | <b><i>(BETA)</i></b> Data structure of the Primitive Engine Calibration struct, which is used for Pool curves. |
+|  [Deadline](./rmm-sdk.deadline.md) | Timestamp which will revert the transaction if not yet mined. |
+|  [DefaultOptions](./rmm-sdk.defaultoptions.md) | Default arguments in swaps. |
 |  [ExactInResult](./rmm-sdk.exactinresult.md) |  |
 |  [ExactOutResult](./rmm-sdk.exactoutresult.md) |  |
-|  [LiquidityOptions](./rmm-sdk.liquidityoptions.md) |  |
-|  [MarginOptions](./rmm-sdk.marginoptions.md) |  |
+|  [ICalibration](./rmm-sdk.icalibration.md) | Calibration Struct; Class representation of each Curve's parameters. |
+|  [IEngine](./rmm-sdk.iengine.md) | <b><i>(BETA)</i></b> Abstraction of PrimitiveEngine.sol smart contract. |
+|  [IPool](./rmm-sdk.ipool.md) | <b><i>(BETA)</i></b> Abstraction of a Primitive RMM Pool |
+|  [LiquidityOptions](./rmm-sdk.liquidityoptions.md) | Token amounts to use for allocating liquidity. |
+|  [MarginOptions](./rmm-sdk.marginoptions.md) | Token amounts to use for depositing or withdrawing into a margin account. |
 |  [MethodParameters](./rmm-sdk.methodparameters.md) | Generated method parameters for executing a call. |
-|  [NativeOptions](./rmm-sdk.nativeoptions.md) |  |
-|  [PermitTokens](./rmm-sdk.permittokens.md) |  |
-|  [PoolInterface](./rmm-sdk.poolinterface.md) |  Calling the <code>uri</code> function on the PrimitiveHouse contract returns this api |
-|  [RecipientOptions](./rmm-sdk.recipientoptions.md) |  |
-|  [RemoveOptions](./rmm-sdk.removeoptions.md) |  |
-|  [SafeTransferOptions](./rmm-sdk.safetransferoptions.md) |  |
-|  [StandardPermitArguments](./rmm-sdk.standardpermitarguments.md) |  |
-|  [SwapOptions](./rmm-sdk.swapoptions.md) |  |
-|  [SwapResult](./rmm-sdk.swapresult.md) |  |
+|  [NativeOptions](./rmm-sdk.nativeoptions.md) | Flag to use a native currency in a transaction. |
+|  [PermitTokens](./rmm-sdk.permittokens.md) | Permit details on either risky or stable tokens. |
+|  [PoolInterface](./rmm-sdk.poolinterface.md) | <b><i>(BETA)</i></b> Data structure of PrimitiveManager ERC-1155 Uniform Resource Identifier ("URI"). |
+|  [RecipientOptions](./rmm-sdk.recipientoptions.md) | Recipient address of any tokens which are output from transactions. |
+|  [RemoveOptions](./rmm-sdk.removeoptions.md) | Remove liquidity argument details. |
+|  [ReserveStruct](./rmm-sdk.reservestruct.md) | <b><i>(BETA)</i></b> Data structure of the Primitive Engine Reserve struct, which is used tracking tokens in Pool. |
+|  [RSV](./rmm-sdk.rsv.md) | Valid secp256k1 signature components |
+|  [SafeTransferOptions](./rmm-sdk.safetransferoptions.md) | Transfer ERC-1155 liquidity token argument details. |
+|  [StandardPermitArguments](./rmm-sdk.standardpermitarguments.md) | [https://eips.ethereum.org/EIPS/eip-2612](https://eips.ethereum.org/EIPS/eip-2612) |
+|  [SwapOptions](./rmm-sdk.swapoptions.md) | Swap arguments. |
+|  [SwapResult](./rmm-sdk.swapresult.md) | Post-swap invariant and implied price after a swap. |
 
 ## Type Aliases
 
 |  Type Alias | Description |
 |  --- | --- |
-|  [PermitOptions](./rmm-sdk.permitoptions.md) |  |
+|  [PermitOptions](./rmm-sdk.permitoptions.md) | Either [AllowedPermitArguments](./rmm-sdk.allowedpermitarguments.md) or [StandardPermitArguments](./rmm-sdk.standardpermitarguments.md) |
 

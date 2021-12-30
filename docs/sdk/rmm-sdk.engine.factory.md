@@ -4,7 +4,10 @@
 
 ## Engine.factory property
 
- Deployer of this Engine
+> This API is provided as a preview for developers and may change based on feedback that we receive. Do not use this API in a production environment.
+> 
+
+Primitive Factory address. Should be deployer of this instantiated Engine.
 
 <b>Signature:</b>
 

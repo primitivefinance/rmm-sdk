@@ -4,7 +4,10 @@
 
 ## PoolInterface interface
 
- Calling the `uri` function on the PrimitiveHouse contract returns this api
+> This API is provided as a preview for developers and may change based on feedback that we receive. Do not use this API in a production environment.
+> 
+
+Data structure of PrimitiveManager ERC-1155 Uniform Resource Identifier ("URI").
 
 <b>Signature:</b>
 
@@ -12,15 +15,19 @@
 export interface PoolInterface 
 ```
 
+## Remarks
+
+Calling the PrimitiveManager.uri(poolId) function returns encoded json of this data.
+
 ## Properties
 
 |  Property | Type | Description |
 |  --- | --- | --- |
-|  [creator?](./rmm-sdk.poolinterface.creator.md) | string | <i>(Optional)</i> |
-|  [description?](./rmm-sdk.poolinterface.description.md) | string | <i>(Optional)</i> |
-|  [image?](./rmm-sdk.poolinterface.image.md) | string | <i>(Optional)</i> |
-|  [license?](./rmm-sdk.poolinterface.license.md) | string | <i>(Optional)</i> |
-|  [name?](./rmm-sdk.poolinterface.name.md) | string | <i>(Optional)</i> |
-|  [properties](./rmm-sdk.poolinterface.properties.md) | { factory: string; risky: { address: string; decimals: string \| number; symbol?: string; name?: string; }; stable: { address: string; decimals: string \| number; symbol?: string; name?: string; }; invariant?: string; calibration: { strike: string; sigma: string; maturity: string; lastTimestamp?: string; gamma: string; }; reserve: { blockTimestamp?: string; cumulativeLiquidity?: string; cumulativeRisky?: string; cumulativeStable?: string; liquidity: string; reserveRisky: string; reserveStable: string; }; } |  |
-|  [symbol?](./rmm-sdk.poolinterface.symbol.md) | string | <i>(Optional)</i> |
+|  [creator?](./rmm-sdk.poolinterface.creator.md) | string | <b><i>(BETA)</i></b> <i>(Optional)</i> Canonical deployer of the contract. |
+|  [description?](./rmm-sdk.poolinterface.description.md) | string | <b><i>(BETA)</i></b> <i>(Optional)</i> Brief explanation of the data or token. |
+|  [image?](./rmm-sdk.poolinterface.image.md) | string | <b><i>(BETA)</i></b> <i>(Optional)</i> Base64 encoded image or link to an image file. |
+|  [license?](./rmm-sdk.poolinterface.license.md) | string | <b><i>(BETA)</i></b> <i>(Optional)</i> License on the token info or image. |
+|  [name?](./rmm-sdk.poolinterface.name.md) | string | <b><i>(BETA)</i></b> <i>(Optional)</i> Title of token. |
+|  [properties](./rmm-sdk.poolinterface.properties.md) | { factory: string; risky: { address: string; decimals: string \| number; symbol?: string; name?: string; }; stable: { address: string; decimals: string \| number; symbol?: string; name?: string; }; invariant?: string; calibration: { strike: string; sigma: string; maturity: string; lastTimestamp: string; gamma: string; }; reserve: { blockTimestamp?: string; cumulativeLiquidity?: string; cumulativeRisky?: string; cumulativeStable?: string; liquidity: string; reserveRisky: string; reserveStable: string; }; } | <b><i>(BETA)</i></b> All meta-data related to the Primitive Engine's pool for this token id. |
+|  [symbol?](./rmm-sdk.poolinterface.symbol.md) | string | <b><i>(BETA)</i></b> <i>(Optional)</i> Token simplified into an identifiable symbol. |
 

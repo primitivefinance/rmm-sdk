@@ -4,7 +4,10 @@
 
 ## normalize() function
 
- Truncates `wad` to appropriate decimals then converts to a floating point number
+> This API is provided as a preview for developers and may change based on feedback that we receive. Do not use this API in a production environment.
+> 
+
+Truncates `wad` to appropriate decimals then converts to a floating point number.
 
 <b>Signature:</b>
 
@@ -16,8 +19,8 @@ export declare function normalize(wad: number, decimals: number): number;
 
 |  Parameter | Type | Description |
 |  --- | --- | --- |
-|  wad | number |  |
-|  decimals | number |  |
+|  wad | number | Value to truncate. |
+|  decimals | number | Point of truncation. |
 
 <b>Returns:</b>
 

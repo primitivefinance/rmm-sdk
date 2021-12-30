@@ -4,6 +4,11 @@
 
 ## Pool.remaining property
 
+> This API is provided as a preview for developers and may change based on feedback that we receive. Do not use this API in a production environment.
+> 
+
+Difference between `maturity` timestamp and the current timestamp returned by Date.now().
+
 <b>Signature:</b>
 
 ```typescript

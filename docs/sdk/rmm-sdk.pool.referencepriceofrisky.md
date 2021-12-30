@@ -4,7 +4,10 @@
 
 ## Pool.referencePriceOfRisky property
 
- Reference market spot price of the Risky asset denominated in the Stable asset
+> This API is provided as a preview for developers and may change based on feedback that we receive. Do not use this API in a production environment.
+> 
+
+Gets stored reference price of [IEngine.risky](./rmm-sdk.iengine.risky.md)<!-- -->, denominated in [IEngine.stable](./rmm-sdk.iengine.stable.md)<!-- -->.
 
 <b>Signature:</b>
 

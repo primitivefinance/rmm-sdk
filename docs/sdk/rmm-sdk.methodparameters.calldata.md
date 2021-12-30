@@ -4,7 +4,7 @@
 
 ## MethodParameters.calldata property
 
-The hex encoded calldata to perform the given operation
+The hex encoded calldata to perform the given operation.
 
 <b>Signature:</b>
 

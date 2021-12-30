@@ -4,6 +4,8 @@
 
 ## RemoveOptions interface
 
+Remove liquidity argument details.
+
 <b>Signature:</b>
 
 ```typescript

@@ -4,19 +4,19 @@
 
 ## StandardPermitArguments interface
 
+[https://eips.ethereum.org/EIPS/eip-2612](https://eips.ethereum.org/EIPS/eip-2612)
+
 <b>Signature:</b>
 
 ```typescript
-export interface StandardPermitArguments 
+export interface StandardPermitArguments extends RSV 
 ```
+<b>Extends:</b> [RSV](./rmm-sdk.rsv.md)
 
 ## Properties
 
 |  Property | Type | Description |
 |  --- | --- | --- |
-|  [amount](./rmm-sdk.standardpermitarguments.amount.md) | BigNumber |  |
-|  [deadline](./rmm-sdk.standardpermitarguments.deadline.md) | BigNumber |  |
-|  [r](./rmm-sdk.standardpermitarguments.r.md) | string |  |
-|  [s](./rmm-sdk.standardpermitarguments.s.md) | string |  |
-|  [v](./rmm-sdk.standardpermitarguments.v.md) | 0 \| 1 \| 27 \| 28 |  |
+|  [amount](./rmm-sdk.standardpermitarguments.amount.md) | BigNumber | Value of approval to make in permit call. |
+|  [deadline](./rmm-sdk.standardpermitarguments.deadline.md) | BigNumber | Timestamp to void permit signature. |
 

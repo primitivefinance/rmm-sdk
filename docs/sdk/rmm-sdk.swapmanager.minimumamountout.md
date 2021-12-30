@@ -4,7 +4,10 @@
 
 ## SwapManager.minimumAmountOut() method
 
-Get the minimum amount that must be received from this trade for the given slippage tolerance
+> This API is provided as a preview for developers and may change based on feedback that we receive. Do not use this API in a production environment.
+> 
+
+Get the minimum amount that must be received from this trade for the given slippage tolerance.
 
 <b>Signature:</b>
 
@@ -16,12 +19,12 @@ static minimumAmountOut(slippageTolerance: Percentage, amountOut: Wei): Wei;
 
 |  Parameter | Type | Description |
 |  --- | --- | --- |
-|  slippageTolerance | Percentage | The tolerance of unfavorable slippage from the execution price of this trade |
+|  slippageTolerance | Percentage | The tolerance of unfavorable slippage from the execution price of this trade. |
 |  amountOut | Wei |  |
 
 <b>Returns:</b>
 
 Wei
 
-The amount out
+Amount out.
 

@@ -4,6 +4,11 @@
 
 ## PeripheryManager.safeTransferFromParameters() method
 
+> This API is provided as a preview for developers and may change based on feedback that we receive. Do not use this API in a production environment.
+> 
+
+Gets calldata for a transaction to transfer ERC-1155 tokens of Primitive Manager.
+
 <b>Signature:</b>
 
 ```typescript
@@ -14,9 +19,13 @@ static safeTransferFromParameters(options: SafeTransferOptions): MethodParameter
 
 |  Parameter | Type | Description |
 |  --- | --- | --- |
-|  options | [SafeTransferOptions](./rmm-sdk.safetransferoptions.md) |  |
+|  options | [SafeTransferOptions](./rmm-sdk.safetransferoptions.md) | [SafeTransferOptions](./rmm-sdk.safetransferoptions.md) Safe transfer argument details. |
 
 <b>Returns:</b>
 
 [MethodParameters](./rmm-sdk.methodparameters.md)
+
+## Exceptions
+
+Throws if [SafeTransferOptions](./rmm-sdk.safetransferoptions.md) sender or recipient is an invalid address.
 

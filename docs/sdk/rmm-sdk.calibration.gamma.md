@@ -4,7 +4,10 @@
 
 ## Calibration.gamma property
 
- Gamma, equal to 1 - fee %, as a Percentage instance with 4 precision
+> This API is provided as a preview for developers and may change based on feedback that we receive. Do not use this API in a production environment.
+> 
+
+Gamma, equal to 1 - fee %, as a Percentage instance with 4 precision.
 
 <b>Signature:</b>
 

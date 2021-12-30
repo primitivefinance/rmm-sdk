@@ -4,6 +4,8 @@
 
 ## RecipientOptions interface
 
+Recipient address of any tokens which are output from transactions.
+
 <b>Signature:</b>
 
 ```typescript

@@ -4,19 +4,19 @@
 
 ## AllowedPermitArguments interface
 
+[https://eips.ethereum.org/EIPS/eip-2612](https://eips.ethereum.org/EIPS/eip-2612)
+
 <b>Signature:</b>
 
 ```typescript
-export interface AllowedPermitArguments 
+export interface AllowedPermitArguments extends RSV 
 ```
+<b>Extends:</b> [RSV](./rmm-sdk.rsv.md)
 
 ## Properties
 
 |  Property | Type | Description |
 |  --- | --- | --- |
-|  [expiry](./rmm-sdk.allowedpermitarguments.expiry.md) | BigNumber |  |
-|  [nonce](./rmm-sdk.allowedpermitarguments.nonce.md) | BigNumber |  |
-|  [r](./rmm-sdk.allowedpermitarguments.r.md) | string |  |
-|  [s](./rmm-sdk.allowedpermitarguments.s.md) | string |  |
-|  [v](./rmm-sdk.allowedpermitarguments.v.md) | 0 \| 1 \| 27 \| 28 |  |
+|  [expiry](./rmm-sdk.allowedpermitarguments.expiry.md) | BigNumber | Timestamp to void permit signature. |
+|  [nonce](./rmm-sdk.allowedpermitarguments.nonce.md) | BigNumber | Nonce of this permit. |
 

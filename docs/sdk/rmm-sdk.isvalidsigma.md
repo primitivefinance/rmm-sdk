@@ -4,6 +4,11 @@
 
 ## isValidSigma() function
 
+> This API is provided as a preview for developers and may change based on feedback that we receive. Do not use this API in a production environment.
+> 
+
+Checks `sigma` is within the valid smart contract range.
+
 <b>Signature:</b>
 
 ```typescript
@@ -14,9 +19,11 @@ export declare function isValidSigma(sigma: string): boolean;
 
 |  Parameter | Type | Description |
 |  --- | --- | --- |
-|  sigma | string |  |
+|  sigma | string | Implied volatility in basis points. |
 
 <b>Returns:</b>
 
 boolean
+
+true if within bounds of valid sigmas.
 

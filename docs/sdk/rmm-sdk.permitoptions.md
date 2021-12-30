@@ -4,6 +4,8 @@
 
 ## PermitOptions type
 
+Either [AllowedPermitArguments](./rmm-sdk.allowedpermitarguments.md) or [StandardPermitArguments](./rmm-sdk.standardpermitarguments.md)
+
 <b>Signature:</b>
 
 ```typescript
