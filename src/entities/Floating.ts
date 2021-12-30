@@ -20,9 +20,16 @@ const MAX_UINT_256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffff
  * @beta
  */
 export class Floating {
+  /** 2^256 as a BigNumber. */
   static readonly INFINITY = BigNumber.from(MAX_UINT_256)
+
+  /** Floating class with raw value of 0.0. */
   static readonly ZERO = Floating.from(0)
+
+  /** Floating class with raw value of 0.5. */
   static readonly HALF = Floating.from(0.5)
+
+  /** Floating class with raw value of 1.0. */
   static readonly ONE = Floating.from(1)
 
   /** {@internal} */
@@ -31,6 +38,7 @@ export class Floating {
   /** Decimal places to truncate this raw value at. */
   readonly decimals: number
 
+  /** Instantiates a Floating value from a value with default decimals of 18. */
   static from(value: number, decimals = 18): Floating {
     return new Floating(value, decimals)
   }

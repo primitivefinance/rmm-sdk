@@ -9,7 +9,7 @@ import ManagerArtifact from '@primitivefi/rmm-manager/artifacts/contracts/Primit
 import { Pool, PoolSides } from './entities/pool'
 import { Engine } from './entities/engine'
 import { PermitOptions, SelfPermit } from './selfPermit'
-import { MethodParameters, validateAndParseAddress, checkDecimals } from './utils'
+import { MethodParameters, validateAndParseAddress, validateDecimals } from 'src/utils'
 import { Swaps } from './entities'
 
 export interface NativeOptions {
@@ -80,7 +80,7 @@ export abstract class PeripheryManager extends SelfPermit {
 
   // create pool
   public static encodeCreate(pool: Pool, liquidity: Wei): string {
-    checkDecimals(liquidity, pool)
+    validateDecimals(liquidity, pool)
     invariant(typeof pool.referencePriceOfRisky !== 'undefined', `Attempting to create a pool without reference price`)
     const riskyPerLp = parseWei(
       Swaps.getRiskyReservesGivenReferencePrice(
@@ -129,8 +129,8 @@ export abstract class PeripheryManager extends SelfPermit {
   // deposit margin
   public static depositCallParameters(engine: Engine, options: MarginOptions): MethodParameters {
     invariant(options.amountRisky.gt(0) || options.amountStable.gt(0), 'ZeroError()')
-    checkDecimals(options.amountRisky, engine.risky)
-    checkDecimals(options.amountStable, engine.stable)
+    validateDecimals(options.amountRisky, engine.risky)
+    validateDecimals(options.amountStable, engine.stable)
 
     let calldatas: string[] = []
 
@@ -185,8 +185,8 @@ export abstract class PeripheryManager extends SelfPermit {
   // withdraw margin
   public static encodeWithdraw(engine: Engine, options: MarginOptions): string[] {
     invariant(options.amountRisky.gt(0) || options.amountStable.gt(0), 'ZeroError()')
-    checkDecimals(options.amountRisky, engine.risky)
-    checkDecimals(options.amountStable, engine.stable)
+    validateDecimals(options.amountRisky, engine.risky)
+    validateDecimals(options.amountStable, engine.stable)
 
     const recipient: string = validateAndParseAddress(options.recipient)
     invariant(recipient !== AddressZero, 'Zero Address Recipient')
@@ -242,9 +242,9 @@ export abstract class PeripheryManager extends SelfPermit {
     invariant(options.delRisky.gt(0), 'ZeroError()')
     invariant(options.delStable.gt(0), 'ZeroError()')
     invariant(options.delLiquidity.gt(0), 'ZeroError()')
-    checkDecimals(options.delLiquidity, pool)
-    checkDecimals(options.delRisky, pool.risky)
-    checkDecimals(options.delStable, pool.stable)
+    validateDecimals(options.delLiquidity, pool)
+    validateDecimals(options.delRisky, pool.risky)
+    validateDecimals(options.delStable, pool.stable)
 
     let calldatas: string[] = []
 
@@ -303,9 +303,9 @@ export abstract class PeripheryManager extends SelfPermit {
   // remove liquidity
   public static removeCallParameters(pool: Pool, options: RemoveOptions): MethodParameters {
     invariant(options.delLiquidity.gt(0), 'ZeroError()')
-    checkDecimals(options.delLiquidity, pool)
-    checkDecimals(options.delRisky, pool.risky)
-    checkDecimals(options.delStable, pool.stable)
+    validateDecimals(options.delLiquidity, pool)
+    validateDecimals(options.delRisky, pool.risky)
+    validateDecimals(options.delStable, pool.stable)
 
     let calldatas: string[] = []
 
