@@ -6,12 +6,12 @@ import { parseWei, Percentage, toBN, Wei } from 'web3-units'
 import { NativeCurrency } from '@uniswap/sdk-core'
 import ManagerArtifact from '@primitivefi/rmm-manager/artifacts/contracts/PrimitiveManager.sol/PrimitiveManager.json'
 
-import { Engine } from 'src/entities/engine'
-import { Pool, PoolSides } from 'src/entities/pool'
-import { Swaps } from 'src/entities/swaps'
-import { MethodParameters, validateAndParseAddress, validateDecimals } from 'src/utils'
+import { Engine } from './entities/engine'
+import { Pool, PoolSides } from './entities/pool'
+import { Swaps } from './entities/swaps'
+import { MethodParameters, validateAndParseAddress, validateDecimals } from './utils'
 
-import { PermitOptions, SelfPermit } from 'src/selfPermit'
+import { PermitOptions, SelfPermit } from './selfPermit'
 
 /** Flag to use a native currency in a transaction.  */
 export interface NativeOptions {

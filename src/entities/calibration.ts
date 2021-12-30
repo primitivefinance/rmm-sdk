@@ -3,9 +3,8 @@ import invariant from 'tiny-invariant'
 import { Token } from '@uniswap/sdk-core'
 import { Percentage, Time, Wei, toBN } from 'web3-units'
 
+import { weiToWei, computePoolId } from '../utils'
 import { Engine } from './engine'
-import { weiToWei } from '../utils'
-import { computePoolId } from 'src/utils/computePoolId'
 
 /**
  * Checks `sigma` is within the valid smart contract range.

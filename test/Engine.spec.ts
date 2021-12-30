@@ -2,7 +2,7 @@ import { Token } from '@uniswap/sdk-core'
 import { AddressZero } from '@ethersproject/constants'
 
 import { Engine } from '../src/entities/engine'
-import { computeEngineAddress } from 'src/utils/computeEngineAddress'
+import { computeEngineAddress } from '../src/utils/computeEngineAddress'
 
 describe('Engine entity', function() {
   let engine: Engine, token0: Token, token1: Token, token2: Token

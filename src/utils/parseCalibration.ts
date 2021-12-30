@@ -1,5 +1,5 @@
 import { Token } from '@uniswap/sdk-core'
-import { Calibration } from 'src/entities/calibration'
+import { Calibration } from '../entities/calibration'
 
 /**
  * Constructs a Calibration entity from on-chain data.

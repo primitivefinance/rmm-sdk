@@ -6,7 +6,7 @@ import invariant from 'tiny-invariant'
 import { Token } from '@uniswap/sdk-core'
 import { parseWei, Wei } from 'web3-units'
 
-import { computeEngineAddress } from 'src/utils/computeEngineAddress'
+import { computeEngineAddress } from '../utils/computeEngineAddress'
 
 /**
  * Abstraction of PrimitiveEngine.sol smart contract.

@@ -1,9 +1,9 @@
-import { parseWei } from 'web3-units'
-import { Token } from '@uniswap/sdk-core'
-import { parseCalibration } from '../../src/entities/calibration'
 import { AddressZero } from '@ethersproject/constants'
+import { Token } from '@uniswap/sdk-core'
+import { Time, parseWei } from 'web3-units'
+
+import { parseCalibration } from '../../src/utils/parseCalibration'
 import { PoolInterface } from '../../src/entities/interfaces'
-import { Time } from 'web3-units'
 
 export const EMPTY_TOKEN = new Token(1, AddressZero, 18, 'EMPTY', 'Empty Token Class')
 export const EMPTY_CALIBRATION = parseCalibration(AddressZero, EMPTY_TOKEN, EMPTY_TOKEN, {

@@ -3,7 +3,8 @@ import { AddressZero } from '@ethersproject/constants'
 import { parseWei, Time } from 'web3-units'
 
 import { Pool } from '../../src/entities/pool'
-import { parseCalibration, Swaps } from '../../src/entities'
+import { Swaps } from '../../src/entities/swaps'
+import { parseCalibration } from '../../src/utils/parseCalibration'
 
 import { EMPTY_CALIBRATION } from './constants'
 
