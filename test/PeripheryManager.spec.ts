@@ -3,9 +3,12 @@ import { AddressZero } from '@ethersproject/constants'
 import { Ether, NativeCurrency } from '@uniswap/sdk-core'
 
 import { Pool } from '../src/entities/pool'
-import { AddressOne } from './shared/constants'
+import { Swaps } from '../src/entities/swaps'
 import { PeripheryManager } from '../src/peripheryManager'
+
+import { AddressOne } from './shared/constants'
 import { usePool, usePoolWithDecimals, useWethPool } from './shared/fixture'
+import { BigNumber } from 'ethers'
 
 function decode(frag: string, data: any) {
   return PeripheryManager.INTERFACE.decodeFunctionData(frag, data)
@@ -32,7 +35,7 @@ describe('Periphery Manager', function() {
       const reference = pool.referencePriceOfRisky ?? pool.reportedPriceOfRisky
       const riskyPerLp = reference
         ? parseWei(
-            Pool.getRiskyReservesGivenReferencePrice(
+            Swaps.getRiskyReservesGivenReferencePrice(
               pool.strike.float,
               pool.sigma.float,
               pool.tau.years,
@@ -80,7 +83,7 @@ describe('Periphery Manager', function() {
       const reference = pool.referencePriceOfRisky ?? pool.reportedPriceOfRisky
       const riskyPerLp = reference
         ? parseWei(
-            Pool.getRiskyReservesGivenReferencePrice(
+            Swaps.getRiskyReservesGivenReferencePrice(
               pool.strike.float,
               pool.sigma.float,
               pool.tau.years,
@@ -380,7 +383,7 @@ describe('Periphery Manager', function() {
       const reference = pool.referencePriceOfRisky ?? pool.reportedPriceOfRisky
       const riskyPerLp = reference
         ? parseWei(
-            Pool.getRiskyReservesGivenReferencePrice(
+            Swaps.getRiskyReservesGivenReferencePrice(
               pool.strike.float,
               pool.sigma.float,
               pool.tau.years,
@@ -637,6 +640,38 @@ describe('Periphery Manager', function() {
           slippageTolerance
         })
       ).toThrow()
+    })
+  })
+
+  describe('#safeTransferFromParameters', function() {
+    it('successful', async function() {
+      const recipient = from
+      const sender = from
+      const amount = parseWei(0.1, pool.risky.decimals)
+      const id = pool.poolId
+
+      const { calldata, value } = PeripheryManager.safeTransferFromParameters({ sender, recipient, id, amount })
+
+      const data = [sender, recipient, BigNumber.from(id).toString(), amount.raw, '0x']
+      const decoded = decode('safeTransferFrom(address,address,uint256,uint256,bytes)', calldata)
+      data.forEach((item, i) => expect(item.toString()).toStrictEqual(decoded[i].toString()))
+      expect(value).toBe('0x00')
+    })
+  })
+
+  describe('#batchTransferFromParameters', function() {
+    it('successful', async function() {
+      const recipient = from
+      const sender = from
+      const amounts = [parseWei(0.1, pool.risky.decimals)]
+      const ids = [pool.poolId]
+
+      const { calldata, value } = PeripheryManager.batchTransferFromParameters({ sender, recipient, ids, amounts })
+
+      const data = [sender, recipient, ids.map(v => BigNumber.from(v).toString()), amounts.map(v => v.raw), '0x']
+      const decoded = decode('safeBatchTransferFrom(address,address,uint256[],uint256[],bytes)', calldata)
+      data.forEach((item, i) => expect(item.toString()).toStrictEqual(decoded[i].toString()))
+      expect(value).toBe('0x00')
     })
   })
 })

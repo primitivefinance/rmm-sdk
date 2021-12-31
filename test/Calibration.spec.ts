@@ -1,10 +1,14 @@
 import { Token } from '@uniswap/sdk-core'
 import { AddressZero } from '@ethersproject/constants'
 import { parseWei, Percentage, Time } from 'web3-units'
+import { formatUnits } from '@ethersproject/units'
 
 import { Engine } from '../src/entities/engine'
-import { Calibration, parseCalibration } from '../src/entities/calibration'
-import { formatUnits } from '@ethersproject/units'
+import { Calibration } from '../src/entities/calibration'
+
+import { parseCalibration } from '../src/utils/parseCalibration'
+import { computeEngineAddress } from '../src/utils/computeEngineAddress'
+import { computePoolId } from '../src/utils/computePoolId'
 
 describe('Calibration', function() {
   let cal: Calibration, token0: Token, token1: Token, strike: string, sigma: string, maturity: string, gamma: string
@@ -13,12 +17,20 @@ describe('Calibration', function() {
     token0 = new Token(1, AddressZero, 18)
     token1 = new Token(1, AddressZero, 18)
     ;[strike, sigma, maturity, gamma] = [parseWei(10).toString(), '1000', Time.YearInSeconds.toString(), '9985']
-    cal = parseCalibration(AddressZero, token0, token1, { strike, sigma, maturity, gamma })
+    cal = parseCalibration(AddressZero, token0, token1, { strike, sigma, maturity, gamma }, 2)
   })
 
   it('#poolId', async function() {
-    const expected = Calibration.computePoolId(
-      Engine.computeEngineAddress(AddressZero, token0.address, token1.address, Engine.BYTECODE),
+    const temp0 = parseCalibration(AddressZero, token0, token1, { strike, sigma, maturity, gamma }, 2)
+    expect(temp0.poolId).toBe(cal.poolId)
+    expect(temp0.chainId).toBe(cal.chainId)
+    const temp1 = parseCalibration(AddressZero, token0, token1, { strike, sigma, maturity, gamma })
+    expect(temp1.chainId).toBe(1)
+  })
+
+  it('#poolId', async function() {
+    const expected = computePoolId(
+      computeEngineAddress(AddressZero, token0.address, token1.address, Engine.BYTECODE),
       strike,
       sigma,
       maturity,

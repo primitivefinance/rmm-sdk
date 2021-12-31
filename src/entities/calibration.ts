@@ -1,131 +1,153 @@
-import { utils, BigNumber } from 'ethers'
-import { isAddress } from '@ethersproject/address'
+import { BigNumber } from '@ethersproject/bignumber'
+import invariant from 'tiny-invariant'
 import { Token } from '@uniswap/sdk-core'
 import { Percentage, Time, Wei, toBN } from 'web3-units'
+
+import { weiToWei, computePoolId } from '../utils'
 import { Engine } from './engine'
-import invariant from 'tiny-invariant'
-import { weiToWei } from '../utils'
-const { keccak256, solidityPack } = utils
 
-export const MIN_SIGMA = 1
-export const MAX_SIGMA = Percentage.BasisPoints * 1e3
-
+/**
+ * Checks `sigma` is within the valid smart contract range.
+ *
+ * @param sigma Implied volatility in basis points.
+ *
+ * @returns true if within bounds of valid sigmas.
+ *
+ * @beta
+ */
 export function isValidSigma(sigma: string): boolean {
-  return parseFloat(sigma) <= MAX_SIGMA && parseFloat(sigma) >= MIN_SIGMA
+  return parseFloat(sigma) <= Calibration.MAX_SIGMA && parseFloat(sigma) >= Calibration.MIN_SIGMA
 }
 
+/**
+ * Checks `gamma` is within the valid smart contract range.
+ *
+ * @param gamma 10_000 - swap fee, in basis points.
+ *
+ * @returns true if within bounds of valid gammas.
+ */
 export function isValidGamma(gamma: string): boolean {
-  return parseFloat(gamma) < Percentage.BasisPoints && parseFloat(gamma) > 0
+  return parseFloat(gamma) <= Calibration.MAX_GAMMA && parseFloat(gamma) >= Calibration.MIN_GAMMA
 }
 
+/**
+ * Checks `maturity` is within the valid smart contract range.
+ *
+ * @param maturity Expiration timestamp in seconds.
+ *
+ * @returns true if within bounds of valid maturities.
+ */
 export function isValidMaturity(maturity: string): boolean {
   return parseFloat(maturity) < 2e32 - 1 && parseFloat(maturity) > 0
 }
 
+/**
+ * Checks `strike` is within the valid smart contract range.
+ *
+ * @param strike Strike price in wei with decimal places equal the Engine's stable token decimals.
+ *
+ * @returns true if within bounds of valid strikes.
+ */
 export function isValidStrike(strike: string): boolean {
-  return +strike < 2e128 - 1 && Math.floor(+strike) > 0
+  return parseFloat(strike) < 2e128 - 1 && Math.floor(parseFloat(strike)) > 0
 }
 
 /**
- * @notice Constructs a Calibration entity from on-chain data
- * @param factory Address of the factory contract, used to compute Engine
- * @param risky ERC-20 token metadata and address of risky asset
- * @param stable ERC-20 token metadata and address of stable asset
- * @param cal On-chain data of calibration, converted to strings
- * @param chainId An optional chainId for the Token entity, defaults to 1
+ * Calibration Struct; Class representation of each Curve's parameters.
+ *
+ * @remarks
+ * Can be stateless and used to compute poolId of arbitrary parameters.
  */
-export function parseCalibration(
-  factory: string,
-  risky: { address: string; decimals: string | number; name?: string; symbol?: string },
-  stable: { address: string; decimals: string | number; name?: string; symbol?: string },
-  cal: { strike: string; sigma: string; maturity: string; gamma: string; lastTimestamp?: string },
-  chainId?: number
-): Calibration {
-  const token0 = new Token(chainId ?? 1, risky.address, +risky.decimals, risky?.symbol, risky?.name)
-  const token1 = new Token(chainId ?? 1, stable.address, +stable.decimals, stable?.symbol, stable?.name)
-  return new Calibration(factory, token0, token1, cal.strike, cal.sigma, cal.maturity, cal.gamma)
+export interface ICalibration {
+  /** Strike price with the same precision as the stable asset. */
+  readonly strike: Wei
+
+  /** Volatility as a Percentage instance with 4 precision. */
+  readonly sigma: Percentage
+
+  /** Time class with a raw value in seconds. */
+  readonly maturity: Time
+
+  /** Gamma, equal to 1 - fee %, as a Percentage instance with 4 precision. */
+  readonly gamma: Percentage
+
+  /** {@inheritdoc computePoolId} */
+  poolId: string
 }
 
 /**
- * @notice Calibration Struct; Class representation of each Curve's parameters
- * @dev    Can be stateless and used to compute poolId of arbitrary parameters
+ * Calibration base class implements {@link ICalibration}
+ *
+ * @beta
  */
-export class Calibration extends Engine {
-  /**
-   * @notice Strike price with the same precision as the stable asset
-   */
+export class Calibration extends Engine implements ICalibration {
+  /** Minimum sigma value inclusive, equal to 1 basis point, or 0.01%. */
+  static readonly MIN_SIGMA = 1
+  /** Maximum sigma value inclusive, equal to 10_000_000 basis points, or 1_000.00%. */
+  static readonly MAX_SIGMA = Percentage.BasisPoints * 1e3
+  /** Minimum gamma value inclusive, equal to 9000 basis points, or 90.00%. */
+  static readonly MIN_GAMMA = Percentage.BasisPoints - 1e3
+  /** Maximum gamma value inclusive, equal to 9999 basis points, or 99.99%. */
+  static readonly MAX_GAMMA = Percentage.BasisPoints - 1
+
+  /** {@inheritdoc ICalibration.strike} */
   public readonly strike: Wei
-  /**
-   * @notice Volatility as a Percentage instance with 4 precision
-   */
+  /** {@inheritdoc ICalibration.sigma} */
   public readonly sigma: Percentage
-  /**
-   * @notice Time class with a raw value in seconds
-   */
+  /** {@inheritdoc ICalibration.maturity} */
   public readonly maturity: Time
-  /**
-   * @notice Gamma, equal to 1 - fee %, as a Percentage instance with 4 precision
-   */
+  /** {@inheritdoc ICalibration.gamma} */
   public readonly gamma: Percentage
 
   /**
+   *
+   * @throws
+   * Throws invariant error if a calibration parameter is invalid
+   *
    * @param factory Address of the factory contract, used to compute Engine address, which is used to compute poolId
    * @param strike Strike price, returned from a smart contract or calibration.strike.toString()
    * @param sigma Implied volatility in basis points, returned from a smart contract or calibration.sigma.toString()
    * @param maturity Timestamp of expiry, in seconds
    * @param gamma Basis points multiplier less than 10_000 to apply a fee on swaps, e.g. 1% fee = 9900 gamma
+   *
+   * @beta
    */
   constructor(
     factory: string,
     risky: Token,
     stable: Token,
-    strike: string,
-    sigma: string,
-    maturity: string,
-    gamma: string
-  ) {
-    super(factory, risky, stable)
-    invariant(
-      isValidSigma(sigma),
-      `Sigma Error: Implied volatility outside of bounds 1-10_000_000 basis points: ${sigma}`
-    )
-    invariant(isValidGamma(gamma), `Gamma Error: Fee outside of bounds 1-9_9999 basis points: ${gamma}`)
-    invariant(isValidMaturity(maturity), `Maturity out of bounds > 0 && < 2^32 -1: ${maturity}`)
-
-    this.strike = weiToWei(strike, stable.decimals)
-    this.sigma = new Percentage(toBN(sigma))
-    this.maturity = new Time(+maturity)
-    this.gamma = new Percentage(toBN(gamma))
-  }
-
-  /**
-   * @notice Keccak256 hash of the calibration parameters and the engine address
-   */
-  get poolId(): string {
-    return Calibration.computePoolId(this.address, this.strike.raw, this.sigma.raw, this.maturity.raw, this.gamma.raw)
-  }
-
-  public static computePoolId(
-    engine: string,
     strike: string | BigNumber,
     sigma: string | BigNumber,
-    maturity: string | number,
+    maturity: string | BigNumber,
     gamma: string | BigNumber
-  ): string {
+  ) {
+    super(factory, risky, stable)
     strike = typeof strike !== 'string' ? strike.toString() : strike
     sigma = typeof sigma !== 'string' ? sigma.toString() : sigma
     maturity = typeof maturity !== 'string' ? maturity.toString() : maturity
     gamma = typeof gamma !== 'string' ? gamma.toString() : gamma
+    invariant(isValidStrike(strike), `Strike must be an integer in units of wei: ${strike}`)
     invariant(
       isValidSigma(sigma),
       `Sigma Error: Implied volatility outside of bounds 1-10_000_000 basis points: ${sigma}`
     )
-    invariant(isValidGamma(gamma), `Gamma Error: Fee outside of bounds 1-9_9999 basis points: ${gamma}`)
-    invariant(isAddress(engine), 'Invalid address when computing pool id')
-    invariant(isValidStrike(strike), `Strike must be an integer in units of wei: ${strike}`)
     invariant(isValidMaturity(maturity), `Maturity out of bounds > 0 && < 2^32 -1: ${maturity}`)
-    return keccak256(
-      solidityPack(['address', 'uint128', 'uint32', 'uint32', 'uint32'], [engine, strike, sigma, maturity, gamma])
+    invariant(isValidGamma(gamma), `Gamma Error: Fee outside of bounds 1-9_9999 basis points: ${gamma}`)
+
+    this.strike = weiToWei(strike, stable.decimals)
+    this.sigma = new Percentage(toBN(sigma))
+    this.maturity = new Time(parseFloat(maturity))
+    this.gamma = new Percentage(toBN(gamma))
+  }
+
+  /** {@inheritdoc ICalibration.poolId} */
+  get poolId(): string {
+    return computePoolId(
+      this.address,
+      this.strike.toString(),
+      this.sigma.toString(),
+      this.maturity.toString(),
+      this.gamma.toString()
     )
   }
 }
