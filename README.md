@@ -2,6 +2,10 @@
 
 A software development kit for Primitive RMM-01.
 
+# Docs
+
+[Docs](docs/sdk/rmm-sdk.md)
+
 # Alpha Software
 
 This software has no guarantee of being bug-free and should be considered alpha software.

@@ -5,7 +5,7 @@ import { AddressZero } from '@ethersproject/constants'
 import { parseWei, Percentage, toBN, Wei } from 'web3-units'
 import ManagerArtifact from '@primitivefi/rmm-manager/artifacts/contracts/PrimitiveManager.sol/PrimitiveManager.json'
 
-import { Pool } from 'src/entities/pool'
+import { Pool } from './entities/pool'
 import { MethodParameters, validateAndParseAddress, validateDecimals } from './utils'
 import { PeripheryManager, NativeOptions } from './peripheryManager'
 import { PermitOptions, SelfPermit } from './selfPermit'

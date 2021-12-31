@@ -1,13 +1,13 @@
+import { BigNumber } from '@ethersproject/bignumber'
 import invariant from 'tiny-invariant'
 import { Token } from '@uniswap/sdk-core'
-import { FixedPointX64, parseFixedPointX64, parseWei, Percentage, Time, Wei } from 'web3-units'
 import { callDelta, callPremium } from '@primitivefi/rmm-math'
+import { FixedPointX64, parseFixedPointX64, parseWei, Percentage, Time, Wei } from 'web3-units'
 
 import { Calibration } from './calibration'
 import { PoolInterface } from './interfaces'
 import { Swaps, ExactInResult, ExactOutResult } from './swaps'
 import { weiToWei } from '../utils'
-import { BigNumber } from 'ethers'
 
 /**
  * Enum for each side of the pool, inclusive of liquidity token.
