@@ -1,6 +1,6 @@
 {
   "name": "@primitivefi/rmm-sdk",
-  "version": "1.0.3-beta.4",
+  "version": "1.0.4-beta.4",
   "description": "A Software Development Kit for Primitive RMM-01",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
