@@ -6,6 +6,7 @@ import { SwapManager } from '../src/swapManager'
 
 import { usePool } from './shared/fixture'
 import { AddressOne } from './shared/constants'
+import { ContractFactory } from 'ethers'
 
 function decode(frag: string, data: any) {
   return SwapManager.INTERFACE.decodeFunctionData(frag, data)
@@ -16,6 +17,10 @@ describe('Swap Manager', function() {
 
   beforeEach(async function() {
     pool = usePool()
+  })
+
+  it('getFactory returns the ethers factory', async function() {
+    expect(SwapManager.getFactory()).toStrictEqual(new ContractFactory(SwapManager.INTERFACE, SwapManager.BYTECODE))
   })
 
   describe('#swapCallParameters', function() {

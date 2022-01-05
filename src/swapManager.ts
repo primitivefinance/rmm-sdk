@@ -1,7 +1,9 @@
 import { BigNumber } from 'ethers'
 import invariant from 'tiny-invariant'
 import { Interface } from '@ethersproject/abi'
+import { Signer } from '@ethersproject/abstract-signer'
 import { AddressZero } from '@ethersproject/constants'
+import { ContractFactory } from '@ethersproject/contracts'
 import { parseWei, Percentage, toBN, Wei } from 'web3-units'
 import ManagerArtifact from '@primitivefi/rmm-manager/artifacts/contracts/PrimitiveManager.sol/PrimitiveManager.json'
 
@@ -54,7 +56,9 @@ export interface SwapOptions extends DefaultOptions, NativeOptions {
 export abstract class SwapManager extends SelfPermit {
   public static INTERFACE: Interface = new Interface(ManagerArtifact.abi)
   public static BYTECODE: string = ManagerArtifact.bytecode
-  public static ABI: any = ManagerArtifact.abi
+  public static ABI: any[] = ManagerArtifact.abi
+  public static getFactory: (signer?: Signer) => ContractFactory = signer =>
+    new ContractFactory(SwapManager.INTERFACE, SwapManager.BYTECODE, signer)
 
   private constructor() {
     super()

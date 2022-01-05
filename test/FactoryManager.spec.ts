@@ -2,6 +2,7 @@ import { Token } from '@uniswap/sdk-core'
 import { FactoryManager } from '../src/factoryManager'
 import { AddressZero } from '@ethersproject/constants'
 import { AddressOne, AddressTwo } from './shared'
+import { ContractFactory } from 'ethers'
 
 function decode(frag: string, data: any) {
   return FactoryManager.INTERFACE.decodeFunctionData(frag, data)
@@ -13,6 +14,12 @@ describe('FactoryManager', function() {
     token0 = new Token(1, AddressOne, 18)
     token1 = new Token(1, AddressTwo, 18)
     zeroToken = new Token(1, AddressZero, 18)
+  })
+
+  it('getFactory returns the ethers factory', async function() {
+    expect(FactoryManager.getFactory()).toStrictEqual(
+      new ContractFactory(FactoryManager.INTERFACE, FactoryManager.BYTECODE)
+    )
   })
 
   describe('#encodeDeploy', function() {

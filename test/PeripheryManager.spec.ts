@@ -8,7 +8,7 @@ import { PeripheryManager } from '../src/peripheryManager'
 
 import { AddressOne } from './shared/constants'
 import { usePool, usePoolWithDecimals, useWethPool } from './shared/fixture'
-import { BigNumber } from 'ethers'
+import { BigNumber, ContractFactory } from 'ethers'
 
 function decode(frag: string, data: any) {
   return PeripheryManager.INTERFACE.decodeFunctionData(frag, data)
@@ -25,6 +25,12 @@ describe('Periphery Manager', function() {
     lowDecimalPool = usePoolWithDecimals(6)
     from = AddressOne
     useNative = Ether.onChain(1)
+  })
+
+  it('getFactory returns the ethers factory', async function() {
+    expect(PeripheryManager.getFactory()).toStrictEqual(
+      new ContractFactory(PeripheryManager.INTERFACE, PeripheryManager.BYTECODE)
+    )
   })
 
   describe('#encodeCreate', function() {
