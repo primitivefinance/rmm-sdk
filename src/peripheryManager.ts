@@ -47,12 +47,27 @@ export interface MarginOptions extends PermitTokens, RecipientOptions, NativeOpt
 
 /** Token amounts to use for allocating liquidity. */
 export interface LiquidityOptions {
+  /** Amount of risky tokens to provide as liquidity. */
   delRisky: Wei
+  /** Amount of stable tokens to provide as Liquidity. */
   delStable: Wei
+  /** Desired liquidity to mint. */
   delLiquidity: Wei
 }
 
-/** Provide liquidity argument details. */
+/**
+ * Provide liquidity argument details.
+ *
+ * @param recipient Target account that receives liquidity.
+ * @param delRisky Amount of risky tokens to provide as liquidity.
+ * @param delStable Amount of stable tokens to provide as Liquidity.
+ * @param delLiquidity Desired amount of liquidity to mint.
+ * @param fromMargin Use margin balance to pay for liquidity deposit.
+ * @param slippageTolerance Maximum difference in liquidity received from expected liquidity.
+ * @param createPool Create a pool and allocate liquidity to it.
+ *
+ * @beta
+ */
 export interface AllocateOptions extends PermitTokens, LiquidityOptions, RecipientOptions, NativeOptions, Deadline {
   fromMargin: boolean
   slippageTolerance: Percentage

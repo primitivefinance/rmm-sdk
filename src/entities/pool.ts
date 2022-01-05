@@ -243,7 +243,8 @@ export class Pool extends Calibration {
       stable,
       calibration,
       { reserveRisky, reserveStable, liquidity },
-      invariant.toString()
+      invariant.toString(),
+      referencePrice
     )
   }
 
