@@ -1,6 +1,8 @@
 import { Interface } from '@ethersproject/abi'
 import { BigNumber } from '@ethersproject/bignumber'
 import { AddressZero } from '@ethersproject/constants'
+import { Signer } from '@ethersproject/abstract-signer'
+import { ContractFactory } from '@ethersproject/contracts'
 import invariant from 'tiny-invariant'
 import { parseWei, Percentage, toBN, Wei } from 'web3-units'
 import { NativeCurrency } from '@uniswap/sdk-core'
@@ -91,7 +93,9 @@ export interface BatchTransferOptions {
 export abstract class PeripheryManager extends SelfPermit {
   public static INTERFACE: Interface = new Interface(ManagerArtifact.abi)
   public static BYTECODE: string = ManagerArtifact.bytecode
-  public static ABI: any = ManagerArtifact.abi
+  public static ABI: any[] = ManagerArtifact.abi
+  public static getFactory: (signer?: Signer) => ContractFactory = signer =>
+    new ContractFactory(PeripheryManager.INTERFACE, PeripheryManager.BYTECODE, signer)
 
   private constructor() {
     super()

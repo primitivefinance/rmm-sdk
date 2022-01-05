@@ -1,5 +1,7 @@
 export * from './entities'
 export * from './factoryManager'
+export * from './positionDescriptorManager'
+export * from './positionRendererManager'
 export * from './peripheryManager'
 export * from './selfPermit'
 export * from './swapManager'

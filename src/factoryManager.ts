@@ -2,6 +2,8 @@ import invariant from 'tiny-invariant'
 import { getAddress } from 'ethers/lib/utils'
 import { Interface } from '@ethersproject/abi'
 import { AddressZero } from '@ethersproject/constants'
+import { Signer } from '@ethersproject/abstract-signer'
+import { ContractFactory } from '@ethersproject/contracts'
 
 import FactoryArtifact from '@primitivefi/rmm-core/artifacts/contracts/PrimitiveFactory.sol/PrimitiveFactory.json'
 
@@ -13,7 +15,9 @@ import FactoryArtifact from '@primitivefi/rmm-core/artifacts/contracts/Primitive
 export abstract class FactoryManager {
   public static INTERFACE: Interface = new Interface(FactoryArtifact.abi)
   public static BYTECODE: string = FactoryArtifact.bytecode
-  public static ABI: any = FactoryArtifact.abi
+  public static ABI: any[] = FactoryArtifact.abi
+  public static getFactory: (signer?: Signer) => ContractFactory = signer =>
+    new ContractFactory(FactoryManager.INTERFACE, FactoryManager.BYTECODE, signer)
 
   private constructor() {}
 
