@@ -7,6 +7,7 @@ import { Swaps } from '../../src/entities/swaps'
 import { parseCalibration } from '../../src/utils/parseCalibration'
 
 import { EMPTY_CALIBRATION } from './constants'
+import { PoolInterface } from 'src'
 
 export function usePoolWithDecimals(decimals: number): Pool {
   const token0 = new Token(1, AddressZero, decimals)
@@ -28,31 +29,34 @@ export function usePoolWithDecimals(decimals: number): Pool {
     reserveStable: stable ? parseWei(stable, token1.decimals).toString() : '0',
     liquidity: parseWei(1, 18).toString()
   }
-  const pool = Pool.from(
-    {
-      name: 'Pool',
-      image: '',
-      license: '',
-      creator: '',
-      description: 'Regular pool',
-      properties: {
-        factory: AddressZero,
-        risky: { ...token0 },
-        stable: { ...token1 },
-        invariant: '0',
-        calibration: {
-          strike: strike.toString(),
-          sigma: sigma.toString(),
-          maturity: maturity.toString(),
-          gamma: gamma.toString(),
-          lastTimestamp: lastTimestamp.toString()
-        },
-        reserve
-      }
-    },
-    spot.float,
-    token0.chainId
-  )
+  const uri: PoolInterface = {
+    name: 'Pool',
+    image: '',
+    license: '',
+    creator: '',
+    description: 'Regular pool',
+    properties: {
+      chainId: '1',
+      factory: AddressZero,
+      riskyName: token0.name,
+      riskyAddress: token0.address,
+      riskySymbol: token0.symbol,
+      riskyDecimals: token0.decimals,
+      stableName: token1.name,
+      stableDecimals: token1.decimals,
+      stableSymbol: token1.symbol,
+      stableAddress: token1.address,
+      strike: strike.toString(),
+      sigma: sigma.toString(),
+      maturity: maturity.toString(),
+      gamma: gamma.toString(),
+      lastTimestamp: lastTimestamp.toString(),
+      reserveRisky: reserve.reserveRisky,
+      reserveStable: reserve.reserveStable,
+      liquidity: reserve.liquidity
+    }
+  }
+  const pool = Pool.from(uri, spot.float)
   return pool
 }
 
@@ -71,31 +75,34 @@ export function usePool(): Pool {
     reserveStable: stable ? parseWei(stable, token1.decimals).toString() : '0',
     liquidity: parseWei(1, 18).toString()
   }
-  const pool = Pool.from(
-    {
-      name: 'Pool',
-      image: '',
-      license: '',
-      creator: '',
-      description: 'Regular pool',
-      properties: {
-        factory: AddressZero,
-        risky: { ...token0 },
-        stable: { ...token1 },
-        invariant: '0',
-        calibration: {
-          strike: strike.toString(),
-          sigma: sigma.toString(),
-          maturity: maturity.toString(),
-          gamma: gamma.toString(),
-          lastTimestamp: lastTimestamp.toString()
-        },
-        reserve: { ...reserve }
-      }
-    },
-    spot.float,
-    token0.chainId
-  )
+  const uri: PoolInterface = {
+    name: 'Pool',
+    image: '',
+    license: '',
+    creator: '',
+    description: 'Regular pool',
+    properties: {
+      chainId: '1',
+      factory: AddressZero,
+      riskyName: token0.name,
+      riskyAddress: token0.address,
+      riskySymbol: token0.symbol,
+      riskyDecimals: token0.decimals,
+      stableName: token1.name,
+      stableDecimals: token1.decimals,
+      stableSymbol: token1.symbol,
+      stableAddress: token1.address,
+      strike: strike.toString(),
+      sigma: sigma.toString(),
+      maturity: maturity.toString(),
+      gamma: gamma.toString(),
+      lastTimestamp: lastTimestamp.toString(),
+      reserveRisky: reserve.reserveRisky,
+      reserveStable: reserve.reserveStable,
+      liquidity: reserve.liquidity
+    }
+  }
+  const pool = Pool.from(uri, spot.float)
   return pool
 }
 
@@ -119,30 +126,33 @@ export function useWethPool(): Pool {
     reserveStable: stable ? parseWei(stable, token1.decimals).toString() : '0',
     liquidity: parseWei(1, 18).toString()
   }
-  const pool = Pool.from(
-    {
-      name: 'Pool',
-      image: '',
-      license: '',
-      creator: '',
-      description: 'Regular pool',
-      properties: {
-        factory: AddressZero,
-        risky: { ...token0 },
-        stable: { ...token1 },
-        invariant: '0',
-        calibration: {
-          strike: strike.toString(),
-          sigma: sigma.toString(),
-          maturity: maturity.toString(),
-          gamma: gamma.toString(),
-          lastTimestamp: lastTimestamp.toString()
-        },
-        reserve
-      }
-    },
-    spot.float,
-    token0.chainId
-  )
+  const uri: PoolInterface = {
+    name: 'Pool',
+    image: '',
+    license: '',
+    creator: '',
+    description: 'Regular pool',
+    properties: {
+      chainId: '1',
+      factory: AddressZero,
+      riskyName: token0.name,
+      riskyAddress: token0.address,
+      riskySymbol: token0.symbol,
+      riskyDecimals: token0.decimals,
+      stableName: token1.name,
+      stableDecimals: token1.decimals,
+      stableSymbol: token1.symbol,
+      stableAddress: token1.address,
+      strike: strike.toString(),
+      sigma: sigma.toString(),
+      maturity: maturity.toString(),
+      gamma: gamma.toString(),
+      lastTimestamp: lastTimestamp.toString(),
+      reserveRisky: reserve.reserveRisky,
+      reserveStable: reserve.reserveStable,
+      liquidity: reserve.liquidity
+    }
+  }
+  const pool = Pool.from(uri, spot.float)
   return pool
 }

@@ -6,6 +6,7 @@ import { Pool, PoolSides } from '../src/entities/pool'
 
 import { usePool } from './shared/fixture'
 import { AddressOne, EMPTY_CALIBRATION } from './shared'
+import { PoolInterface } from 'src'
 
 describe('Test pool', function() {
   let pool: Pool
@@ -30,31 +31,36 @@ describe('Test pool', function() {
       liquidity: parseWei(1, 18).toString()
     }
     const invariant = '3.345867008995041e+21'
-    const pool = Pool.from(
-      {
-        name: 'Pool',
-        image: '',
-        license: '',
-        creator: '',
-        description: 'Regular pool',
-        properties: {
-          factory: AddressOne,
-          risky: { ...token0 },
-          stable: { ...token1 },
-          invariant: invariant,
-          calibration: {
-            strike: strike.toString(),
-            sigma: sigma.toString(),
-            maturity: maturity.toString(),
-            gamma: gamma.toString(),
-            lastTimestamp: lastTimestamp.toString()
-          },
-          reserve: { ...reserve }
-        }
-      },
-      spot.float,
-      token0.chainId
-    )
+    const uri: PoolInterface = {
+      name: 'Pool',
+      image: '',
+      license: '',
+      creator: '',
+      description: 'Regular pool',
+      properties: {
+        chainId: '1',
+        factory: AddressOne,
+        riskyName: token0.name,
+        riskyAddress: token0.address,
+        riskySymbol: token0.symbol,
+        riskyDecimals: token0.decimals,
+        stableName: token1.name,
+        stableDecimals: token1.decimals,
+        stableSymbol: token1.symbol,
+        stableAddress: token1.address,
+        strike: strike.toString(),
+        sigma: sigma.toString(),
+        maturity: maturity.toString(),
+        gamma: gamma.toString(),
+        lastTimestamp: lastTimestamp.toString(),
+        reserveRisky: reserve.reserveRisky,
+        reserveStable: reserve.reserveStable,
+        liquidity: reserve.liquidity,
+        invariant: invariant
+      }
+    }
+
+    const pool = Pool.from(uri, spot.float)
     expect(pool.poolId).toBeDefined()
   })
 

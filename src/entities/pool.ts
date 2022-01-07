@@ -186,18 +186,42 @@ export class Pool extends Calibration {
    *
    * @beta
    */
-  public static from(pool: PoolInterface, referencePrice?: number, chainId: number = 1): Pool {
-    const { factory, risky, stable, calibration, reserve, invariant } = pool.properties
+  public static from(pool: PoolInterface, referencePrice?: number): Pool {
+    const {
+      factory,
+      riskyName,
+      riskySymbol,
+      riskyDecimals,
+      riskyAddress,
+      stableName,
+      stableSymbol,
+      stableDecimals,
+      stableAddress,
+      strike,
+      sigma,
+      gamma,
+      maturity,
+      lastTimestamp,
+      reserveRisky,
+      reserveStable,
+      liquidity,
+      invariant,
+      chainId
+    } = pool.properties
 
+    const risky = { address: riskyAddress, name: riskyName, symbol: riskySymbol, decimals: riskyDecimals }
+    const stable = { address: stableAddress, name: stableName, symbol: stableSymbol, decimals: stableDecimals }
+    const calibration = { strike, sigma, maturity, lastTimestamp, gamma }
+    const reserve = { reserveRisky, reserveStable, liquidity }
     return new Pool(
-      chainId,
+      +chainId,
       factory,
       { ...risky },
       { ...stable },
       { ...calibration },
       { ...reserve },
       invariant,
-      referencePrice ?? undefined
+      referencePrice
     )
   }
 

@@ -81,42 +81,36 @@ export interface PoolInterface {
     factory: string
 
     /** {@inheritdoc IEngine.risky} */
-    risky: {
-      address: string
-      decimals: string | number
-      symbol?: string
-      name?: string
-    }
+    riskyAddress: string
+    riskyDecimals: string | number
+    riskySymbol?: string
+    riskyName?: string
 
     /** {@inheritdoc IEngine.stable} */
-    stable: {
-      address: string
-      decimals: string | number
-      symbol?: string
-      name?: string
-    }
+    stableAddress: string
+    stableDecimals: string | number
+    stableSymbol?: string
+    stableName?: string
 
     /** {@inheritdoc IPool.invariant} */
     invariant?: string
 
     /** {@inheritdoc CalibrationStruct} */
-    calibration: {
-      strike: string
-      sigma: string
-      maturity: string
-      lastTimestamp: string
-      gamma: string
-    }
+    strike: string
+    sigma: string
+    maturity: string
+    lastTimestamp: string
+    gamma: string
 
     /** {@inheritdoc ReserveStruct} */
-    reserve: {
-      blockTimestamp?: string
-      cumulativeLiquidity?: string
-      cumulativeRisky?: string
-      cumulativeStable?: string
-      liquidity: string
-      reserveRisky: string
-      reserveStable: string
-    }
+    blockTimestamp?: string
+    cumulativeLiquidity?: string
+    cumulativeRisky?: string
+    cumulativeStable?: string
+    liquidity: string
+    reserveRisky: string
+    reserveStable: string
+
+    chainId: string
   }
 }
