@@ -253,7 +253,7 @@ export class Swaps {
 
     const x1 = x.add(amountIn * gamma).div(l)
 
-    const yAdjusted = Swaps.getStableGivenRisky(x1.normalized, K, sigma, tau, k)
+    const yAdjusted = Swaps.getStableGivenRisky(K, sigma, tau, x1.normalized, k)
     if (!yAdjusted) throw new Error(`Next stable reserves are undefined: ${yAdjusted}`)
 
     const y1 = Floating.from(yAdjusted, decimalsStable).mul(l) // liquidity normalized

@@ -256,7 +256,7 @@ export class Pool extends Calibration {
       tau.years,
       referencePrice
     )
-    const balance = Swaps.getStableGivenRisky(oppositeDelta, strikePrice, sigmaFloating, tau.years, invariant) ?? 0
+    const balance = Swaps.getStableGivenRisky(strikePrice, sigmaFloating, tau.years, oppositeDelta, invariant) ?? 0
 
     const reserveRisky = parseWei(oppositeDelta.toString(), Number(risky.decimals)).toString()
     const reserveStable = parseWei(balance.toString(), Number(stable.decimals)).toString()
