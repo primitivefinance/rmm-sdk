@@ -31,7 +31,7 @@
   "dependencies": {
     "@primitivefi/rmm-core": "^2.0.0-beta.5",
     "@primitivefi/rmm-manager": "^2.0.0-beta.5",
-    "@primitivefi/rmm-math": "^2.0.0-beta.2",
+    "@primitivefi/rmm-math": "^2.0.0-beta.3",
     "@uniswap/sdk-core": "^3.0.1",
     "tiny-invariant": "^1.1.0",
     "tiny-warning": "^1.0.3"
