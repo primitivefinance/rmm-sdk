@@ -26,7 +26,8 @@
     "docs": "run-s docs:*",
     "docs:prepare": "api-extractor run --local",
     "docs:collect-sdk-apis": "node scripts/collect-sdk-api.js",
-    "docs:api-documenter": "api-documenter generate -i temp/sdk-api -o docs/sdk"
+    "docs:api-documenter": "api-documenter generate -i temp/sdk-api -o docs/sdk",
+    "prepare": "husky install"
   },
   "peerDependencies": {
     "prettier": ">=2.0.0"
