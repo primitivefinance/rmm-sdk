@@ -1,7 +1,7 @@
 {
   "name": "@primitivefi/rmm-sdk",
   "version": "1.1.0-beta.5",
-  "description": "A Software Development Kit for Primitive RMM-01.",
+  "description": "∇ A Software Development Kit for Primitive RMM-01.",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
   "license": "GPL-3.0-or-later",
@@ -33,8 +33,8 @@
     "prettier": ">=2.0.0"
   },
   "dependencies": {
-    "@primitivefi/rmm-core": "^2.0.0-beta.5",
-    "@primitivefi/rmm-manager": "^2.0.0-beta.5",
+    "@primitivefi/rmm-core": "^1.0.0-rc.1",
+    "@primitivefi/rmm-manager": "^1.0.0-rc.1",
     "@primitivefi/rmm-math": "^2.0.0-rc.1",
     "@uniswap/sdk-core": "^3.0.1",
     "shelljs": "0.8.5",
