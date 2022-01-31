@@ -2,7 +2,7 @@
 
 ![version](https://img.shields.io/npm/v/@primitivefi/rmm-sdk) ![npm](https://img.shields.io/npm/dt/@primitivefi/rmm-sdk) ![license](https://img.shields.io/npm/l/@primitivefi/rmm-sdk) ![stars](https://img.shields.io/github/stars/primitivefinance/rmm-sdk?style=social&color=%23FFB31A)
 
-> Formulas and math used in RMM protocol.
+> Software development kit for Primitive RMM-01.
 
 ## 🧩 Features
 
