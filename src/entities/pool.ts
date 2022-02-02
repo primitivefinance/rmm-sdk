@@ -387,11 +387,19 @@ export class Pool extends Calibration {
 
     switch (sideOfPool) {
       case PoolSides.RISKY:
+        invariant(
+          reserveRisky.gt(0),
+          `Reserve risky is 0. It must be greater than 0 because its being used as a denominator to compute LP tokens to mint.`
+        )
         delRisky = amount
         delLiquidity = liquidity.mul(delRisky).div(reserveRisky)
         delStable = reserveStable.mul(delLiquidity).div(liquidity)
         break
       case PoolSides.STABLE:
+        invariant(
+          reserveStable.gt(0),
+          `Reserve stable is 0. It must be greater than 0 because its being used as a denominator to compute LP tokens to mint.`
+        )
         delStable = amount
         delLiquidity = liquidity.mul(delStable).div(reserveStable)
         delRisky = reserveRisky.mul(delLiquidity).div(liquidity)

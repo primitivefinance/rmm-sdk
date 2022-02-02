@@ -58,24 +58,47 @@ export interface LiquidityOptions {
 /**
  * Provide liquidity argument details.
  *
- * @param recipient Target account that receives liquidity.
+ * @remarks
+ * Slippage tolerance can be safely set to 0,
+ * which will cause the transaction to revert in the case the expected `delLiquidity`
+ * is not granted to the transaction sender.
+ *
+ * @param recipient Address that will be granted the minted Primitive liquidity pool tokens.
  * @param delRisky Amount of risky tokens to provide as liquidity.
  * @param delStable Amount of stable tokens to provide as Liquidity.
  * @param delLiquidity Desired amount of liquidity to mint.
  * @param fromMargin Use margin balance to pay for liquidity deposit.
  * @param slippageTolerance Maximum difference in liquidity received from expected liquidity.
  * @param createPool Create a pool and allocate liquidity to it.
+ * @param useNative Whether or not a native protocol token (e.g. Ether) should be used with a wrapped token version.
  *
  * @beta
  */
-export interface AllocateOptions extends PermitTokens, LiquidityOptions, RecipientOptions, NativeOptions, Deadline {
+export interface AllocateOptions extends PermitTokens, LiquidityOptions, NativeOptions, RecipientOptions {
   fromMargin: boolean
   slippageTolerance: Percentage
   createPool?: boolean
 }
 
-/** Remove liquidity argument details. */
-export interface RemoveOptions extends LiquidityOptions, RecipientOptions, NativeOptions, Deadline {
+/**
+ * Remove liquidity argument details.
+ *
+ * @remarks
+ * Expected risky and stable amounts should be defaulted to 0.
+ *
+ * @param expectedRisky Amount of risky tokens to withdraw from margin account, minRisky is added to this.
+ * @param expectedStable Amount of stable tokens to withdraw from margin account, minStable is added to this.
+ * @param toMargin Whether or not to keep tokens withdrawn from liquidity in margin.
+ * @param slippageTolerance Percentage deviation from the expected token amounts being removed from the pool.
+ * @param recipient Address that will be granted the minted Primitive liquidity pool tokens.
+ * @param delRisky Amount of risky tokens to provide as liquidity.
+ * @param delStable Amount of stable tokens to provide as Liquidity.
+ * @param delLiquidity Desired amount of liquidity to mint.
+ * @param useNative Whether or not a native protocol token (e.g. Ether) should be used with a wrapped token version.
+ *
+ * @beta
+ */
+export interface RemoveOptions extends LiquidityOptions, RecipientOptions, NativeOptions {
   expectedRisky: Wei
   expectedStable: Wei
   toMargin: boolean
@@ -125,12 +148,13 @@ export abstract class PeripheryManager extends SelfPermit {
    * @throws
    * Throws if liquidity amount decimals and pool decimals are not equal.
    * Throws if pool has an undefined {@link IPool.referencePriceOfRisky}.
+   * Throws if `liquidity` is less than {@link IEngine.MIN_LIQUIDITY}.
    *
    * @beta
    */
   public static encodeCreate(pool: Pool, liquidity: Wei): string {
     validateDecimals(liquidity, pool)
-    invariant(typeof pool.referencePriceOfRisky !== 'undefined', `Attempting to create a pool without reference price`)
+    invariant(typeof pool.referencePriceOfRisky !== 'undefined', `Attempting to create a pool without reference price.`)
     const riskyPerLp = parseWei(
       Swaps.getRiskyReservesGivenReferencePrice(
         pool.strike.float,
@@ -141,6 +165,18 @@ export abstract class PeripheryManager extends SelfPermit {
       pool.risky.decimals
     )
 
+    invariant(
+      riskyPerLp.gt(0),
+      `Attempting to create a pool that has 0 risky tokens in the reserves. This is only possible after a pool has expired, has the maturity timestamp already been passed?`
+    )
+    invariant(
+      riskyPerLp.lt(parseWei(1, riskyPerLp.decimals)),
+      `Attempting to create a pool that has 1 risky token per liquidity in the reserves. This is only possible after a pool has expired, has the maturity timestamp already been passed?`
+    )
+    invariant(
+      liquidity.gte(pool.MIN_LIQUIDITY),
+      `Attempting to create a pool and allocating less than MIN_LIQUIDITY amount of liquidity.`
+    )
     return PeripheryManager.INTERFACE.encodeFunctionData('create', [
       pool.risky.address,
       pool.stable.address,
@@ -333,6 +369,8 @@ export abstract class PeripheryManager extends SelfPermit {
    * Throws if any {@link LiquidityOptions} amount decimals does not match respective token decimals.
    * Throws if depositing a currency and the token has an undefined `wrapped` attribute.
    * Throws if attempting to create a pool from a margin balance.
+   * Throws if computed minimum liquidity to receive is 0.
+   * Throws if recipient is AddressZero.
    *
    * @beta
    */
@@ -343,6 +381,9 @@ export abstract class PeripheryManager extends SelfPermit {
     validateDecimals(options.delLiquidity, pool)
     validateDecimals(options.delRisky, pool.risky)
     validateDecimals(options.delStable, pool.stable)
+
+    const recipient: string = validateAndParseAddress(options.recipient)
+    invariant(recipient !== AddressZero, 'Zero Address Recipient')
 
     let calldatas: string[] = []
 
@@ -355,11 +396,16 @@ export abstract class PeripheryManager extends SelfPermit {
       calldatas.push(PeripheryManager.encodePermit(pool.stable, options.permitStable))
     }
 
-    const minLiquidity = options.delLiquidity.mul(options.slippageTolerance.raw).div(Percentage.BasisPoints)
+    const slippageMultiplier = Percentage.BasisPoints - options.slippageTolerance.bps // 100% - slippage%
+    const minLiquidity = options.delLiquidity.mul(slippageMultiplier).div(Percentage.BasisPoints)
+    invariant(
+      minLiquidity.gt(0),
+      `Slippage parameter minLiquidity cannot be zero! ${options.delLiquidity.display} * ${slippageMultiplier} / ${Percentage.BasisPoints} = ${minLiquidity.display} `
+    )
 
     // if curve should be created
     if (options.createPool) {
-      invariant(!options.fromMargin, 'Cannot pay from margin when creating')
+      invariant(!options.fromMargin, 'Cannot pay from margin when creating, set fromMargin to false.')
       calldatas.push(PeripheryManager.encodeCreate(pool, options.delLiquidity))
     } else {
       calldatas.push(
@@ -404,6 +450,13 @@ export abstract class PeripheryManager extends SelfPermit {
    * @param pool {@link IPool} Uses poolId and tokens of Pool entity for remove arguments.
    * @param options {@link RemoveOptions} Remove argument details.
    *
+   * @remarks
+   * Computed min token amounts to receive are used to withdraw them from margin, and expected amounts are added to them.
+   * A high slippageTolerance when removing liquidity could cause a discrepancy in the withdrawn tokens and tokens received in margin.
+   * For this reason, it's best to have a 0 slippage tolerance.
+   * In most cases, 0 slippage tolerance and 0 expected amounts should be used.
+   * Potentially fails if there is not enough margin balance after removing liquidity when attempting to withdraw expected amounts.
+   *
    * @throws
    * Throws if {@link LiquidityOptions.delLiquidity} is zero.
    * Throws if {@link LiquidityOptions} amount decimals does not match respective token decimals.
@@ -419,8 +472,9 @@ export abstract class PeripheryManager extends SelfPermit {
     let calldatas: string[] = []
 
     const { delRisky, delStable } = pool.liquidityQuote(options.delLiquidity, PoolSides.RMM_LP)
-    const minRisky = delRisky.mul(options.slippageTolerance.bps).div(Percentage.BasisPoints)
-    const minStable = delStable.mul(options.slippageTolerance.bps).div(Percentage.BasisPoints)
+    const slippageMultiplier = Percentage.BasisPoints - options.slippageTolerance.bps // 100% - slippage%
+    const minRisky = delRisky.mul(slippageMultiplier).div(Percentage.BasisPoints)
+    const minStable = delStable.mul(slippageMultiplier).div(Percentage.BasisPoints)
 
     // tokens are by default removed from curve and deposited to margin
     calldatas.push(
@@ -438,8 +492,8 @@ export abstract class PeripheryManager extends SelfPermit {
       calldatas.push(
         ...PeripheryManager.encodeWithdraw(pool, {
           recipient: options.recipient,
-          amountRisky: options.expectedRisky,
-          amountStable: options.expectedStable,
+          amountRisky: minRisky.add(options.expectedRisky),
+          amountStable: minStable.add(options.expectedStable),
           useNative: options.useNative
         })
       )

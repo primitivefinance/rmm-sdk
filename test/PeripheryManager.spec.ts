@@ -1,14 +1,14 @@
-import { parsePercentage, parseWei } from 'web3-units'
+import { BigNumber, ContractFactory } from 'ethers'
+import { parsePercentage, parseWei, Percentage } from 'web3-units'
 import { AddressZero } from '@ethersproject/constants'
 import { Ether, NativeCurrency } from '@uniswap/sdk-core'
 
-import { Pool } from '../src/entities/pool'
+import { Pool, PoolSides } from '../src/entities/pool'
 import { Swaps } from '../src/entities/swaps'
 import { PeripheryManager } from '../src/peripheryManager'
 
 import { AddressOne } from './shared/constants'
 import { usePool, usePoolWithDecimals, useWethPool } from './shared/fixture'
-import { BigNumber, ContractFactory } from 'ethers'
 
 function decode(frag: string, data: any) {
   return PeripheryManager.INTERFACE.decodeFunctionData(frag, data)
@@ -331,6 +331,28 @@ describe('Periphery Manager', function() {
       expect(value).toBe('0x00')
     })
 
+    it('should have a minLiquidity equal to delLiquidity when slippageTolerance is 0', async function() {
+      const recipient = from
+      const fromMargin = false
+      const delRisky = parseWei(0.3, pool.risky.decimals)
+      const delStable = parseWei(3, pool.stable.decimals)
+      const delLiquidity = parseWei(1, 18)
+
+      const { calldata, value } = PeripheryManager.allocateCallParameters(pool, {
+        recipient,
+        fromMargin,
+        delRisky,
+        delStable,
+        delLiquidity,
+        slippageTolerance: parsePercentage(0)
+      })
+      const data = [pool.poolId, pool.risky.address, pool.stable.address, delRisky.raw, delStable.raw, fromMargin]
+      const decoded = decode('allocate', calldata)
+      data.forEach((item, i) => expect(item.toString()).toStrictEqual(decoded[i].toString()))
+      expect(value).toBe('0x00')
+      expect(decoded[decoded.length - 1].toString()).toStrictEqual(delLiquidity.toString())
+    })
+
     it('successful using native', async function() {
       const recipient = from
       const fromMargin = false
@@ -365,6 +387,12 @@ describe('Periphery Manager', function() {
       const refundETHDecoded = decode('refundETH', multicall.data[1])
       expect(refundETHDecoded).toBeDefined()
       expect(value).toBe(delRisky.raw.toHexString())
+      expect(allocateDecoded[allocateDecoded.length - 1].toString()).toStrictEqual(
+        delLiquidity
+          .mul(Percentage.BasisPoints - slippageTolerance.bps)
+          .div(Percentage.BasisPoints)
+          .toString()
+      )
     })
 
     it('successful when creating pool instead', async function() {
@@ -557,6 +585,33 @@ describe('Periphery Manager', function() {
       const decoded = decode('remove', calldata)
       data.forEach((item, i) => expect(item.toString()).toStrictEqual(decoded[i].toString()))
       expect(value).toBe('0x00')
+    })
+
+    it('should have same minRisky as expectedRisky and same minStable as expectedStable with 0 slippage tolerance', async function() {
+      const recipient = from
+      const toMargin = true
+      const delLiquidity = parseWei(1, 18)
+      const { delRisky, delStable } = pool.liquidityQuote(delLiquidity, PoolSides.RMM_LP)
+      const expectedRisky = delRisky
+      const expectedStable = delStable
+
+      const { calldata, value } = PeripheryManager.removeCallParameters(pool, {
+        delLiquidity,
+        expectedRisky,
+        expectedStable,
+        toMargin,
+        delRisky,
+        delStable,
+        recipient,
+        slippageTolerance: parsePercentage(0)
+      })
+
+      const data = [pool.address, pool.poolId, delLiquidity.raw]
+      const decoded = decode('remove', calldata)
+      data.forEach((item, i) => expect(item.toString()).toStrictEqual(decoded[i].toString()))
+      expect(value).toBe('0x00')
+      expect(decoded[decoded.length - 2].toString()).toStrictEqual(delRisky.toString())
+      expect(decoded[decoded.length - 1].toString()).toStrictEqual(delStable.toString())
     })
 
     it('fails if delLiquidity is zero', async function() {
