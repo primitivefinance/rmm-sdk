@@ -325,7 +325,15 @@ describe('Periphery Manager', function() {
         delLiquidity,
         slippageTolerance
       })
-      const data = [pool.poolId, pool.risky.address, pool.stable.address, delRisky.raw, delStable.raw, fromMargin]
+      const data = [
+        recipient,
+        pool.poolId,
+        pool.risky.address,
+        pool.stable.address,
+        delRisky.raw,
+        delStable.raw,
+        fromMargin
+      ]
       const decoded = decode('allocate', calldata)
       data.forEach((item, i) => expect(item.toString()).toStrictEqual(decoded[i].toString()))
       expect(value).toBe('0x00')
@@ -346,7 +354,15 @@ describe('Periphery Manager', function() {
         delLiquidity,
         slippageTolerance: parsePercentage(0)
       })
-      const data = [pool.poolId, pool.risky.address, pool.stable.address, delRisky.raw, delStable.raw, fromMargin]
+      const data = [
+        recipient,
+        pool.poolId,
+        pool.risky.address,
+        pool.stable.address,
+        delRisky.raw,
+        delStable.raw,
+        fromMargin
+      ]
       const decoded = decode('allocate', calldata)
       data.forEach((item, i) => expect(item.toString()).toStrictEqual(decoded[i].toString()))
       expect(value).toBe('0x00')
@@ -371,6 +387,7 @@ describe('Periphery Manager', function() {
       })
 
       const allocateData = [
+        recipient,
         wethPool.poolId,
         wethPool.risky.address,
         wethPool.stable.address,

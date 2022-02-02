@@ -410,6 +410,7 @@ export abstract class PeripheryManager extends SelfPermit {
     } else {
       calldatas.push(
         PeripheryManager.INTERFACE.encodeFunctionData('allocate', [
+          recipient,
           pool.poolId,
           pool.risky.address,
           pool.stable.address,
