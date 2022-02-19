@@ -33,8 +33,7 @@
     "prettier": ">=2.0.0"
   },
   "dependencies": {
-    "@primitivefi/rmm-core": "^1.0.0-rc.2",
-    "@primitivefi/rmm-manager": "^1.0.0-rc.3",
+    "@primitivefi/rmm-manager": "^1.0.0",
     "@primitivefi/rmm-math": "^2.0.0-rc.1",
     "@uniswap/sdk-core": "^3.0.1",
     "shelljs": "0.8.5",
