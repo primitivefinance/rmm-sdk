@@ -87,8 +87,8 @@ export class Calibration extends Engine implements ICalibration {
   static readonly MAX_SIGMA = Percentage.BasisPoints * 1e3
   /** Minimum gamma value inclusive, equal to 9000 basis points, or 90.00%. */
   static readonly MIN_GAMMA = Percentage.BasisPoints - 1e3
-  /** Maximum gamma value inclusive, equal to 9999 basis points, or 99.99%. */
-  static readonly MAX_GAMMA = Percentage.BasisPoints - 1
+  /** Maximum gamma value inclusive, equal to 10_000 basis points, or 100%. */
+  static readonly MAX_GAMMA = Percentage.BasisPoints
 
   /** {@inheritdoc ICalibration.strike} */
   public readonly strike: Wei
@@ -132,7 +132,7 @@ export class Calibration extends Engine implements ICalibration {
       `Sigma Error: Implied volatility outside of bounds 1-10_000_000 basis points: ${sigma}`
     )
     invariant(isValidMaturity(maturity), `Maturity out of bounds > 0 && < 2^32 -1: ${maturity}`)
-    invariant(isValidGamma(gamma), `Gamma Error: Fee outside of bounds 1-9_9999 basis points: ${gamma}`)
+    invariant(isValidGamma(gamma), `Gamma Error: Outside of bounds (9_000, 10_000): ${gamma}`)
 
     this.strike = weiToWei(strike, stable.decimals)
     this.sigma = new Percentage(toBN(sigma))

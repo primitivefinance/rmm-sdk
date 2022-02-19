@@ -1,7 +1,7 @@
 {
   "name": "@primitivefi/rmm-sdk",
-  "version": "1.1.0-beta.5",
-  "description": "A Software Development Kit for Primitive RMM-01.",
+  "version": "1.1.0-rc.3",
+  "description": "∇ A Software Development Kit for Primitive RMM-01.",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
   "license": "GPL-3.0-or-later",
@@ -26,17 +26,23 @@
     "docs": "run-s docs:*",
     "docs:prepare": "api-extractor run --local",
     "docs:collect-sdk-apis": "node scripts/collect-sdk-api.js",
-    "docs:api-documenter": "api-documenter generate -i temp/sdk-api -o docs/sdk"
+    "docs:api-documenter": "api-documenter generate -i temp/sdk-api -o docs/sdk",
+    "prepare": "husky install"
+  },
+  "peerDependencies": {
+    "prettier": ">=2.0.0"
   },
   "dependencies": {
-    "@primitivefi/rmm-core": "^2.0.0-beta.5",
-    "@primitivefi/rmm-manager": "^2.0.0-beta.5",
-    "@primitivefi/rmm-math": "^2.0.0-beta.3",
+    "@primitivefi/rmm-manager": "^1.0.0",
+    "@primitivefi/rmm-math": "^2.0.0-rc.1",
     "@uniswap/sdk-core": "^3.0.1",
+    "shelljs": "0.8.5",
     "tiny-invariant": "^1.1.0",
     "tiny-warning": "^1.0.3"
   },
   "devDependencies": {
+    "@commitlint/cli": "^16.1.0",
+    "@commitlint/config-conventional": "^16.0.0",
     "@microsoft/api-documenter": "^7.13.78",
     "@microsoft/api-extractor": "^7.19.3",
     "@types/jest": "^27.0.1",
@@ -44,16 +50,41 @@
     "eslint-config-prettier": "^8.3.0",
     "eslint-plugin-prettier": "^4.0.0",
     "ethers": "^5.4.6",
+    "husky": "^7.0.4",
     "npm-run-all": "^4.1.5",
     "tsdx": "^0.14.1",
     "web3-units": "^1.3.3"
   },
   "engines": {
-    "node": ">=10"
+    "node": "*"
   },
   "release": {
     "branches": [
-      "main"
+      "main",
+      {
+        "name": "rc",
+        "channel": "rc",
+        "prerelease": "rc"
+      }
+    ],
+    "plugins": [
+      "@semantic-release/commit-analyzer",
+      [
+        "@semantic-release/release-notes-generator",
+        {
+          "preset": "angular",
+          "parserOpts": {
+            "headerPattern": "^(\\w*)(?:\\((.*)\\))?!?: (.*)$"
+          }
+        }
+      ],
+      "@semantic-release/npm",
+      "@semantic-release/github"
+    ]
+  },
+  "commitlint": {
+    "extends": [
+      "@commitlint/config-conventional"
     ]
   }
 }

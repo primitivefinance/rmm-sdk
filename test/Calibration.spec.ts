@@ -56,15 +56,19 @@ describe('Calibration', function() {
   })
 
   it('#gamma fails out of bounds', async function() {
-    expect(() => parseCalibration(AddressZero, token0, token1, { strike, sigma, maturity, gamma: '0' })).toThrow()
     expect(() =>
-      parseCalibration(AddressZero, token0, token1, { strike, sigma, maturity, gamma: (1e8).toString() })
+      parseCalibration(AddressZero, token0, token1, { strike, sigma, maturity, gamma: (9_000 - 1).toString() })
+    ).toThrow()
+    expect(() =>
+      parseCalibration(AddressZero, token0, token1, { strike, sigma, maturity, gamma: (10_000 + 1).toString() })
     ).toThrow()
   })
   it('#gamma succeeds on bounds', async function() {
-    expect(() => parseCalibration(AddressZero, token0, token1, { strike, sigma, maturity, gamma: '1' })).toBeDefined()
     expect(() =>
-      parseCalibration(AddressZero, token0, token1, { strike, sigma, maturity, gamma: (1e7).toString() })
-    ).toBeDefined()
+      parseCalibration(AddressZero, token0, token1, { strike, sigma, maturity, gamma: (9_000).toString() })
+    ).not.toThrow()
+    expect(() =>
+      parseCalibration(AddressZero, token0, token1, { strike, sigma, maturity, gamma: (10_000).toString() })
+    ).not.toThrow()
   })
 })
