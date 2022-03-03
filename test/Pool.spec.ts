@@ -112,28 +112,28 @@ describe('Test pool', function() {
   it('pool.liquidityQuote() risky', async function() {
     const amount = parseWei('0.5')
     const liquidityQuote = pool.liquidityQuote(amount, PoolSides.RISKY)
-    const delStable = liquidityQuote.delLiquidity.mul(pool.reserveStable).div(pool.liquidity)
+    const delStable = pool.reserveStable.mul(liquidityQuote.delLiquidity).div(pool.liquidity)
     expect(liquidityQuote.delStable.float).toBeCloseTo(delStable.float)
   })
 
   it('pool.liquidityQuote() stable', async function() {
     const amount = parseWei('0.5')
     const liquidityQuote = pool.liquidityQuote(amount, PoolSides.STABLE)
-    const delRisky = liquidityQuote.delLiquidity.mul(pool.reserveRisky).div(pool.liquidity)
+    const delRisky = pool.reserveRisky.mul(liquidityQuote.delLiquidity).div(pool.liquidity)
     expect(liquidityQuote.delRisky.float).toBeCloseTo(delRisky.float)
   })
 
   it('pool.liquidityQuote() RMM', async function() {
     const amount = parseWei('0.5')
     const liquidityQuote = pool.liquidityQuote(amount, PoolSides.RMM_LP)
-    const delStable = liquidityQuote.delLiquidity.mul(pool.reserveStable).div(pool.liquidity)
+    const delStable = pool.reserveStable.mul(liquidityQuote.delLiquidity).div(pool.liquidity)
     expect(liquidityQuote.delStable.float).toBeCloseTo(delStable.float)
   })
 
   it('pool.liquidityQuote() with a fresh pool', async function() {
     const amount = parseWei('0.5')
     const liquidityQuote = pool.liquidityQuote(amount, PoolSides.RISKY)
-    const delStable = liquidityQuote.delLiquidity.mul(pool.reserveStable).div(pool.liquidity)
+    const delStable = pool.reserveStable.mul(liquidityQuote.delLiquidity).div(pool.liquidity)
     expect(liquidityQuote.delStable.float).toBeCloseTo(delStable.float)
   })
 

@@ -363,7 +363,8 @@ export class Pool extends Calibration {
    */
   liquidityQuote(amount: Wei, sideOfPool: PoolSides): { delRisky: Wei; delStable: Wei; delLiquidity: Wei } {
     const { reserveRisky, reserveStable, liquidity } = this
-    return Pool.getLiquidityQuote(amount, sideOfPool, reserveRisky, reserveStable, liquidity)
+    const price = this.reportedPriceOfRisky
+    return Pool.getLiquidityQuote(amount, sideOfPool, reserveRisky, reserveStable, liquidity, price)
   }
 
   /**
@@ -377,7 +378,8 @@ export class Pool extends Calibration {
     sideOfPool: PoolSides,
     reserveRisky: Wei,
     reserveStable: Wei,
-    liquidity: Wei
+    liquidity: Wei,
+    reportedPriceOfRisky?: Wei
   ): { delRisky: Wei; delStable: Wei; delLiquidity: Wei } {
     invariant(liquidity.gt(0), `Liquidity must be greater than zero`)
 
@@ -391,18 +393,38 @@ export class Pool extends Calibration {
           reserveRisky.gt(0),
           `Reserve risky is 0. It must be greater than 0 because its being used as a denominator to compute LP tokens to mint.`
         )
-        delRisky = amount
-        delLiquidity = liquidity.mul(delRisky).div(reserveRisky)
-        delStable = reserveStable.mul(delLiquidity).div(liquidity)
+        if (typeof reportedPriceOfRisky === 'undefined') {
+          delRisky = amount
+          delLiquidity = liquidity.mul(delRisky).div(reserveRisky)
+          delStable = reserveStable.mul(delLiquidity).div(liquidity)
+        } else {
+          delRisky = amount
+          delStable = reportedPriceOfRisky.mul(delRisky).div(parseWei(1, delRisky.decimals))
+          delLiquidity = liquidity.mul(delRisky).div(reserveRisky)
+          const computedLiquidity = liquidity.mul(delStable).div(reserveStable)
+          delLiquidity = delLiquidity.lt(computedLiquidity) ? delLiquidity : computedLiquidity
+        }
         break
       case PoolSides.STABLE:
         invariant(
           reserveStable.gt(0),
           `Reserve stable is 0. It must be greater than 0 because its being used as a denominator to compute LP tokens to mint.`
         )
-        delStable = amount
-        delLiquidity = liquidity.mul(delStable).div(reserveStable)
-        delRisky = reserveRisky.mul(delLiquidity).div(liquidity)
+
+        if (typeof reportedPriceOfRisky === 'undefined') {
+          delStable = amount
+          delLiquidity = liquidity.mul(delStable).div(reserveStable)
+          delRisky = reserveRisky.mul(delLiquidity).div(liquidity)
+        } else {
+          delStable = amount
+          delRisky = parseWei(1, delRisky.decimals)
+            .mul(delStable)
+            .div(reportedPriceOfRisky)
+          delLiquidity = liquidity.mul(delRisky).div(reserveRisky)
+          const computedLiquidity = liquidity.mul(delStable).div(reserveStable)
+          delLiquidity = delLiquidity.lt(computedLiquidity) ? delLiquidity : computedLiquidity
+        }
+
         break
       case PoolSides.RMM_LP:
         delLiquidity = amount
