@@ -486,6 +486,7 @@ export class Pool extends Calibration {
     const tau = this.tau.years
     const spot = Swaps.getReportedPriceOfRisky(risky, this.strike.float, this.sigma.float, tau)
     if (isNaN(spot)) return undefined
+    if (!isFinite(spot)) return undefined
     return parseWei(spot, this.stable.decimals)
   }
 
