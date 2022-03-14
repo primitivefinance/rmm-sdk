@@ -9,6 +9,7 @@ import { PeripheryManager } from '../src/peripheryManager'
 
 import { AddressOne } from './shared/constants'
 import { usePool, usePoolWithDecimals, useWethPool } from './shared/fixture'
+import { Engine } from '../src/entities/engine'
 
 function decode(frag: string, data: any) {
   return PeripheryManager.INTERFACE.decodeFunctionData(frag, data)
@@ -460,6 +461,66 @@ describe('Periphery Manager', function() {
       createData.forEach((item, i) => expect(item.toString()).toStrictEqual(decoded[i].toString()))
 
       expect(value).toBe('0x00')
+    })
+
+    it('successful when creating pool using native', async function() {
+      const recipient = from
+      const fromMargin = false
+      const createPool = true
+      const delRisky = parseWei(0.3, wethPool.risky.decimals)
+      const delStable = parseWei(3, wethPool.stable.decimals)
+      const delLiquidity = parseWei(1, 18)
+
+      const { calldata, value } = PeripheryManager.allocateCallParameters(wethPool, {
+        recipient,
+        fromMargin,
+        delRisky,
+        delStable,
+        delLiquidity,
+        createPool,
+        useNative,
+        slippageTolerance
+      })
+
+      const decimals = pool.risky.decimals
+      const reference = pool.referencePriceOfRisky ?? pool.reportedPriceOfRisky
+      const riskyPerLp = reference
+        ? parseWei(
+            Swaps.getRiskyReservesGivenReferencePrice(
+              pool.strike.float,
+              pool.sigma.float,
+              pool.tau.years,
+              reference.float
+            ),
+            decimals
+          )
+        : undefined
+      if (!riskyPerLp) throw Error('Risky per lp is undefined')
+
+      const createData = [
+        wethPool.risky.address,
+        wethPool.stable.address,
+        wethPool.strike.raw,
+        wethPool.sigma.raw,
+        wethPool.maturity.raw,
+        wethPool.gamma.raw,
+        riskyPerLp.raw,
+        delLiquidity.raw
+      ]
+
+      const multicall = decode('multicall', calldata)
+
+      const createDecoded = decode('create', multicall.data[0])
+      createData.forEach((item, i) => expect(item.toString()).toStrictEqual(createDecoded[i].toString()))
+
+      const refundETHDecoded = decode('refundETH', multicall.data[1])
+      expect(refundETHDecoded).toBeDefined()
+      expect(value).toBe(
+        riskyPerLp
+          .mul(delLiquidity)
+          .div(Engine.PRECISION)
+          .raw.toHexString()
+      )
     })
 
     it('fails if delRisky is 0', async function() {
