@@ -404,9 +404,12 @@ export abstract class PeripheryManager extends SelfPermit {
     )
 
     // if curve should be created
+    let createData: string | undefined = undefined
+
     if (options.createPool) {
       invariant(!options.fromMargin, 'Cannot pay from margin when creating, set fromMargin to false.')
-      calldatas.push(PeripheryManager.encodeCreate(pool, options.delLiquidity))
+      createData = PeripheryManager.encodeCreate(pool, options.delLiquidity)
+      calldatas.push(createData)
     } else {
       calldatas.push(
         PeripheryManager.INTERFACE.encodeFunctionData('allocate', [
@@ -429,7 +432,18 @@ export abstract class PeripheryManager extends SelfPermit {
       const wrapped = options.useNative.wrapped
       invariant(pool.risky.equals(wrapped) || pool.stable.equals(wrapped), 'No Weth')
 
-      const wrappedAmount = pool.risky.equals(wrapped) ? options.delRisky.raw : options.delStable.raw
+      let wrappedAmount: BigNumber
+
+      if (options.createPool && typeof createData !== 'undefined') {
+        const decoded = PeripheryManager.INTERFACE.decodeFunctionData('create', createData)
+        const riskyPerLp: BigNumber = decoded[decoded.length - 2]
+        const liquidity: BigNumber = decoded[decoded.length - 1]
+        const amount: BigNumber = riskyPerLp.mul(liquidity).div(Engine.PRECISION.raw) // weth token per liquidity * liquidity / 1e18
+
+        wrappedAmount = pool.risky.equals(wrapped) ? amount : options.delStable.raw
+      } else {
+        wrappedAmount = pool.risky.equals(wrapped) ? options.delRisky.raw : options.delStable.raw
+      }
 
       if (wrappedAmount.gte(0)) {
         calldatas.push(PeripheryManager.INTERFACE.encodeFunctionData('refundETH'))
