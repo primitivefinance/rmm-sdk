@@ -17,7 +17,7 @@ import { weiToWei } from '../utils'
 export enum PoolSides {
   RISKY = 'RISKY',
   STABLE = 'STABLE',
-  RMM_LP = 'RMM_LP'
+  RMM_LP = 'RMM_LP',
 }
 
 /**
@@ -206,7 +206,7 @@ export class Pool extends Calibration {
       reserveStable,
       liquidity,
       invariant,
-      chainId
+      chainId,
     } = pool.properties
 
     const risky = { address: riskyAddress, name: riskyName, symbol: riskySymbol, decimals: riskyDecimals }
@@ -363,8 +363,7 @@ export class Pool extends Calibration {
    */
   liquidityQuote(amount: Wei, sideOfPool: PoolSides): { delRisky: Wei; delStable: Wei; delLiquidity: Wei } {
     const { reserveRisky, reserveStable, liquidity } = this
-    const price = this.reportedPriceOfRisky
-    return Pool.getLiquidityQuote(amount, sideOfPool, reserveRisky, reserveStable, liquidity, price)
+    return Pool.getLiquidityQuote(amount, sideOfPool, reserveRisky, reserveStable, liquidity)
   }
 
   /**
@@ -378,8 +377,7 @@ export class Pool extends Calibration {
     sideOfPool: PoolSides,
     reserveRisky: Wei,
     reserveStable: Wei,
-    liquidity: Wei,
-    reportedPriceOfRisky?: Wei
+    liquidity: Wei
   ): { delRisky: Wei; delStable: Wei; delLiquidity: Wei } {
     invariant(liquidity.gt(0), `Liquidity must be greater than zero`)
 
@@ -393,43 +391,23 @@ export class Pool extends Calibration {
           reserveRisky.gt(0),
           `Reserve risky is 0. It must be greater than 0 because its being used as a denominator to compute LP tokens to mint.`
         )
-        if (typeof reportedPriceOfRisky === 'undefined') {
-          delRisky = amount
-          delLiquidity = liquidity.mul(delRisky).div(reserveRisky)
-          delStable = reserveStable.mul(delLiquidity).div(liquidity)
-        } else {
-          delRisky = amount
-          delStable = reportedPriceOfRisky.mul(delRisky).div(parseWei(1, delRisky.decimals))
-          delLiquidity = liquidity.mul(delRisky).div(reserveRisky)
-          const computedLiquidity = liquidity.mul(delStable).div(reserveStable)
-          delLiquidity = delLiquidity.lt(computedLiquidity) ? delLiquidity : computedLiquidity
-        }
+        delRisky = amount // not rounded
+        delLiquidity = liquidity.mul(delRisky).div(reserveRisky.add(1)) // rounds down
+        delStable = reserveStable.mul(delLiquidity).div(liquidity).add(1) // rounds up
         break
       case PoolSides.STABLE:
         invariant(
           reserveStable.gt(0),
           `Reserve stable is 0. It must be greater than 0 because its being used as a denominator to compute LP tokens to mint.`
         )
-
-        if (typeof reportedPriceOfRisky === 'undefined') {
-          delStable = amount
-          delLiquidity = liquidity.mul(delStable).div(reserveStable)
-          delRisky = reserveRisky.mul(delLiquidity).div(liquidity)
-        } else {
-          delStable = amount
-          delRisky = parseWei(1, delRisky.decimals)
-            .mul(delStable)
-            .div(reportedPriceOfRisky)
-          delLiquidity = liquidity.mul(delRisky).div(reserveRisky)
-          const computedLiquidity = liquidity.mul(delStable).div(reserveStable)
-          delLiquidity = delLiquidity.lt(computedLiquidity) ? delLiquidity : computedLiquidity
-        }
-
+        delStable = amount // not rounded
+        delLiquidity = liquidity.mul(delStable).div(reserveStable.add(1)) // rounds down
+        delRisky = reserveRisky.mul(delLiquidity).div(liquidity).add(1) // rounds up
         break
       case PoolSides.RMM_LP:
-        delLiquidity = amount
-        delRisky = reserveRisky.mul(delLiquidity).div(liquidity)
-        delStable = reserveStable.mul(delLiquidity).div(liquidity)
+        delLiquidity = amount // not rounded
+        delRisky = reserveRisky.mul(delLiquidity).div(liquidity).add(1) // rounds up
+        delStable = reserveStable.mul(delLiquidity).div(liquidity).add(1) // rounds up
         break
       default:
         break
@@ -465,12 +443,8 @@ export class Pool extends Calibration {
 
     // Computes the price of the token multiplied by amount of the token and dividing by 10^decimals, canceling out the tokens decimals
     const values = [
-      parseWei(priceOfRisky, 18)
-        .mul(reserve0)
-        .div(parseWei(1, reserve0.decimals)),
-      parseWei(priceOfStable, 18)
-        .mul(reserve1)
-        .div(parseWei(1, reserve1.decimals))
+      parseWei(priceOfRisky, 18).mul(reserve0).div(parseWei(1, reserve0.decimals)),
+      parseWei(priceOfStable, 18).mul(reserve1).div(parseWei(1, reserve1.decimals)),
     ]
 
     const sum = values[0].add(values[1]) // both have 18 decimals
@@ -501,7 +475,7 @@ export class Pool extends Calibration {
       this.strike.float,
       this.sigma.float,
       this.gamma.float,
-      this.tau.add(120).years
+      this.tau.add(120).years,
     ] as const
     return args
   }
