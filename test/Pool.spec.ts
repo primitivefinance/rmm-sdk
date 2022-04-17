@@ -4,18 +4,20 @@ import { parseWei, Time } from 'web3-units'
 import { Swaps } from '../src/entities/swaps'
 import { Pool, PoolSides } from '../src/entities/pool'
 
-import { usePool } from './shared/fixture'
+import { usePool, useImbalancedPool } from './shared/fixture'
 import { AddressOne, EMPTY_CALIBRATION } from './shared'
 import { PoolInterface } from 'src'
 
-describe('Test pool', function() {
+describe('Test pool', function () {
   let pool: Pool
+  let imbalancedPool: Pool
 
-  beforeEach(async function() {
+  beforeEach(async function () {
     pool = usePool()
+    imbalancedPool = useImbalancedPool()
   })
 
-  it('from', async function() {
+  it('from', async function () {
     const token0 = new Token(1, AddressOne, 18)
     const token1 = new Token(1, AddressOne, 18)
     const spot = parseWei(10, token1.decimals)
@@ -28,7 +30,7 @@ describe('Test pool', function() {
     const reserve = {
       reserveRisky: '1.345867008995041e+21',
       reserveStable: stable ? parseWei(stable, token1.decimals).toString() : '0',
-      liquidity: parseWei(1, 18).toString()
+      liquidity: parseWei(1, 18).toString(),
     }
     const invariant = '3.345867008995041e+21'
     const uri: PoolInterface = {
@@ -56,15 +58,15 @@ describe('Test pool', function() {
         reserveRisky: reserve.reserveRisky,
         reserveStable: reserve.reserveStable,
         liquidity: reserve.liquidity,
-        invariant: invariant
-      }
+        invariant: invariant,
+      },
     }
 
     const pool = Pool.from(uri, spot.float)
     expect(pool.poolId).toBeDefined()
   })
 
-  it('fromReferencePrice', async function() {
+  it('fromReferencePrice', async function () {
     const token0 = new Token(1, AddressOne, 18)
     const token1 = new Token(1, AddressOne, 18)
     const spot = parseWei(10, token1.decimals)
@@ -77,7 +79,7 @@ describe('Test pool', function() {
     const reserve = {
       reserveRisky: '1.345867008995041e+21',
       reserveStable: stable ? parseWei(stable, token1.decimals).toString() : '0',
-      liquidity: parseWei(1, 18).toString()
+      liquidity: parseWei(1, 18).toString(),
     }
     const pool = Pool.fromReferencePrice(
       spot.float,
@@ -89,7 +91,7 @@ describe('Test pool', function() {
         sigma: sigma.toString(),
         maturity: maturity.toString(),
         gamma: gamma.toString(),
-        lastTimestamp: lastTimestamp.toString()
+        lastTimestamp: lastTimestamp.toString(),
       },
       token0.chainId
     )
@@ -98,66 +100,88 @@ describe('Test pool', function() {
     expect(pool.liquidity.toString()).toEqual(reserve.liquidity)
   })
 
-  it('gets the current liquidity value', async function() {
+  it('gets the current liquidity value', async function () {
     const current = pool.getCurrentLiquidityValue(pool?.referencePriceOfRisky?.float ?? 1)
     expect(current.valuePerLiquidity.float).toBeGreaterThan(0)
   })
 
-  it('#lastTimestamp', async function() {
+  it('#lastTimestamp', async function () {
     const time = new Time(Time.now + 10)
     pool.lastTimestamp = time
     expect(pool.lastTimestamp.raw).toEqual(time.raw)
   })
 
-  it('pool.liquidityQuote() risky', async function() {
+  it('pool.liquidityQuote() risky', async function () {
     const amount = parseWei('0.5')
     const liquidityQuote = pool.liquidityQuote(amount, PoolSides.RISKY)
     const delStable = pool.reserveStable.mul(liquidityQuote.delLiquidity).div(pool.liquidity)
     expect(liquidityQuote.delStable.float).toBeCloseTo(delStable.float)
   })
 
-  it('pool.liquidityQuote() stable', async function() {
+  it('pool.liquidityQuote() stable', async function () {
     const amount = parseWei('0.5')
     const liquidityQuote = pool.liquidityQuote(amount, PoolSides.STABLE)
     const delRisky = pool.reserveRisky.mul(liquidityQuote.delLiquidity).div(pool.liquidity)
     expect(liquidityQuote.delRisky.float).toBeCloseTo(delRisky.float)
   })
 
-  it('pool.liquidityQuote() RMM', async function() {
+  it('pool.liquidityQuote() RMM', async function () {
     const amount = parseWei('0.5')
     const liquidityQuote = pool.liquidityQuote(amount, PoolSides.RMM_LP)
     const delStable = pool.reserveStable.mul(liquidityQuote.delLiquidity).div(pool.liquidity)
     expect(liquidityQuote.delStable.float).toBeCloseTo(delStable.float)
   })
 
-  it('pool.liquidityQuote() with a fresh pool', async function() {
+  it('pool.liquidityQuote() with a fresh pool', async function () {
     const amount = parseWei('0.5')
     const liquidityQuote = pool.liquidityQuote(amount, PoolSides.RISKY)
     const delStable = pool.reserveStable.mul(liquidityQuote.delLiquidity).div(pool.liquidity)
     expect(liquidityQuote.delStable.float).toBeCloseTo(delStable.float)
   })
 
-  it('#remaining', async function() {
+  it('imbalancedPool.liquidityQuote() risky', async function () {
+    const amount = parseWei('0.5')
+    const liquidityQuote = imbalancedPool.liquidityQuote(amount, PoolSides.RISKY)
+    const delRisky = amount
+    const delLiquidity = imbalancedPool.liquidity.mul(delRisky).div(imbalancedPool.reserveRisky)
+    const delStable = imbalancedPool.reserveStable.mul(delLiquidity).div(imbalancedPool.liquidity)
+    expect(liquidityQuote.delRisky.float).toBeCloseTo(delRisky.float)
+    expect(liquidityQuote.delStable.float).toBeCloseTo(delStable.float)
+    expect(liquidityQuote.delLiquidity.float).toBeCloseTo(delLiquidity.float)
+  })
+
+  it('imbalancedPool.liquidityQuote() stable', async function () {
+    const amount = parseWei('0.5')
+    const liquidityQuote = imbalancedPool.liquidityQuote(amount, PoolSides.STABLE)
+    const delStable = amount
+    const delLiquidity = imbalancedPool.liquidity.mul(liquidityQuote.delRisky).div(imbalancedPool.reserveRisky)
+    const delRisky = imbalancedPool.reserveRisky.mul(delLiquidity).div(imbalancedPool.liquidity)
+    expect(liquidityQuote.delRisky.float).toBeCloseTo(delRisky.float)
+    expect(liquidityQuote.delStable.float).toBeCloseTo(delStable.float)
+    expect(liquidityQuote.delLiquidity.float).toBeCloseTo(delLiquidity.float)
+  })
+
+  it('#remaining', async function () {
     expect(pool.remaining.raw).toEqual(Time.now >= pool.maturity.raw ? 0 : pool.maturity.sub(pool.lastTimestamp).raw)
   })
-  it('#expired', async function() {
+  it('#expired', async function () {
     expect(pool.expired).toBe(Time.now >= pool.maturity.raw ? true : false)
   })
-  it('#delta', async function() {
+  it('#delta', async function () {
     expect(pool.delta).toBeGreaterThan(0)
   })
-  it('#premium', async function() {
+  it('#premium', async function () {
     expect(pool.premium).toBeGreaterThan(0)
   })
-  it('#inTheMoney', async function() {
+  it('#inTheMoney', async function () {
     expect(pool.inTheMoney).toBe(pool.reportedPriceOfRisky && pool.reportedPriceOfRisky.float >= pool.strike.float)
   })
 
-  it('#reportedPriceOfRisky', async function() {
+  it('#reportedPriceOfRisky', async function () {
     expect(pool.reportedPriceOfRisky).toBeDefined()
   })
 
-  it('#swapArgs', async function() {
+  it('#swapArgs', async function () {
     const args = pool.swapArgs
     const check = [
       pool.risky.decimals,
@@ -168,7 +192,7 @@ describe('Test pool', function() {
       pool.strike.float,
       pool.sigma.float,
       pool.gamma.float,
-      pool.tau.add(120).years
+      pool.tau.add(120).years,
     ]
     args.forEach((arg, i) => expect(arg).toStrictEqual(check[i]))
   })
@@ -192,7 +216,7 @@ describe('Test pool', function() {
     const amountIn = parseWei(0.0001, pool.stable.decimals).float
     expect(pool.amountOut(tokenIn, amountIn).output).toBeGreaterThan(0)
   }) */
-  it('#derivativeOut', async function() {
+  it('#derivativeOut', async function () {
     const tokenIn = pool.risky
     const amountIn = 0
     expect(pool.derivativeOut(tokenIn, amountIn)).toBeGreaterThan(0)

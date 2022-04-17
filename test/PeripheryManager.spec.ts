@@ -8,19 +8,19 @@ import { Swaps } from '../src/entities/swaps'
 import { PeripheryManager } from '../src/peripheryManager'
 
 import { AddressOne } from './shared/constants'
-import { usePool, usePoolWithDecimals, useWethPool } from './shared/fixture'
+import { usePool, useImbalancedPool, usePoolWithDecimals, useWethPool } from './shared/fixture'
 import { Engine } from '../src/entities/engine'
 
 function decode(frag: string, data: any) {
   return PeripheryManager.INTERFACE.decodeFunctionData(frag, data)
 }
 
-describe('Periphery Manager', function() {
+describe('Periphery Manager', function () {
   let pool: Pool, from: string, wethPool: Pool, useNative: NativeCurrency, lowDecimalPool: Pool
 
   const slippageTolerance = parsePercentage(0.05)
 
-  beforeEach(async function() {
+  beforeEach(async function () {
     pool = usePool()
     wethPool = useWethPool()
     lowDecimalPool = usePoolWithDecimals(6)
@@ -28,14 +28,14 @@ describe('Periphery Manager', function() {
     useNative = Ether.onChain(1)
   })
 
-  it('getFactory returns the ethers factory', async function() {
+  it('getFactory returns the ethers factory', async function () {
     expect(PeripheryManager.getFactory()).toStrictEqual(
       new ContractFactory(PeripheryManager.INTERFACE, PeripheryManager.BYTECODE)
     )
   })
 
-  describe('#encodeCreate', function() {
-    it('successful', async function() {
+  describe('#encodeCreate', function () {
+    it('successful', async function () {
       const liquidity = parseWei(1, 18)
       const decimals = pool.risky.decimals
 
@@ -63,7 +63,7 @@ describe('Periphery Manager', function() {
         pool.maturity.raw,
         pool.gamma.raw,
         riskyPerLp.raw,
-        liquidity.raw
+        liquidity.raw,
       ]
 
       const calldata = PeripheryManager.encodeCreate(pool, liquidity)
@@ -71,20 +71,20 @@ describe('Periphery Manager', function() {
       data.forEach((item, i) => expect(item.toString()).toStrictEqual(decoded[i].toString()))
     })
 
-    it('fails with wrong liquidity decimals', async function() {
+    it('fails with wrong liquidity decimals', async function () {
       const liquidity = parseWei(1, 9)
       expect(() => PeripheryManager.encodeCreate(pool, liquidity)).toThrow()
     })
 
-    it('fails if reference price is not set', async function() {
+    it('fails if reference price is not set', async function () {
       pool.referencePriceOfRisky = undefined
       const liquidity = parseWei(1, 18)
       expect(() => PeripheryManager.encodeCreate(pool, liquidity)).toThrow()
     })
   })
 
-  describe('#createCallParameters', function() {
-    it('successful', async function() {
+  describe('#createCallParameters', function () {
+    it('successful', async function () {
       const liquidity = parseWei(1, 18)
       const decimals = pool.risky.decimals
       const reference = pool.referencePriceOfRisky ?? pool.reportedPriceOfRisky
@@ -111,7 +111,7 @@ describe('Periphery Manager', function() {
         pool.maturity.raw,
         pool.gamma.raw,
         riskyPerLp.raw,
-        liquidity.raw
+        liquidity.raw,
       ]
 
       const { calldata, value } = PeripheryManager.createCallParameters(pool, liquidity)
@@ -121,8 +121,8 @@ describe('Periphery Manager', function() {
     })
   })
 
-  describe('#depositCallParameters', function() {
-    it('encoded calldata matches decoded arguments', async function() {
+  describe('#depositCallParameters', function () {
+    it('encoded calldata matches decoded arguments', async function () {
       const recipient = from
       const risky = pool.risky
       const stable = pool.stable
@@ -135,7 +135,7 @@ describe('Periphery Manager', function() {
       expect(value).toBe('0x00')
     })
 
-    it('uses native token successfully', async function() {
+    it('uses native token successfully', async function () {
       const recipient = from
       const amountRisky = parseWei(1)
       const amountStable = parseWei(1)
@@ -145,7 +145,7 @@ describe('Periphery Manager', function() {
       ).toBe(amountRisky.raw.toHexString())
     })
 
-    it('fails with wrong risky decimals', async function() {
+    it('fails with wrong risky decimals', async function () {
       const recipient = AddressZero
       const amountRisky = parseWei(1)
       const amountStable = parseWei(1, 6)
@@ -154,7 +154,7 @@ describe('Periphery Manager', function() {
       ).toThrow()
     })
 
-    it('fails with wrong stable decimals', async function() {
+    it('fails with wrong stable decimals', async function () {
       const recipient = AddressZero
       const amountRisky = parseWei(1, 6)
       const amountStable = parseWei(1)
@@ -163,21 +163,21 @@ describe('Periphery Manager', function() {
       ).toThrow()
     })
 
-    it('fails with address zero as recipient', async function() {
+    it('fails with address zero as recipient', async function () {
       const recipient = AddressZero
       const amountRisky = parseWei(1)
       const amountStable = parseWei(1)
       expect(() => PeripheryManager.depositCallParameters(pool, { recipient, amountRisky, amountStable })).toThrow()
     })
 
-    it('fails with 0 amounts', async function() {
+    it('fails with 0 amounts', async function () {
       const recipient = from
       const amountRisky = parseWei(0)
       const amountStable = parseWei(0)
       expect(() => PeripheryManager.depositCallParameters(pool, { recipient, amountRisky, amountStable })).toThrow()
     })
 
-    it('fails with using native on a pool which does not have a wrapped token', async function() {
+    it('fails with using native on a pool which does not have a wrapped token', async function () {
       const recipient = from
       const amountRisky = parseWei(1)
       const amountStable = parseWei(1)
@@ -188,8 +188,8 @@ describe('Periphery Manager', function() {
     })
   })
 
-  describe('#encodeWithdraw', function() {
-    it('successful', async function() {
+  describe('#encodeWithdraw', function () {
+    it('successful', async function () {
       const recipient = from
       const amountRisky = parseWei(1)
       const amountStable = parseWei(1)
@@ -199,7 +199,7 @@ describe('Periphery Manager', function() {
       data.forEach((item, i) => expect(item.toString()).toStrictEqual(decoded[i].toString()))
     })
 
-    it('uses native token successfully', async function() {
+    it('uses native token successfully', async function () {
       const recipient = from
       const amountRisky = parseWei(1)
       const amountStable = parseWei(1)
@@ -208,7 +208,7 @@ describe('Periphery Manager', function() {
         recipient,
         amountRisky,
         amountStable,
-        useNative
+        useNative,
       })
 
       const unwrapCalldata = calldatas[1]
@@ -222,35 +222,35 @@ describe('Periphery Manager', function() {
       sweepData.forEach((data, i) => expect(data).toStrictEqual(sweepDecoded[i]))
     })
 
-    it('fails with wrong risky decimals', async function() {
+    it('fails with wrong risky decimals', async function () {
       const recipient = AddressZero
       const amountRisky = parseWei(1)
       const amountStable = parseWei(1, 6)
       expect(() => PeripheryManager.encodeWithdraw(lowDecimalPool, { recipient, amountRisky, amountStable })).toThrow()
     })
 
-    it('fails with wrong stable decimals', async function() {
+    it('fails with wrong stable decimals', async function () {
       const recipient = AddressZero
       const amountRisky = parseWei(1, 6)
       const amountStable = parseWei(1)
       expect(() => PeripheryManager.encodeWithdraw(lowDecimalPool, { recipient, amountRisky, amountStable })).toThrow()
     })
 
-    it('fails with address zero as recipient', async function() {
+    it('fails with address zero as recipient', async function () {
       const recipient = AddressZero
       const amountRisky = parseWei(1)
       const amountStable = parseWei(1)
       expect(() => PeripheryManager.encodeWithdraw(pool, { recipient, amountRisky, amountStable })).toThrow()
     })
 
-    it('fails with both 0 amounts', async function() {
+    it('fails with both 0 amounts', async function () {
       const recipient = from
       const amountRisky = parseWei(0)
       const amountStable = parseWei(0)
       expect(() => PeripheryManager.encodeWithdraw(pool, { recipient, amountRisky, amountStable })).toThrow()
     })
 
-    it('fails with using native on a pool which does not have a wrapped token', async function() {
+    it('fails with using native on a pool which does not have a wrapped token', async function () {
       const recipient = from
       const amountRisky = parseWei(1)
       const amountStable = parseWei(1)
@@ -259,15 +259,15 @@ describe('Periphery Manager', function() {
     })
   })
 
-  describe('#withdrawCallParameters', function() {
-    it('successful', async function() {
+  describe('#withdrawCallParameters', function () {
+    it('successful', async function () {
       const recipient = from
       const amountRisky = parseWei(1)
       const amountStable = parseWei(1)
       const { calldata, value } = PeripheryManager.withdrawCallParameters(pool, {
         recipient,
         amountRisky,
-        amountStable
+        amountStable,
       })
 
       const data = [recipient, pool.address, amountRisky.raw, amountStable.raw]
@@ -277,7 +277,7 @@ describe('Periphery Manager', function() {
       expect(value).toBe('0x00')
     })
 
-    it('fails with wrong risky decimals', async function() {
+    it('fails with wrong risky decimals', async function () {
       const recipient = AddressZero
       const amountRisky = parseWei(1)
       const amountStable = parseWei(1, 6)
@@ -286,7 +286,7 @@ describe('Periphery Manager', function() {
       ).toThrow()
     })
 
-    it('fails with wrong stable decimals', async function() {
+    it('fails with wrong stable decimals', async function () {
       const recipient = AddressZero
       const amountRisky = parseWei(1, 6)
       const amountStable = parseWei(1)
@@ -295,7 +295,7 @@ describe('Periphery Manager', function() {
       ).toThrow()
     })
 
-    it('successful with multicall calldata bundle when using native', async function() {
+    it('successful with multicall calldata bundle when using native', async function () {
       const recipient = from
       const amountRisky = parseWei(1)
       const amountStable = parseWei(1)
@@ -304,14 +304,14 @@ describe('Periphery Manager', function() {
         recipient,
         amountRisky,
         amountStable,
-        useNative
+        useNative,
       })
       expect(value).toBe('0x00')
     })
   })
 
-  describe('#allocateCallParameters', function() {
-    it('successful', async function() {
+  describe('#allocateCallParameters', function () {
+    it('successful', async function () {
       const recipient = from
       const fromMargin = false
       const delRisky = parseWei(0.3, pool.risky.decimals)
@@ -324,7 +324,7 @@ describe('Periphery Manager', function() {
         delRisky,
         delStable,
         delLiquidity,
-        slippageTolerance
+        slippageTolerance,
       })
       const data = [
         recipient,
@@ -333,14 +333,52 @@ describe('Periphery Manager', function() {
         pool.stable.address,
         delRisky.raw,
         delStable.raw,
-        fromMargin
+        fromMargin,
       ]
       const decoded = decode('allocate', calldata)
       data.forEach((item, i) => expect(item.toString()).toStrictEqual(decoded[i].toString()))
       expect(value).toBe('0x00')
     })
 
-    it('should have a minLiquidity equal to delLiquidity when slippageTolerance is 0', async function() {
+    it('uses getLiquidityQuote to allocate liquidity', async function () {
+      const recipient = from
+      const fromMargin = false
+      const imbalancedPool = useImbalancedPool()
+
+      const amount = parseWei(2, imbalancedPool.stable.decimals)
+      const sideOfPool = PoolSides.STABLE
+      const { delRisky, delStable, delLiquidity } = imbalancedPool.liquidityQuote(amount, sideOfPool)
+
+      const { calldata, value } = PeripheryManager.allocateCallParameters(imbalancedPool, {
+        recipient,
+        fromMargin,
+        delRisky,
+        delStable,
+        delLiquidity,
+        slippageTolerance,
+      })
+      const data = [
+        recipient,
+        imbalancedPool.poolId,
+        imbalancedPool.risky.address,
+        imbalancedPool.stable.address,
+        delRisky.raw,
+        delStable.raw,
+        fromMargin,
+      ]
+      const decoded = decode('allocate', calldata)
+      data.forEach((item, i) => expect(item.toString()).toStrictEqual(decoded[i].toString()))
+      expect(value).toBe('0x00')
+
+      const actualLiquidity = imbalancedPool.liquidity.mul(delRisky).div(imbalancedPool.reserveRisky)
+      const computedLiquidity = imbalancedPool.liquidity.mul(amount).div(imbalancedPool.reserveStable)
+      const MAX_DEVIATION = 1 / 100
+
+      expect(computedLiquidity.float).toBeCloseTo(actualLiquidity.float + actualLiquidity.float * MAX_DEVIATION)
+      expect(computedLiquidity.float).toBeCloseTo(actualLiquidity.float - actualLiquidity.float * MAX_DEVIATION)
+    })
+
+    it('should have a minLiquidity equal to delLiquidity when slippageTolerance is 0', async function () {
       const recipient = from
       const fromMargin = false
       const delRisky = parseWei(0.3, pool.risky.decimals)
@@ -353,7 +391,7 @@ describe('Periphery Manager', function() {
         delRisky,
         delStable,
         delLiquidity,
-        slippageTolerance: parsePercentage(0)
+        slippageTolerance: parsePercentage(0),
       })
       const data = [
         recipient,
@@ -362,7 +400,7 @@ describe('Periphery Manager', function() {
         pool.stable.address,
         delRisky.raw,
         delStable.raw,
-        fromMargin
+        fromMargin,
       ]
       const decoded = decode('allocate', calldata)
       data.forEach((item, i) => expect(item.toString()).toStrictEqual(decoded[i].toString()))
@@ -370,7 +408,7 @@ describe('Periphery Manager', function() {
       expect(decoded[decoded.length - 1].toString()).toStrictEqual(delLiquidity.toString())
     })
 
-    it('successful using native', async function() {
+    it('successful using native', async function () {
       const recipient = from
       const fromMargin = false
       const delRisky = parseWei(0.3, wethPool.risky.decimals)
@@ -384,7 +422,7 @@ describe('Periphery Manager', function() {
         delStable,
         delLiquidity,
         useNative,
-        slippageTolerance
+        slippageTolerance,
       })
 
       const allocateData = [
@@ -394,7 +432,7 @@ describe('Periphery Manager', function() {
         wethPool.stable.address,
         delRisky.raw,
         delStable.raw,
-        fromMargin
+        fromMargin,
       ]
 
       const multicall = decode('multicall', calldata)
@@ -413,7 +451,7 @@ describe('Periphery Manager', function() {
       )
     })
 
-    it('successful when creating pool instead', async function() {
+    it('successful when creating pool instead', async function () {
       const recipient = from
       const fromMargin = false
       const createPool = true
@@ -428,7 +466,7 @@ describe('Periphery Manager', function() {
         delStable,
         delLiquidity,
         createPool,
-        slippageTolerance
+        slippageTolerance,
       })
 
       const decimals = pool.risky.decimals
@@ -454,7 +492,7 @@ describe('Periphery Manager', function() {
         wethPool.maturity.raw,
         wethPool.gamma.raw,
         riskyPerLp.raw,
-        delLiquidity.raw
+        delLiquidity.raw,
       ]
 
       const decoded = decode('create', calldata)
@@ -463,7 +501,7 @@ describe('Periphery Manager', function() {
       expect(value).toBe('0x00')
     })
 
-    it('successful when creating pool using native', async function() {
+    it('successful when creating pool using native', async function () {
       const recipient = from
       const fromMargin = false
       const createPool = true
@@ -479,7 +517,7 @@ describe('Periphery Manager', function() {
         delLiquidity,
         createPool,
         useNative,
-        slippageTolerance
+        slippageTolerance,
       })
 
       const decimals = pool.risky.decimals
@@ -505,7 +543,7 @@ describe('Periphery Manager', function() {
         wethPool.maturity.raw,
         wethPool.gamma.raw,
         riskyPerLp.raw,
-        delLiquidity.raw
+        delLiquidity.raw,
       ]
 
       const multicall = decode('multicall', calldata)
@@ -515,15 +553,10 @@ describe('Periphery Manager', function() {
 
       const refundETHDecoded = decode('refundETH', multicall.data[1])
       expect(refundETHDecoded).toBeDefined()
-      expect(value).toBe(
-        riskyPerLp
-          .mul(delLiquidity)
-          .div(Engine.PRECISION)
-          .raw.toHexString()
-      )
+      expect(value).toBe(riskyPerLp.mul(delLiquidity).div(Engine.PRECISION).raw.toHexString())
     })
 
-    it('fails if delRisky is 0', async function() {
+    it('fails if delRisky is 0', async function () {
       const recipient = from
       const fromMargin = false
       const delRisky = parseWei(0, pool.risky.decimals)
@@ -537,12 +570,12 @@ describe('Periphery Manager', function() {
           delRisky,
           delStable,
           delLiquidity,
-          slippageTolerance
+          slippageTolerance,
         })
       ).toThrow()
     })
 
-    it('fails with wrong risky decimals', async function() {
+    it('fails with wrong risky decimals', async function () {
       const recipient = from
       const fromMargin = false
       const delRisky = parseWei(0.3, lowDecimalPool.risky.decimals + 1)
@@ -555,12 +588,12 @@ describe('Periphery Manager', function() {
           delRisky,
           delStable,
           delLiquidity,
-          slippageTolerance
+          slippageTolerance,
         })
       ).toThrow()
     })
 
-    it('fails with wrong stable decimals', async function() {
+    it('fails with wrong stable decimals', async function () {
       const recipient = from
       const fromMargin = false
       const delRisky = parseWei(0.3, lowDecimalPool.risky.decimals)
@@ -573,12 +606,12 @@ describe('Periphery Manager', function() {
           delRisky,
           delStable,
           delLiquidity,
-          slippageTolerance
+          slippageTolerance,
         })
       ).toThrow()
     })
 
-    it('fails if delStable is 0', async function() {
+    it('fails if delStable is 0', async function () {
       const recipient = from
       const fromMargin = false
       const delRisky = parseWei(0.3, pool.risky.decimals)
@@ -592,12 +625,12 @@ describe('Periphery Manager', function() {
           delRisky,
           delStable,
           delLiquidity,
-          slippageTolerance
+          slippageTolerance,
         })
       ).toThrow()
     })
 
-    it('fails if delLiquidity is 0', async function() {
+    it('fails if delLiquidity is 0', async function () {
       const recipient = from
       const fromMargin = false
       const delRisky = parseWei(0.3, pool.risky.decimals)
@@ -611,12 +644,12 @@ describe('Periphery Manager', function() {
           delRisky,
           delStable,
           delLiquidity,
-          slippageTolerance
+          slippageTolerance,
         })
       ).toThrow()
     })
 
-    it('fails when createPool and fromMargin are both true', async function() {
+    it('fails when createPool and fromMargin are both true', async function () {
       const recipient = from
       const fromMargin = true
       const createPool = true
@@ -632,14 +665,14 @@ describe('Periphery Manager', function() {
           delStable,
           delLiquidity,
           createPool,
-          slippageTolerance
+          slippageTolerance,
         })
       ).toThrow()
     })
   })
 
-  describe('#removeCallParameters', function() {
-    it('successful', async function() {
+  describe('#removeCallParameters', function () {
+    it('successful', async function () {
       const recipient = from
       const toMargin = true
       const delRisky = parseWei(0.3, pool.risky.decimals)
@@ -656,7 +689,7 @@ describe('Periphery Manager', function() {
         delRisky,
         delStable,
         recipient,
-        slippageTolerance
+        slippageTolerance,
       })
 
       const data = [pool.address, pool.poolId, delLiquidity.raw]
@@ -665,7 +698,7 @@ describe('Periphery Manager', function() {
       expect(value).toBe('0x00')
     })
 
-    it('should have same minRisky as expectedRisky and same minStable as expectedStable with 0 slippage tolerance', async function() {
+    it('should have same minRisky as expectedRisky and same minStable as expectedStable with 0 slippage tolerance', async function () {
       const recipient = from
       const toMargin = true
       const delLiquidity = parseWei(1, 18)
@@ -681,7 +714,7 @@ describe('Periphery Manager', function() {
         delRisky,
         delStable,
         recipient,
-        slippageTolerance: parsePercentage(0)
+        slippageTolerance: parsePercentage(0),
       })
 
       const data = [pool.address, pool.poolId, delLiquidity.raw]
@@ -692,7 +725,7 @@ describe('Periphery Manager', function() {
       expect(decoded[decoded.length - 1].toString()).toStrictEqual(delStable.toString())
     })
 
-    it('fails if delLiquidity is zero', async function() {
+    it('fails if delLiquidity is zero', async function () {
       const recipient = from
       const toMargin = false
       const delRisky = parseWei(0.3, pool.risky.decimals)
@@ -710,12 +743,12 @@ describe('Periphery Manager', function() {
           delRisky,
           delStable,
           recipient,
-          slippageTolerance
+          slippageTolerance,
         })
       ).toThrow()
     })
 
-    it('fails with wrong risky decimals', async function() {
+    it('fails with wrong risky decimals', async function () {
       const recipient = from
       const toMargin = false
       const delRisky = parseWei(0.3, lowDecimalPool.risky.decimals + 1)
@@ -732,12 +765,12 @@ describe('Periphery Manager', function() {
           delRisky,
           delStable,
           recipient,
-          slippageTolerance
+          slippageTolerance,
         })
       ).toThrow()
     })
 
-    it('fails with wrong stable decimals', async function() {
+    it('fails with wrong stable decimals', async function () {
       const recipient = from
       const toMargin = false
       const delRisky = parseWei(0.3, lowDecimalPool.risky.decimals)
@@ -754,12 +787,12 @@ describe('Periphery Manager', function() {
           delRisky,
           delStable,
           recipient,
-          slippageTolerance
+          slippageTolerance,
         })
       ).toThrow()
     })
 
-    it('fails with wrong liquidity decimals', async function() {
+    it('fails with wrong liquidity decimals', async function () {
       const recipient = from
       const toMargin = false
       const delRisky = parseWei(0.3, lowDecimalPool.risky.decimals)
@@ -776,14 +809,14 @@ describe('Periphery Manager', function() {
           delRisky,
           delStable,
           recipient,
-          slippageTolerance
+          slippageTolerance,
         })
       ).toThrow()
     })
   })
 
-  describe('#safeTransferFromParameters', function() {
-    it('successful', async function() {
+  describe('#safeTransferFromParameters', function () {
+    it('successful', async function () {
       const recipient = from
       const sender = from
       const amount = parseWei(0.1, pool.risky.decimals)
@@ -798,8 +831,8 @@ describe('Periphery Manager', function() {
     })
   })
 
-  describe('#batchTransferFromParameters', function() {
-    it('successful', async function() {
+  describe('#batchTransferFromParameters', function () {
+    it('successful', async function () {
       const recipient = from
       const sender = from
       const amounts = [parseWei(0.1, pool.risky.decimals)]
@@ -807,7 +840,7 @@ describe('Periphery Manager', function() {
 
       const { calldata, value } = PeripheryManager.batchTransferFromParameters({ sender, recipient, ids, amounts })
 
-      const data = [sender, recipient, ids.map(v => BigNumber.from(v).toString()), amounts.map(v => v.raw), '0x']
+      const data = [sender, recipient, ids.map((v) => BigNumber.from(v).toString()), amounts.map((v) => v.raw), '0x']
       const decoded = decode('safeBatchTransferFrom(address,address,uint256[],uint256[],bytes)', calldata)
       data.forEach((item, i) => expect(item.toString()).toStrictEqual(decoded[i].toString()))
       expect(value).toBe('0x00')
