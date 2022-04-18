@@ -368,7 +368,7 @@ export class Pool extends Calibration {
 
   /**
    *
-   * @remarks Rounds down! rmm-core: Reserve.sol.getAmounts() computes the amount of tokens
+   * @remarks rmm-core: Reserve.sol.getAmounts() computes the amount of tokens
    * to withdraw when removing liquidity.
    *
    * @param delLiquidity Amount of liquidity to mint or burn.
@@ -384,8 +384,8 @@ export class Pool extends Calibration {
 
     let delRisky: Wei = parseWei(0, reserveRisky.decimals)
     let delStable: Wei = parseWei(0, reserveStable.decimals)
-    delRisky = reserveRisky.mul(delLiquidity).div(liquidity).sub(1)
-    delStable = reserveStable.mul(delLiquidity).div(liquidity).sub(1)
+    delRisky = reserveRisky.mul(delLiquidity).div(liquidity)
+    delStable = reserveStable.mul(delLiquidity).div(liquidity)
 
     invariant(
       delRisky.decimals === reserveRisky.decimals,
