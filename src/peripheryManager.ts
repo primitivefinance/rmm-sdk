@@ -9,7 +9,7 @@ import { NativeCurrency } from '@uniswap/sdk-core'
 import ManagerArtifact from '@primitivefi/rmm-manager/artifacts/contracts/PrimitiveManager.sol/PrimitiveManager.json'
 
 import { Engine } from './entities/engine'
-import { Pool, PoolSides } from './entities/pool'
+import { Pool } from './entities/pool'
 import { Swaps } from './entities/swaps'
 import { MethodParameters, validateAndParseAddress, validateDecimals } from './utils'
 
@@ -86,8 +86,8 @@ export interface AllocateOptions extends PermitTokens, LiquidityOptions, NativeO
  * @remarks
  * Expected risky and stable amounts should be defaulted to 0.
  *
- * @param expectedRisky Amount of risky tokens to withdraw from margin account, minRisky is added to this.
- * @param expectedStable Amount of stable tokens to withdraw from margin account, minStable is added to this.
+ * @param additionalRisky Amount of risky tokens to withdraw from margin account, minRisky is added to this.
+ * @param additionalStable Amount of stable tokens to withdraw from margin account, minStable is added to this.
  * @param toMargin Whether or not to keep tokens withdrawn from liquidity in margin.
  * @param slippageTolerance Percentage deviation from the expected token amounts being removed from the pool.
  * @param recipient Address that will be granted the minted Primitive liquidity pool tokens.
@@ -99,8 +99,8 @@ export interface AllocateOptions extends PermitTokens, LiquidityOptions, NativeO
  * @beta
  */
 export interface RemoveOptions extends LiquidityOptions, RecipientOptions, NativeOptions {
-  expectedRisky: Wei
-  expectedStable: Wei
+  additionalRisky: Wei
+  additionalStable: Wei
   toMargin: boolean
   slippageTolerance: Percentage
 }
@@ -132,7 +132,7 @@ export abstract class PeripheryManager extends SelfPermit {
   public static INTERFACE: Interface = new Interface(ManagerArtifact.abi)
   public static BYTECODE: string = ManagerArtifact.bytecode
   public static ABI: any[] = ManagerArtifact.abi
-  public static getFactory: (signer?: Signer) => ContractFactory = signer =>
+  public static getFactory: (signer?: Signer) => ContractFactory = (signer) =>
     new ContractFactory(PeripheryManager.INTERFACE, PeripheryManager.BYTECODE, signer)
 
   private constructor() {
@@ -185,7 +185,7 @@ export abstract class PeripheryManager extends SelfPermit {
       pool.maturity.raw,
       pool.gamma.raw.toHexString(),
       riskyPerLp.raw.toHexString(),
-      liquidity.raw.toHexString()
+      liquidity.raw.toHexString(),
     ])
   }
 
@@ -212,7 +212,7 @@ export abstract class PeripheryManager extends SelfPermit {
     return {
       calldata:
         calldatas.length === 1 ? calldatas[0] : PeripheryManager.INTERFACE.encodeFunctionData('multicall', [calldatas]),
-      value
+      value,
     }
   }
 
@@ -258,7 +258,7 @@ export abstract class PeripheryManager extends SelfPermit {
         engine.risky.address,
         engine.stable.address,
         amount0.toHexString(),
-        amount1.toHexString()
+        amount1.toHexString(),
       ])
     )
 
@@ -281,7 +281,7 @@ export abstract class PeripheryManager extends SelfPermit {
     return {
       calldata:
         calldatas.length === 1 ? calldatas[0] : PeripheryManager.INTERFACE.encodeFunctionData('multicall', [calldatas]),
-      value
+      value,
     }
   }
 
@@ -318,7 +318,7 @@ export abstract class PeripheryManager extends SelfPermit {
         options.useNative ? AddressZero : recipient,
         engine.address,
         amount0.toHexString(),
-        amount1.toHexString()
+        amount1.toHexString(),
       ])
     )
 
@@ -335,7 +335,7 @@ export abstract class PeripheryManager extends SelfPermit {
         PeripheryManager.INTERFACE.encodeFunctionData('sweepToken', [
           token.address,
           tokenAmount.toHexString(),
-          recipient
+          recipient,
         ])
       )
     }
@@ -354,7 +354,7 @@ export abstract class PeripheryManager extends SelfPermit {
     return {
       calldata:
         calldatas.length === 1 ? calldatas[0] : PeripheryManager.INTERFACE.encodeFunctionData('multicall', [calldatas]),
-      value: toBN(0).toHexString()
+      value: toBN(0).toHexString(),
     }
   }
 
@@ -420,7 +420,7 @@ export abstract class PeripheryManager extends SelfPermit {
           options.delRisky.raw.toHexString(),
           options.delStable.raw.toHexString(),
           options.fromMargin,
-          minLiquidity.raw.toHexString()
+          minLiquidity.raw.toHexString(),
         ])
       )
     }
@@ -455,7 +455,7 @@ export abstract class PeripheryManager extends SelfPermit {
     return {
       calldata:
         calldatas.length === 1 ? calldatas[0] : PeripheryManager.INTERFACE.encodeFunctionData('multicall', [calldatas]),
-      value
+      value,
     }
   }
 
@@ -486,10 +486,10 @@ export abstract class PeripheryManager extends SelfPermit {
 
     let calldatas: string[] = []
 
-    const { delRisky, delStable } = pool.liquidityQuote(options.delLiquidity, PoolSides.RMM_LP)
+    const { delRisky, delStable } = pool.getAmounts(options.delLiquidity)
     const slippageMultiplier = Percentage.BasisPoints - options.slippageTolerance.bps // 100% - slippage%
-    const minRisky = delRisky.mul(slippageMultiplier).div(Percentage.BasisPoints)
-    const minStable = delStable.mul(slippageMultiplier).div(Percentage.BasisPoints)
+    const minRisky = delRisky.mul(slippageMultiplier).div(Percentage.BasisPoints) // rounded down
+    const minStable = delStable.mul(slippageMultiplier).div(Percentage.BasisPoints) // rounded down
 
     // tokens are by default removed from curve and deposited to margin
     calldatas.push(
@@ -498,7 +498,7 @@ export abstract class PeripheryManager extends SelfPermit {
         pool.poolId,
         options.delLiquidity.raw.toHexString(),
         minRisky.raw.toHexString(),
-        minStable.raw.toHexString()
+        minStable.raw.toHexString(),
       ])
     )
 
@@ -507,9 +507,9 @@ export abstract class PeripheryManager extends SelfPermit {
       calldatas.push(
         ...PeripheryManager.encodeWithdraw(pool, {
           recipient: options.recipient,
-          amountRisky: minRisky.add(options.expectedRisky),
-          amountStable: minStable.add(options.expectedStable),
-          useNative: options.useNative
+          amountRisky: minRisky.add(options.additionalRisky),
+          amountStable: minStable.add(options.additionalStable),
+          useNative: options.useNative,
         })
       )
     }
@@ -517,7 +517,7 @@ export abstract class PeripheryManager extends SelfPermit {
     return {
       calldata:
         calldatas.length === 1 ? calldatas[0] : PeripheryManager.INTERFACE.encodeFunctionData('multicall', [calldatas]),
-      value: toBN(0).toHexString()
+      value: toBN(0).toHexString(),
     }
   }
 
@@ -544,7 +544,7 @@ export abstract class PeripheryManager extends SelfPermit {
 
     return {
       calldata,
-      value: toBN(0).toHexString()
+      value: toBN(0).toHexString(),
     }
   }
 
@@ -562,8 +562,8 @@ export abstract class PeripheryManager extends SelfPermit {
     const sender = validateAndParseAddress(options.sender)
     const recipient = validateAndParseAddress(options.recipient)
 
-    const ids = options.ids.map(id => (id.substring(0, 2) === '0x' ? BigNumber.from(id).toString() : id))
-    const amounts = options.amounts.map(v => v.raw.toHexString())
+    const ids = options.ids.map((id) => (id.substring(0, 2) === '0x' ? BigNumber.from(id).toString() : id))
+    const amounts = options.amounts.map((v) => v.raw.toHexString())
 
     const calldata = PeripheryManager.INTERFACE.encodeFunctionData(
       'safeBatchTransferFrom(address,address,uint256[],uint256[],bytes)',
@@ -572,7 +572,7 @@ export abstract class PeripheryManager extends SelfPermit {
 
     return {
       calldata,
-      value: toBN(0).toHexString()
+      value: toBN(0).toHexString(),
     }
   }
 }

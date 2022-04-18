@@ -367,6 +367,38 @@ export class Pool extends Calibration {
   }
 
   /**
+   *
+   * @remarks Rounds down! rmm-core: Reserve.sol.getAmounts() computes the amount of tokens
+   * to withdraw when removing liquidity.
+   *
+   * @param delLiquidity Amount of liquidity to mint or burn.
+   *
+   * @returns delRisky Amount of risky tokens that are removed from the burned liquidity, truncated.
+   * @returns delStable Amount of Stable tokens that are removed form the burned liquidity, truncated.
+   *
+   * @beta
+   */
+  public getAmounts(delLiquidity: Wei): { delRisky: Wei; delStable: Wei } {
+    const { reserveRisky, reserveStable, liquidity } = this
+    invariant(liquidity.gt(0), `Liquidity must be greater than zero`)
+
+    let delRisky: Wei = parseWei(0, reserveRisky.decimals)
+    let delStable: Wei = parseWei(0, reserveStable.decimals)
+    delRisky = reserveRisky.mul(delLiquidity).div(liquidity).sub(1)
+    delStable = reserveStable.mul(delLiquidity).div(liquidity).sub(1)
+
+    invariant(
+      delRisky.decimals === reserveRisky.decimals,
+      `Computed risky amount decimals: ${delRisky.decimals} != reserve risky decimals: ${reserveRisky.decimals}`
+    )
+    invariant(
+      delStable.decimals === reserveStable.decimals,
+      `Computed stable amount decimals: ${delRisky.decimals} != reserve stable decimals: ${reserveRisky.decimals}`
+    )
+    return { delRisky, delStable }
+  }
+
+  /**
    * @notice Calculates the other side of the pool using the known amount of a side of the pool
    * @param amount Amount of token
    * @param sideOfPool Token side of the pool that is used to calculate the other side
@@ -391,23 +423,23 @@ export class Pool extends Calibration {
           reserveRisky.gt(0),
           `Reserve risky is 0. It must be greater than 0 because its being used as a denominator to compute LP tokens to mint.`
         )
-        delRisky = amount // not rounded
-        delLiquidity = liquidity.mul(delRisky).div(reserveRisky.add(1)) // rounds down
-        delStable = reserveStable.mul(delLiquidity).div(liquidity).add(1) // rounds up
+        delRisky = amount
+        delLiquidity = liquidity.mul(delRisky).div(reserveRisky)
+        delStable = reserveStable.mul(delLiquidity).div(liquidity)
         break
       case PoolSides.STABLE:
         invariant(
           reserveStable.gt(0),
           `Reserve stable is 0. It must be greater than 0 because its being used as a denominator to compute LP tokens to mint.`
         )
-        delStable = amount // not rounded
-        delLiquidity = liquidity.mul(delStable).div(reserveStable.add(1)) // rounds down
-        delRisky = reserveRisky.mul(delLiquidity).div(liquidity).add(1) // rounds up
+        delStable = amount
+        delLiquidity = liquidity.mul(delStable).div(reserveStable)
+        delRisky = reserveRisky.mul(delLiquidity).div(liquidity)
         break
       case PoolSides.RMM_LP:
-        delLiquidity = amount // not rounded
-        delRisky = reserveRisky.mul(delLiquidity).div(liquidity).add(1) // rounds up
-        delStable = reserveStable.mul(delLiquidity).div(liquidity).add(1) // rounds up
+        delLiquidity = amount
+        delRisky = reserveRisky.mul(delLiquidity).div(liquidity)
+        delStable = reserveStable.mul(delLiquidity).div(liquidity)
         break
       default:
         break

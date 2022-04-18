@@ -678,13 +678,13 @@ describe('Periphery Manager', function () {
       const delRisky = parseWei(0.3, pool.risky.decimals)
       const delStable = parseWei(3, pool.stable.decimals)
       const delLiquidity = parseWei(1, 18)
-      const expectedRisky = delRisky
-      const expectedStable = delStable
+      const additionalRisky = delRisky
+      const additionalStable = delStable
 
       const { calldata, value } = PeripheryManager.removeCallParameters(pool, {
         delLiquidity,
-        expectedRisky,
-        expectedStable,
+        additionalRisky,
+        additionalStable,
         toMargin,
         delRisky,
         delStable,
@@ -698,18 +698,18 @@ describe('Periphery Manager', function () {
       expect(value).toBe('0x00')
     })
 
-    it('should have same minRisky as expectedRisky and same minStable as expectedStable with 0 slippage tolerance', async function () {
+    it('should have same minRisky as additionalRisky and same minStable as additionalStable with 0 slippage tolerance', async function () {
       const recipient = from
       const toMargin = true
       const delLiquidity = parseWei(1, 18)
-      const { delRisky, delStable } = pool.liquidityQuote(delLiquidity, PoolSides.RMM_LP)
-      const expectedRisky = delRisky
-      const expectedStable = delStable
+      const { delRisky, delStable } = pool.getAmounts(delLiquidity)
+      const additionalRisky = delRisky
+      const additionalStable = delStable
 
       const { calldata, value } = PeripheryManager.removeCallParameters(pool, {
         delLiquidity,
-        expectedRisky,
-        expectedStable,
+        additionalRisky,
+        additionalStable,
         toMargin,
         delRisky,
         delStable,
@@ -731,14 +731,14 @@ describe('Periphery Manager', function () {
       const delRisky = parseWei(0.3, pool.risky.decimals)
       const delStable = parseWei(3, pool.stable.decimals)
       const delLiquidity = parseWei(0, 18)
-      const expectedRisky = delRisky
-      const expectedStable = delStable
+      const additionalRisky = delRisky
+      const additionalStable = delStable
 
       expect(() =>
         PeripheryManager.removeCallParameters(pool, {
           delLiquidity,
-          expectedRisky,
-          expectedStable,
+          additionalRisky,
+          additionalStable,
           toMargin,
           delRisky,
           delStable,
@@ -754,13 +754,13 @@ describe('Periphery Manager', function () {
       const delRisky = parseWei(0.3, lowDecimalPool.risky.decimals + 1)
       const delStable = parseWei(3, lowDecimalPool.stable.decimals)
       const delLiquidity = parseWei(1, 18)
-      const expectedRisky = delRisky
-      const expectedStable = delStable
+      const additionalRisky = delRisky
+      const additionalStable = delStable
       expect(() =>
         PeripheryManager.removeCallParameters(lowDecimalPool, {
           delLiquidity,
-          expectedRisky,
-          expectedStable,
+          additionalRisky,
+          additionalStable,
           toMargin,
           delRisky,
           delStable,
@@ -776,13 +776,13 @@ describe('Periphery Manager', function () {
       const delRisky = parseWei(0.3, lowDecimalPool.risky.decimals)
       const delStable = parseWei(3, lowDecimalPool.stable.decimals + 1)
       const delLiquidity = parseWei(1, 18)
-      const expectedRisky = delRisky
-      const expectedStable = delStable
+      const additionalRisky = delRisky
+      const additionalStable = delStable
       expect(() =>
         PeripheryManager.removeCallParameters(lowDecimalPool, {
           delLiquidity,
-          expectedRisky,
-          expectedStable,
+          additionalRisky,
+          additionalStable,
           toMargin,
           delRisky,
           delStable,
@@ -798,13 +798,13 @@ describe('Periphery Manager', function () {
       const delRisky = parseWei(0.3, lowDecimalPool.risky.decimals)
       const delStable = parseWei(3, lowDecimalPool.stable.decimals)
       const delLiquidity = parseWei(1, 6)
-      const expectedRisky = delRisky
-      const expectedStable = delStable
+      const additionalRisky = delRisky
+      const additionalStable = delStable
       expect(() =>
         PeripheryManager.removeCallParameters(lowDecimalPool, {
           delLiquidity,
-          expectedRisky,
-          expectedStable,
+          additionalRisky,
+          additionalStable,
           toMargin,
           delRisky,
           delStable,
